@@ -85,7 +85,7 @@ class Server(commands.Cog):
         `{pre}permissions @NecroBot 5` - set the NecroBot permission level to 5
         `{pre}perms @NecroBot 5` - set the NecroBot permission level to 5"""
         if level is None and user is not None:
-            level = await self.bot.db.get_permission(ctx.guild.id, user.id)
+            level = await self.bot.db.get_permission(user.id, ctx.guild.id)
             return await ctx.send(f"**{user.display_name}** is **{level}** ({self.bot.perms_name[level]})")
 
         if level is None and user is None:
@@ -359,17 +359,17 @@ class Server(commands.Cog):
         """Sets the message that will be sent to the designated channel everytime a member joins the server. You 
         can use special keywords to replace certain words by stuff like the name of the member or a mention.
         List of keywords:
-        `{mention}` - mentions the member
-        `{member}` - name and discriminator of the member
-        `{name}` - name of the member
-        `{server}` - name of the server
-        `{id}` - id of the member that joined
+        `{{mention}}` - mentions the member
+        `{{member}}` - name and discriminator of the member
+        `{{name}}` - name of the member
+        `{{server}}` - name of the server
+        `{{id}}` - id of the member that joined
 
         {usage}
         
         __Example__
-        `{pre}welcome Hello {member} :wave:` - sets the welcome message to be 'Hello Necrobot#1231 :wave:'.
-        `{pre}welcome hey there {mention}, welcome to {server}` - set the welcome message to 'hey there @NecroBot, welcome
+        `{pre}welcome Hello {{member}} :wave:` - sets the welcome message to be 'Hello Necrobot#1231 :wave:'.
+        `{pre}welcome hey there {{mention}}, welcome to {{server}}` - set the welcome message to 'hey there @NecroBot, welcome
         to NecroBot Support Server'
         `{pre}welcome` - see your server's welcome message
         `{pre}welcome disable` - disable server welcome messages
@@ -397,17 +397,17 @@ class Server(commands.Cog):
         """Sets the message that will be sent to the designated channel everytime a member leaves the server. You 
         can use special keywords to replace certain words by stuff like the name of the member or a mention.
         List of keywords:
-        `{mention}` - mentions the member
-        `{member}` - name and discriminator of the member
-        `{name}` - name of the member
-        `{server}` - name of the server
-        `{id}` - id of the member that left
+        `{{mention}}` - mentions the member
+        `{{member}}` - name and discriminator of the member
+        `{{name}}` - name of the member
+        `{{server}}` - name of the server
+        `{{id}}` - id of the member that left
 
         {usage}
         
         __Example__
-        `{pre}farewell Hello {member} :wave:` - sets the farewell message to be 'Hello Necrobot#1231 :wave:'.
-        `{pre}farewell hey there {mention}, we'll miss you on {server}` - set the farewell message to 'hey 
+        `{pre}farewell Hello {{member}} :wave:` - sets the farewell message to be 'Hello Necrobot#1231 :wave:'.
+        `{pre}farewell hey there {{mention}}, we'll miss you on {{server}}` - set the farewell message to 'hey 
         there @NecroBot, we'll miss you on NecroBot Support Server'
         """
         if message == "":
@@ -513,6 +513,9 @@ class Server(commands.Cog):
             await ctx.send(":white_check_mark: | Auto-Role disabled")
             await self.bot.db.update_auto_role(ctx.guild.id, 0, time)
         else:
+            if not isinstance(time, int):
+                raise BotError("Please specify a valid time format")
+
             time = f"for **{time}** seconds" if time else "permanently"
             await ctx.send(f":white_check_mark: | Joining members will now automatically be assigned the role **{role.name}** {time}")
             await self.bot.db.update_auto_role(ctx.guild.id, role.id, time)

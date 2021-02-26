@@ -503,6 +503,7 @@ class Admin(commands.Cog):
         del self.gates[channel.id] 
             
     @commands.command()
+    @commands.is_owner()
     async def maintenance(self, ctx, message = None):
         """Set the bot as going down for maintenance soon.
         

@@ -26,17 +26,25 @@ class Decisions(commands.Cog):
     ## Commands
     #######################################################################
 
-    @commands.command()
+    @commands.command(aliases=["choice"])
     async def choose(self, ctx, *, choices):
-        """Returns a single choice from the list of choices given. Use `,` to seperate each of the choices.
+        """Returns a single choice from the list of choices given. Use `,` to seperate each of the choices. You can
+        make multiple choices with a single command by separating them with `|`.
         
         {usage}
         
         __Example__
         `{pre}choose Bob, John Smith, Mary` - choose between the names of Bob, John Smith, and Mary
-        `{pre}choose 1, 2` - choose between 1 and 2 """
-        choice_list = [x.strip() for x in choices.split(",")]
-        await ctx.send(f"I choose **{random.choice(choice_list)}**")
+        `{pre}choose 1, 2` - choose between 1 and 2 
+        `{pre}choose I | like, hate | tico, kittycat` - can become 'I, like, tico' or 'I, hate, tico' or 'I, like, kittycat'"""
+        choice_sets = choices.split("|")
+        final_choices = []
+        for choice_set in choice_sets:
+            choice_list = [x.strip() for x in choice_set.strip().split(",")]
+            final_choices.append(random.choice(choice_list))
+
+
+        await ctx.send(f"I choose **{', '.join(final_choices)}**")
 
     @commands.command(aliases=["flip"])
     @commands.cooldown(3, 5, BucketType.user)
