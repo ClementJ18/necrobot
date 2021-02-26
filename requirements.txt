@@ -8,7 +8,7 @@ Pillow == 7.1.1
 # C:\Users\Admin\Desktop\necrobot\rings\misc.py: 10
 # C:\Users\Admin\Desktop\necrobot\rings\utilities.py: 7
 # C:\Users\Admin\Desktop\necrobot\rings\words.py: 9
-aiohttp == 3.6.1
+aiohttp == 3.7.4
 
 # C:\Users\Admin\Desktop\necrobot\rings\db.py: 6
 asyncpg == 0.20.1
