@@ -2,7 +2,7 @@
 
 # C:\Users\Admin\Desktop\necrobot\rings\meta.py: 11
 # C:\Users\Admin\Desktop\necrobot\rings\profile.py: 12,13,14
-Pillow == 7.1.1
+Pillow == 8.1.1
 
 # C:\Users\Admin\Desktop\necrobot\rings\meta.py: 8
 # C:\Users\Admin\Desktop\necrobot\rings\misc.py: 10
