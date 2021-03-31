@@ -54,7 +54,7 @@ feedparser == 5.2.1
 fuzzywuzzy == 0.18.0
 
 # C:\Users\Admin\Desktop\necrobot\unwiki\unwiki.py: 9
-lxml == 4.5.0
+lxml == 4.6.3
 
 # C:\Users\Admin\Desktop\necrobot\rings\modding.py: 7
 moddb == 0.7
