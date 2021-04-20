@@ -11,7 +11,7 @@ Pillow == 7.1.1
 aiohttp == 3.6.1
 
 # C:\Users\Admin\Desktop\necrobot\rings\db.py: 6
-asyncpg == 0.20.1
+asyncpg == 0.21.0
 
 # C:\Users\Admin\Desktop\necrobot\rings\modding.py: 5
 # C:\Users\Admin\Desktop\necrobot\rings\social.py: 9
