@@ -13,13 +13,17 @@ from PIL import Image
 class Meta(commands.Cog):
     def __init__(self, bot):
         self.bot = bot        
-        self.hourly_task = self.bot.loop.create_task(self.hourly())
+        self.hourly_loop = self.bot.loop.create_task(self.hourly())
         
-        self.tasks = [
+        self.tasks_hourly = [
             self.broadcast,
-            self.clear_potential_star,
-            self.clear_old_denied,
             self.rotate_status,
+        ]
+
+        self.tasks_daily = [
+            self.clear_potential_star,
+            self.clear_temporary_invites,
+            self.clear_old_denied,
         ]
         
     #######################################################################
@@ -27,7 +31,7 @@ class Meta(commands.Cog):
     #######################################################################
         
     def cog_unload(self):
-        self.hourly_task.cancel()
+        self.hourly_loop.cancel()
         
     #######################################################################
     ## Functions
@@ -147,13 +151,15 @@ class Meta(commands.Cog):
         
         if message.id not in self.bot.starred:
             self.bot.starred.append(message.id)
-            await self.bot.db.add_star(message, msg)
+            await self.bot.db.add_star(message, msg, self.bot.guild_data[message.guild.id]["starboard-limit"])
             
     async def hourly(self):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             if self.bot.counter >= 24:
                 self.bot.counter = 0
+                for task in self.tasks_daily:
+                    await task()
 
             now = datetime.datetime.now()
             time = 3600 - (now.second + (now.minute * 60))
@@ -164,7 +170,7 @@ class Meta(commands.Cog):
             
             self.bot.counter += 1
             
-            for task in self.tasks:
+            for task in self.tasks_hourly:
                 await task()
                 
                 
@@ -193,9 +199,6 @@ class Meta(commands.Cog):
                     allowed_mentions=discord.AllowedMentions())
         
     async def clear_potential_star(self):
-        if self.bot.counter != 24:
-            return
-        
         ids = list(self.bot.potential_stars.keys())
         ids.sort()
         
@@ -207,11 +210,20 @@ class Meta(commands.Cog):
                 del self.bot.potential_stars[message_id]
             else:
                 break
+
+    async def clear_temporary_invites(self):
+        for guild in self.bot.guilds:
+            try:
+                ids = [x.id for x in await guild.invites()]
+            except discord.Forbidden:
+                return
+
+            await self.bot.db.query_executer(
+                "DELETE FROM necrobot.Invites WHERE guild_id = $1 AND id != ANY ($2)",
+                guild.id, ids
+            )
                 
     async def clear_old_denied(self):
-        if self.bot.counter != 24:
-            return
-        
         posts = list(self.bot.denied_posts)
         posts.sort()
         

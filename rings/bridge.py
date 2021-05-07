@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, has_perms, react_menu
-from rings.utils.config import cookies, MU_Username, MU_Password
+from rings.utils.utils import BotError, react_menu, guild_only
+from rings.utils.config import MU_Username, MU_Password
 from rings.utils.converters import MemberConverter
 
 import re
@@ -37,18 +37,6 @@ class MUConverter(commands.Converter):
             user.display_name = "User Left"
         
         return user
-
-def guild_only(guild_id):
-    def predicate(ctx):
-        if ctx.guild is None:
-            raise commands.CheckFailure("This command cannot be executed in DMs")
-            
-        if ctx.guild.id not in (guild_id, 311630847969198082):
-            raise commands.CheckFailure("This command cannot be executed in this server")
-            
-        return True
-        
-    return commands.check(predicate)
     
 def mu_moderator(guild):
     ids = []
@@ -65,7 +53,7 @@ def mu_moderator_check():
         
     return commands.check(predicate)
 
-class Special(commands.Cog):
+class Bridge(commands.Cog):
     """A cog for all commands specific to certain servers."""
     def __init__(self, bot):
         self.bot = bot
@@ -539,4 +527,4 @@ class Special(commands.Cog):
                 await post["message"].delete() 
  
 def setup(bot):
-    bot.add_cog(Special(bot))
+    bot.add_cog(Bridge(bot))

@@ -66,12 +66,15 @@ class Events(commands.Cog):
         self.bot.polls[payload.message_id]["voters"].append(payload.user_id)
         
     async def starred_reaction_handler(self, payload):
+        await self.bot.db.update_stars(payload.message_id, 1)
+
         if not self.is_starrable(payload.guild_id, payload.channel_id, payload.message_id):
             return
 
         channel = self.bot.get_channel(payload.channel_id)
         starboard = self.bot.get_channel(self.bot.guild_data[payload.guild_id]["starboard-channel"])
         if channel.is_nsfw() and not starboard.is_nsfw():
+            await channel.send(":negative_squared_cross_mark: | Could not send message to starboard because channel is marked as NSFW and starboard id marked as SFW. Either make this channel SFW or make the starboard NSFW")
             return
         
         if not payload.message_id in self.bot.potential_stars:
@@ -425,11 +428,14 @@ class Events(commands.Cog):
             if result:
                 self.bot.polls[payload.message_id]["voters"].remove(payload.user_id)
             
-        if payload.emoji.name == "\N{WHITE MEDIUM STAR}" and payload.message_id in self.bot.potential_stars:
-            message = self.bot.potential_stars[payload.message_id]
-            
-            if not message["message"].author.id == payload.user_id:
-                message["count"] -= 1
+        if payload.emoji.name == "\N{WHITE MEDIUM STAR}":
+            if payload.message_id in self.bot.potential_stars:
+                message = self.bot.potential_stars[payload.message_id]
+                
+                if not message["message"].author.id == payload.user_id:
+                    message["count"] -= 1
+
+            await self.bot.db.update_stars(payload.message_id, -1)
     
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):

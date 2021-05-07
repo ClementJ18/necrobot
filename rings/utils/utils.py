@@ -134,3 +134,24 @@ def midnight():
         day=tomorrow.day, hour=0, minute=0, second=0
     )
     return time - datetime.datetime.now()
+
+def guild_only(guild_id):
+    def predicate(ctx):
+        if ctx.guild is None:
+            raise commands.CheckFailure("This command cannot be executed in DMs")
+            
+        if ctx.guild.id not in (guild_id, 311630847969198082):
+            raise commands.CheckFailure("This command cannot be executed in this server")
+            
+        return True
+        
+    return commands.check(predicate)
+
+def default_settings():
+    return {
+        "blacklist": [],
+        "news": [],
+        "disabled": [],
+        "shop": [],
+        "messages": {}
+    }

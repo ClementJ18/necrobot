@@ -2,23 +2,23 @@
 
 # C:\Users\Admin\Desktop\necrobot\rings\meta.py: 11
 # C:\Users\Admin\Desktop\necrobot\rings\profile.py: 12,13,14
-Pillow == 7.1.1
+Pillow
 
 # C:\Users\Admin\Desktop\necrobot\rings\meta.py: 8
 # C:\Users\Admin\Desktop\necrobot\rings\misc.py: 10
 # C:\Users\Admin\Desktop\necrobot\rings\utilities.py: 7
 # C:\Users\Admin\Desktop\necrobot\rings\words.py: 9
-aiohttp == 3.6.1
+aiohttp
 
 # C:\Users\Admin\Desktop\necrobot\rings\db.py: 6
-asyncpg == 0.20.1
+asyncpg
 
 # C:\Users\Admin\Desktop\necrobot\rings\modding.py: 5
 # C:\Users\Admin\Desktop\necrobot\rings\social.py: 9
-beautifulsoup4 == 4.6.3
+beautifulsoup4
 
 # C:\Users\Admin\Desktop\necrobot\rings\decisions.py: 7
-dice == 3.1.0
+dice
 
 # C:\Users\Admin\Desktop\necrobot\bot.py: 1,2
 # C:\Users\Admin\Desktop\necrobot\maintenance_bot.py: 1,2
@@ -44,39 +44,39 @@ dice == 3.1.0
 # C:\Users\Admin\Desktop\necrobot\rings\utils\utils.py: 1,2
 # C:\Users\Admin\Desktop\necrobot\rings\wiki.py: 1,2
 # C:\Users\Admin\Desktop\necrobot\rings\words.py: 1,2,3
-discord.py == 1.4.0a2352+g421d8bf
+discord.py
 
 # C:\Users\Admin\Desktop\necrobot\rings\rss.py: 6
-feedparser == 5.2.1
+feedparser
 
 # C:\Users\Admin\Desktop\necrobot\rings\modding.py: 6
 # C:\Users\Admin\Desktop\necrobot\rings\wiki.py: 10
-fuzzywuzzy == 0.18.0
+fuzzywuzzy
 
 # C:\Users\Admin\Desktop\necrobot\unwiki\unwiki.py: 9
-lxml == 4.5.0
+lxml
 
 # C:\Users\Admin\Desktop\necrobot\rings\modding.py: 7
-moddb == 0.7
+git+git://github.com/ClementJ18/moddb.git
 
 # C:\Users\Admin\Desktop\necrobot\rings\admin.py: 10
-pbs == 0.110
+pbs
 
 # C:\Users\Admin\Desktop\necrobot\rings\admin.py: 14
-psutil == 5.7.0
+psutil
 
 # C:\Users\Admin\Desktop\necrobot\rings\db.py: 7
-psycopg2 == 2.8.5
+psycopg2
 
 # C:\Users\Admin\Desktop\necrobot\unwiki\unwiki.py: 7
-pytidylib == 0.3.2
+pytidylib
 
 # C:\Users\Admin\Desktop\necrobot\rings\special.py: 8
-robobrowser == 0.5.3
+robobrowser
 
 # C:\Users\Admin\Desktop\necrobot\rings\admin.py: 8
-sh == 1.12.14
+sh
 
 # C:\Users\Admin\Desktop\necrobot\rings\admin.py: 17
 # C:\Users\Admin\Desktop\necrobot\rings\utilities.py: 9
-simpleeval == 0.9.10
+simpleeval

@@ -3,7 +3,7 @@ from discord.ext import commands
 
 from rings.db import SyncDatabase
 from rings.utils.config import token
-from rings.utils.utils import get_pre
+from rings.utils.utils import get_pre, default_settings
 from rings.utils.help import NecrobotHelp
 
 import json
@@ -37,12 +37,12 @@ class NecroBot(commands.Bot):
         self.uptime_start = time.time()
         self.counter = datetime.datetime.now().hour
         
-        self.version = 3.1
+        self.version = 3.2
         self.ready = False
         self.prefixes = ["n!", "N!", "n@", "N@"]
         self.admin_prefixes = ["n@", "N@"]
-        self.new_commands = ["mu", "maintenance"]
-        self.statuses = ["n!help for help", "currently in {guild} guilds", "with {members} members", "n!report for bug/suggestions", "recently upgraded to v3!"]
+        self.new_commands = []
+        self.statuses = ["n!help for help", "currently in {guild} guilds", "with {members} members", "n!report for bug/suggestions"]
         self.perms_name = ["User", "Helper", "Moderator", "Semi-Admin", "Admin", "Server Owner", "NecroBot Admin", "Bot Smiths"]
         
         
@@ -66,9 +66,9 @@ class NecroBot(commands.Bot):
         self.pending_posts = {}
         self.denied_posts = []
         self.queued_posts = asyncio.Queue()
-        
+
         with open("rings/utils/data/settings.json", "rb") as infile:
-            self.settings = json.load(infile)
+            self.settings = {**default_settings(), **json.load(infile)}
         
         @self.check
         def disabled_check(ctx):
@@ -152,7 +152,7 @@ class NecroBot(commands.Bot):
             Dictate what happens if an error happens
                 True - Error is raised
                 None - Nothing
-                False - Error is raised but silenced
+                False - Error is raised but silenced in global error handler
         """
         try:
             return await super().wait_for(event, check=check, timeout=timeout)

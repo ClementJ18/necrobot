@@ -109,11 +109,15 @@ CREATE TABLE necrobot.Warnings(
     date_issued TIMESTAMPTZ DEFAULT NOW()
 );
 
+#SELECT setval(pg_get_serial_sequence('necrobot.Warnings', 'warn_id'), coalesce(max(warn_id)+1, 1), false) FROM necrobot.Warnings;
+
 CREATE TABLE necrobot.Starred(
     message_id bigint PRIMARY KEY,
     starred_id bigint,
     guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
-    user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE
+    user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
+    stars int DEFAULT 0,
+    link varchar(200) DEFAULT 'None'
 );
 
 CREATE TABLE necrobot.Reminders(
@@ -146,7 +150,7 @@ CREATE TABLE necrobot.Youtube(
     youtuber_id varchar(50),
     last_update TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     filter varchar(200),
-    youtuber_name varchar(200)
+    youtuber_name varchar(200),
     PRIMARY KEY(guild_id, youtuber_id)
 );
 
@@ -204,3 +208,11 @@ CREATE TYPE emote_count_hybrid as (
     reaction varchar(200),
     count int
 );
+
+CREATE TABLE necrobot.InternalRanked(
+    faction varchar(25),
+    enemy varchar(25),
+    defeats int default 0
+    victories int default 0
+)
+

@@ -271,10 +271,16 @@ class Database(commands.Cog):
             user_id, value
         )
         
-    async def add_star(self, starred, message):
+    async def add_star(self, starred, message, stars=4):
         await self.query_executer(
-            "INSERT INTO necrobot.Starred VALUES ($1, $2, $3, $4);",
-            starred.id, message.id, starred.guild.id, starred.author.id
+            "INSERT INTO necrobot.Starred VALUES ($1, $2, $3, $4, $5, $6);",
+            starred.id, message.id, starred.guild.id, starred.author.id, stars, message.jump_url
+        )
+
+    async def update_stars(self, starred_id, increment):
+        await self.query_executer(
+            "UPDATE FROM necrobot.Starred SET stars = stars + $2 WHERE starred_id = $1",
+            starred_id, increment
         )
         
     async def update_prefix(self, guild_id, prefix):
@@ -448,8 +454,6 @@ class Database(commands.Cog):
         )
         
     async def update_invites(self, guild):
-        changed = None
-        used_invite = None
         try:
             invites = sorted(await guild.invites(), key=lambda x: x.created_at)
         except discord.Forbidden:
@@ -457,18 +461,12 @@ class Database(commands.Cog):
 
         for invite in invites:
             changed = await self.query_executer(
-                """
-                    INSERT INTO necrobot.Invites as inv VALUES($1, $2, $3, $4, $5)
-                    ON CONFLICT (id)
-                    DO UPDATE SET uses = $4 WHERE inv.id = $1 AND inv.uses < $4 RETURNING url""",
-                invite.id, guild.id, invite.url, invite.uses, invite.inviter.id if invite.inviter else 000, fetchval=True
+                "UPDATE SET uses = $2 WHERE inv.id = $1 AND inv.uses < $2 RETURNING url",
+                invite.id, invite.uses
             )
 
-            if changed and not used_invite:
-                used_invite = invite
-                break
-                    
-        return used_invite
+            if changed:
+                return invite
         
     async def get_reminders(self, user_id = None):
         if user_id is None:
@@ -555,7 +553,8 @@ class Database(commands.Cog):
     async def update_yt_filter(self, guild_id, youtuber_name, text):
         await self.bot.db.query_executer(
             "UPDATE necrobot.Youtube SET filter = $3 WHERE guild_id = $1 and LOWER(youtuber_name) = LOWER($2) RETURNING youtuber_name", 
-            guild_id, youtuber_id, text
+            guild_id, youtuber_name, text,
+            fetchval=True
         )
             
     async def update_yt_rss(self, guild_id = None):
