@@ -212,7 +212,7 @@ CREATE TYPE emote_count_hybrid as (
 CREATE TABLE necrobot.InternalRanked(
     faction varchar(25),
     enemy varchar(25),
-    defeats int default 0
+    defeats int default 0,
     victories int default 0
 )
 

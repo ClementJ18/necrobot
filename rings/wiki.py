@@ -5,7 +5,6 @@ import rings.utils.wikia as wikia
 import rings.utils.mediawiki as mediawiki
 from rings.utils.utils import BotError
 
-from unwiki.unwiki import UnWiki
 from fuzzywuzzy import process
 
 class Wiki(commands.Cog):

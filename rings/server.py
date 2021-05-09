@@ -718,23 +718,23 @@ class Server(commands.Cog):
         __Examples__
         `{pre}starboard stars @Necrobot`
         """
-        if user is None:
+        if user is not None:
             stars = await self.bot.db.query_executer(
-                "SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1 AND user_id = $2";
+                "SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1 AND user_id = $2",
                 ctx.guild.id, user.id
             )
         else:
             stars = await self.bot.db.query_executer(
-                "SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1";
+                "SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1",
                 ctx.guild.id
             )
 
 
         def embed_maker(index, entries):
-            star_str = "\n".join([f"{x[1]} :star: - [Link]({x[2]} ({ctx.guild.get_member(x[0]) if ctx.guild.get_member(x[0]) is not None else 'User Left'}"])
+            star_str = "\n".join([f"{x[1]} :star: - [Link]({x[2]}) ({ctx.guild.get_member(x[0]) if ctx.guild.get_member(x[0]) is not None else 'User Left'})" for x in entries])
             embed = discord.Embed(
                 title=f"Stars ({index[0]}/{index[1]})", 
-                description=stars_str, 
+                description=star_str, 
                 colour=discord.Colour(0x277b0)
             )
             

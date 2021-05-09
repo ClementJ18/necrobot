@@ -194,7 +194,6 @@ class Admin(commands.Cog):
         
         
     @commands.group()
-    @has_perms(6)
     async def admin(self, ctx):
         """{usage}"""
         pass

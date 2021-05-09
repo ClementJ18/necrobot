@@ -271,16 +271,16 @@ class Database(commands.Cog):
             user_id, value
         )
         
-    async def add_star(self, starred, message, stars=4):
+    async def add_star(self, starred, message, stars):
         await self.query_executer(
             "INSERT INTO necrobot.Starred VALUES ($1, $2, $3, $4, $5, $6);",
             starred.id, message.id, starred.guild.id, starred.author.id, stars, message.jump_url
         )
 
-    async def update_stars(self, starred_id, increment):
+    async def update_stars(self, message_id, increment):
         await self.query_executer(
-            "UPDATE FROM necrobot.Starred SET stars = stars + $2 WHERE starred_id = $1",
-            starred_id, increment
+            "UPDATE necrobot.Starred SET stars = stars + $2 WHERE message_id = $1",
+            message_id, increment
         )
         
     async def update_prefix(self, guild_id, prefix):
@@ -452,21 +452,49 @@ class Database(commands.Cog):
             "DELETE FROM necrobot.Invites WHERE id=$1",
             invite.id    
         )
-        
+       
+    #TODO: Fix this, it makes bot hang 
     async def update_invites(self, guild):
         try:
             invites = sorted(await guild.invites(), key=lambda x: x.created_at)
         except discord.Forbidden:
             return
 
+        return_invite = None
         for invite in invites:
+            print(invite)
             changed = await self.query_executer(
                 "UPDATE SET uses = $2 WHERE inv.id = $1 AND inv.uses < $2 RETURNING url",
                 invite.id, invite.uses
             )
 
-            if changed:
-                return invite
+            if changed and return_invite is None:
+                return_invite = invite
+
+        return return_invite
+
+    async def sync_invites(self, guild):
+        try:
+            invites = sorted(await guild.invites(), key=lambda x: x.created_at)
+        except discord.Forbidden:
+            return
+
+        #insert
+        #update
+        for invite in invites:
+            await self.query_executer(
+                """
+                    INSERT INTO necrobot.Invites as inv VALUES($1, $2, $3, $4, $5)
+                    ON CONFLICT (id)
+                    DO UPDATE SET uses = $4 WHERE inv.id = $1""",
+                invite.id, guild.id, invite.url, invite.uses, invite.inviter.id if invite.inviter else 000, fetchval=True
+            )
+
+        #delete
+        await self.query_executer(
+            "DELETE FROM necrobot.Invites WHERE NOT(id = ANY($1)) AND guild_id = $2",
+            [x.id for x in invites], guild.id
+        )
         
     async def get_reminders(self, user_id = None):
         if user_id is None:

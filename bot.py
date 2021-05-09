@@ -243,7 +243,7 @@ extensions = [
     'moderation',
     'profile',
     'economy',
-    'special'
+    'bridge'
 ]
 
 if __name__ == '__main__':

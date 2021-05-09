@@ -249,9 +249,8 @@ class Meta(commands.Cog):
         self.bot.session = aiohttp.ClientSession(loop=self.bot.loop)
         
         msg = await self.bot.get_bot_channel().send("**Initiating Bot**")
-        
         for guild in self.bot.guilds:
-            await self.new_guild(guild.id) 
+            await self.new_guild(guild.id)
             await self.guild_checker(guild)
                 
             for member in guild.members:
@@ -298,7 +297,6 @@ class Meta(commands.Cog):
             
         if g["welcome-channel"] not in channels:
             await self.bot.db.update_greeting_channel(guild.id)
-            
         if g["automod"] not in channels:
             await self.bot.db.update_automod_channel(guild.id)
             
@@ -306,7 +304,7 @@ class Meta(commands.Cog):
             await self.bot.db.update_mute_role(guild.id)
             
         await self.bot.db.delete_self_roles(guild.id, *[role for role in g["self-roles"] if role not in roles])
-        await self.bot.db.update_invites(guild)
+        await self.bot.db.sync_invites(guild)
         
         await self.bot.db.query_executer(
             "DELETE FROM necrobot.Youtube WHERE guild_id = $1 AND NOT(channel_id = any($2))",
