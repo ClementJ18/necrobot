@@ -453,7 +453,6 @@ class Database(commands.Cog):
             invite.id    
         )
        
-    #TODO: Fix this, it makes bot hang 
     async def update_invites(self, guild):
         try:
             invites = sorted(await guild.invites(), key=lambda x: x.created_at)
@@ -462,9 +461,8 @@ class Database(commands.Cog):
 
         return_invite = None
         for invite in invites:
-            print(invite)
             changed = await self.query_executer(
-                "UPDATE SET uses = $2 WHERE inv.id = $1 AND inv.uses < $2 RETURNING url",
+                "UPDATE necrobot.Invites SET uses = $2 WHERE id = $1 AND uses < $2 RETURNING url",
                 invite.id, invite.uses
             )
 

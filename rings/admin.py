@@ -515,6 +515,15 @@ class Admin(commands.Cog):
             
         self.bot.meta.hourly_task.cancel()
         await self.bot.change_presence(activity=discord.Game(name=msg))
+
+        await ctx.send(":white_check_mark: | Set to go down soon")
+
+    @commands.command()
+    @commands.is_owner()
+    async def reset(self, ctx):
+        """{usage}"""
+        self.bot.check_enabled = True
+        await ctx.send(":white_check_mark: | Process checks re-enabled")
         
     #######################################################################
     ## Events

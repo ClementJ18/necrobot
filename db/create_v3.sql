@@ -109,16 +109,19 @@ CREATE TABLE necrobot.Warnings(
     date_issued TIMESTAMPTZ DEFAULT NOW()
 );
 
-#SELECT setval(pg_get_serial_sequence('necrobot.Warnings', 'warn_id'), coalesce(max(warn_id)+1, 1), false) FROM necrobot.Warnings;
+-- SELECT setval(pg_get_serial_sequence('necrobot.Warnings', 'warn_id'), coalesce(max(warn_id)+1, 1), false) FROM necrobot.Warnings;
 
 CREATE TABLE necrobot.Starred(
     message_id bigint PRIMARY KEY,
     starred_id bigint,
     guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
     user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
-    stars int DEFAULT 0,
+    stars int DEFAULT 4,
     link varchar(200) DEFAULT 'None'
 );
+
+-- ALTER TABLE necrobot.Starred ADD stars int DEFAULT 4;
+-- ALTER TABLE necrobot.Starred ADD link varchar(200) DEFAULT 'None';
 
 CREATE TABLE necrobot.Reminders(
     id SERIAL PRIMARY KEY,
@@ -214,5 +217,5 @@ CREATE TABLE necrobot.InternalRanked(
     enemy varchar(25),
     defeats int default 0,
     victories int default 0
-)
+);
 

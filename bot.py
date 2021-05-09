@@ -51,6 +51,7 @@ class NecroBot(commands.Bot):
         self.session = None
         self.pool = None
         self.maintenance = False
+        self.check_enabled = True
         self.owner_id = 241942232867799040
         
         sync_db = SyncDatabase()
@@ -327,18 +328,16 @@ if __name__ == '__main__':
             
             with open("rings/utils/data/settings.json", "w") as file:
                 json.dump(ctx.bot.settings, file)
-            
-            await ctx.bot.session.close()
-            await ctx.bot.pool.close()
-            ctx.bot.meta.hourly_task.cancel()
+
+            ctx.bot.meta.hourly_loop.cancel()
             ctx.bot.get_cog("RSS").task.cancel()
             for reminder in ctx.bot.reminders.values():
                 reminder.cancel()
 
+            await ctx.bot.session.close()
+            await ctx.bot.pool.close()
             await ctx.bot.get_bot_channel().send("**Bot Offline**")
-            for x in [x for x in asyncio.Task.all_tasks() if not x.done()]:
-                print(x)
-            # await ctx.bot.logout()
+            await ctx.bot.close()
 
     for extension in extensions:
         bot.load_extension(f"rings.{extension}")   

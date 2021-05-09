@@ -4,6 +4,11 @@ from discord.ext import commands
 from rings.db import DatabaseError
 from rings.utils.converters import time_converter
 
+try:
+    import sh
+except ImportError:
+    import pbs as sh
+
 import io
 import aiohttp
 import asyncio
@@ -18,6 +23,7 @@ class Meta(commands.Cog):
         self.tasks_hourly = [
             self.broadcast,
             self.rotate_status,
+            self.check_processes,
         ]
 
         self.tasks_daily = [
@@ -25,6 +31,10 @@ class Meta(commands.Cog):
             self.clear_temporary_invites,
             self.clear_old_denied,
         ]
+
+        self.processes = {
+            "rss.py": "RSS Feeds"
+        }
         
     #######################################################################
     ## Cog Functions
@@ -172,7 +182,20 @@ class Meta(commands.Cog):
             
             for task in self.tasks_hourly:
                 await task()
-                
+
+    async def check_processes(self):
+        if not self.bot.check_enabled:
+            return
+
+        ps = sh.grep(sh.ps("-ef"), 'python3.8')
+        downed = []
+        for file, name in self.processes.items():
+            if file not in ps:
+                downed.append(name)
+
+        if downed:
+            await self.bot.get_bot_channel().send(f":negative_squared_cross_mark: | The following processes are down: {', '.join(downed)}")
+            self.bot.check_enabled = False
                 
     async def broadcast(self):
         def guild_check(guild):
