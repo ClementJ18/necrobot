@@ -360,11 +360,11 @@ class Misc(commands.Cog):
             faction_name, enemy_name
         )
 
-        # reverse_index = "defeats" if index == "victories" else "victories"
-        # await self.bot.db.query_executer(
-        #     f"UPDATE necrobot.InternalRanked SET {reverse_index} = {reverse_index} + 1 WHERE faction = $1 AND enemy = $2",
-        #     enemy_name, faction_name
-        # )
+        reverse_index = "defeats" if index == "victories" else "victories"
+        await self.bot.db.query_executer(
+            f"UPDATE necrobot.InternalRanked SET {reverse_index} = {reverse_index} + 1 WHERE faction = $1 AND enemy = $2",
+            enemy_name, faction_name
+        )
 
         await self.bot.db.query_executer(
             "INSERT INTO necrobot.InternalRankedLogs(user_id, faction, enemy, faction_won) VALUES ($1, $2, $3, $4)",
