@@ -62,15 +62,15 @@ async def react_menu(ctx, entries, per_page, generator, *, page=0, timeout=300):
     if len(entries) <= per_page:
         return
     
+    react_list = ["\N{BLACK LEFT-POINTING TRIANGLE}", "\N{BLACK SQUARE FOR STOP}", "\N{BLACK RIGHT-POINTING TRIANGLE}"]
+    for reaction in react_list:
+        await msg.add_reaction(reaction)
+
     while True: 
-        react_list = ["\N{BLACK LEFT-POINTING TRIANGLE}", "\N{BLACK SQUARE FOR STOP}", "\N{BLACK RIGHT-POINTING TRIANGLE}"]
-        for reaction in react_list:
-            await msg.add_reaction(reaction)
+        def check(r, u):
+            return u == ctx.message.author and r.emoji in react_list and msg.id == r.message.id
 
-        def check(reaction, user):
-            return user == ctx.message.author and reaction.emoji in react_list and msg.id == reaction.message.id
-
-        reaction, _ = await ctx.bot.wait_for(
+        reaction, user = await ctx.bot.wait_for(
             "reaction_add", 
             check=check, 
             timeout=timeout, 
@@ -90,7 +90,7 @@ async def react_menu(ctx, entries, per_page, generator, *, page=0, timeout=300):
             if page > max_pages:
                 page = 0
 
-        await msg.clear_reactions()
+        await reaction.remove(user)
         
         subset = entries[page*per_page:(page+1)*per_page]
         await msg.edit(embed=generator((page + 1, max_pages + 1), subset[0] if per_page == 1 else subset))
