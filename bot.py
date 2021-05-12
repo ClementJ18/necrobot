@@ -37,13 +37,13 @@ class NecroBot(commands.Bot):
         self.uptime_start = time.time()
         self.counter = datetime.datetime.now().hour
         
-        self.version = 3.2
+        self.version = 3.3
         self.ready = False
         self.prefixes = ["n!", "N!", "n@", "N@"]
         self.admin_prefixes = ["n@", "N@"]
-        self.new_commands = []
+        self.new_commands = ["star"]
         self.statuses = ["n!help for help", "currently in {guild} guilds", "with {members} members", "n!report for bug/suggestions"]
-        self.perms_name = ["User", "Helper", "Moderator", "Semi-Admin", "Admin", "Server Owner", "NecroBot Admin", "Bot Smiths"]
+        self.perms_name = ["User", "Helper", "Moderator", "Semi-Admin", "Admin", "Server Owner", "Bot Admin", "Bot Smiths"]
         
         
         self.bot_channel = 318465643420712962
@@ -168,7 +168,7 @@ class NecroBot(commands.Bot):
                 raise e
 
     async def on_ready(self):
-        """If this is the first time the boot is booting then we load the cache and set the
+        """If this is the first time the bot is booting then we load the cache and set the
         ready variable to True to signify the bot is ready. Else we assume that it means the
         bot had a hiccup and is resuming."""
         if not self.ready:
@@ -221,7 +221,6 @@ class NecroBot(commands.Bot):
                 await msg.pin()
                 await self.db.update_tutorial(message.author.id)
             
-        self.dispatch("message_approved", message)
         await self.process_commands(message)
 
                 

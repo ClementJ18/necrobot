@@ -12,7 +12,8 @@ class Tag(commands.Converter):
         tag = await ctx.bot.db.query_executer("""
             SELECT t.name, t.content, t.owner_id, t.uses, t.created_at FROM necrobot.Tags t, necrobot.Aliases a 
             WHERE t.name = a.original AND a.alias = $1 AND a.guild_id = $2 AND t.guild_id = $2
-            """, argument, ctx.guild.id)
+            """, argument, ctx.guild.id
+        )
         
         if not tag:
             raise commands.BadArgument(f"Tag {argument} not found.")

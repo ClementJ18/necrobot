@@ -211,7 +211,7 @@ class Misc(commands.Cog):
         except StopError:
             pass
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, aliases=["matchup"])
     @guild_only(496617962334060545)
     async def matchups(self, ctx, *, strings=None):
         """Get data about the results of matchups stored in the bot

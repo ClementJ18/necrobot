@@ -390,7 +390,7 @@ class Moderation(commands.Cog):
         if cog:
             disabled_commands = [x.name for x in cog.get_commands() if x.name not in self.bot.guild_data[ctx.guild.id]["disabled"]]
             await self.bot.db.insert_disabled(ctx.guild.id, *disabled_commands)
-            return await ctx.send(f":white_check_mark: | All commands in cog **{name}** are now disabled")  
+            return await ctx.send(f":white_check_mark: | All commands in **{name}** are now disabled")  
             
         raise BotError("No such command/cog")
 
@@ -428,32 +428,9 @@ class Moderation(commands.Cog):
         if cog:
             enabled_commands = [x.name for x in cog.get_commands() if x.name in self.bot.guild_data[ctx.guild.id]["disabled"]]
             await self.bot.db.delete_disabled(ctx.guild.id, *enabled_commands)
-            return await ctx.send(f":white_check_mark: | All commands in cog **{name}** are now enabled")  
+            return await ctx.send(f":white_check_mark: | All commands in **{name}** are now enabled")  
             
         raise BotError("No such command/cog")
-
-
-    @commands.command()
-    @has_perms(3)
-    async def star(self, ctx, message_id : int):
-        """Allows to manually star a message that either has failed to be sent to starboard or doesn't 
-        have the amount of stars
-        required.
-
-        {usage}
-
-        __EXamples__
-        `{pre}star 427227137511129098` - gets the message by id and stars it.
-        """
-        if not self.bot.guild_data[ctx.guild.id]["starboard-channel"]:
-            raise BotError("Please set a starboard first")
-
-        try:
-            message = await ctx.channel.fetch_message(message_id)
-        except:
-            raise BotError("Message not found, make sure you are in the channel with the message.")
-
-        await self.bot.meta.star_message(message)
      
     #######################################################################
     ## Events
