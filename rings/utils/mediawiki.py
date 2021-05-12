@@ -3,6 +3,7 @@ from datetime import datetime
 from .utils import BotError
 
 API_URL = 'http://tolkiengateway.net/w/api.php'
+FANDOM_API_URL = "https://{sub_wikia}.fandom.com/api.php"
 RATE_LIMIT = False
 RATE_LIMIT_MIN_WAIT = None
 RATE_LIMIT_LAST_CALL = None
@@ -26,7 +27,7 @@ def _check_error_response(response, query):
             raise ValueError(err)
         raise ValueError(err)
 
-async def _wiki_request(self, params):
+async def _wiki_request(self, params, fandom):
     '''
     Make a request to the Wikia API using the given search parameters.
     Returns a parsed dict of the JSON response.
@@ -34,7 +35,11 @@ async def _wiki_request(self, params):
     global RATE_LIMIT_LAST_CALL
     global USER_AGENT
 
-    api_url = API_URL
+    if fandom is not None:
+        api_url = FANDOM_API_URL.format(sub_wikia=fandom)
+    else:
+        api_url = API_URL
+    
     params['format'] = 'json'
     headers = {
         'User-Agent': USER_AGENT
@@ -57,7 +62,7 @@ async def _wiki_request(self, params):
         
     return r
 
-async def search(self, query):
+async def search(self, query, fandom=None):
     search_params = {
         "action": "query",
         "generator": "search",
@@ -65,28 +70,41 @@ async def search(self, query):
         "gsrsearch": query,
     }
         
-    raw_results = await _wiki_request(self, search_params)
+    raw_results = await _wiki_request(self, search_params, fandom)
 
     _check_error_response(raw_results, query)
 
     return list(raw_results["query"]["pages"].values())
     
-async def page(self, page_id):
+async def page(self, page_id, fandom=None):
     query_params = {
         "action": "query",
-        "prop": "info|pageprops",
-        "inprop": "url",
-        "ppprop": "disambiguation",
+        "prop": "info",
+        "rvprop": "content",
         "redirects": "",
-        "pageids": page_id
+        "inprop": "url",
+        "rvlimit": 1,
+        "rvsection": 0,
+        "pageids": page_id,
     }
     
-    request = await _wiki_request(self, query_params)
-    print(request)
-    result = request['items'][str(page_id)]
+    request = await _wiki_request(self, query_params, fandom)
+    result = request['query']['pages'][str(page_id)]
     
     return result
     
+async def parse(self, page_id, fandom=None):
+    query_params = {
+        "action": "parse",
+        "pageid": page_id,
+        "prop": "text|images",
+        "section": 0,
+    }
+
+    result = await _wiki_request(self, query_params, fandom)
+    return result
+
+
 async def related(self, page_id):
     pass
     
