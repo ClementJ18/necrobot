@@ -256,7 +256,7 @@ if __name__ == '__main__':
         
         {usage}"""
         try:
-            ctx.bot.load_extension(f"rings.{extension_name}")
+            bot.load_extension(f"rings.{extension_name}")
             await ctx.send(f"{extension_name} loaded.")
         except commands.ExtensionFailed as e:
             await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
@@ -270,7 +270,7 @@ if __name__ == '__main__':
          
         {usage}"""
         try:
-            ctx.bot.unload_extension(f"rings.{extension_name}")
+            bot.unload_extension(f"rings.{extension_name}")
             await ctx.send(f"{extension_name} unloaded.")
         except commands.ExtensionFailed as e:
             await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
@@ -284,14 +284,14 @@ if __name__ == '__main__':
          
         {usage}"""
         try:
-            ctx.bot.unload_extension(f"rings.{extension_name}")
+            bot.unload_extension(f"rings.{extension_name}")
         except commands.ExtensionFailed as e:
             await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
         except commands.ExtensionNotLoaded:
             pass
             
         try:
-            ctx.bot.load_extension(f"rings.{extension_name}")
+            bot.load_extension(f"rings.{extension_name}")
             await ctx.send(f"{extension_name} reloaded.")
         except commands.ExtensionFailed as e:
             await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
@@ -311,7 +311,7 @@ if __name__ == '__main__':
         def check(reaction, user):
             return user.id == 241942232867799040 and str(reaction.emoji) in ["\N{WHITE HEAVY CHECK MARK}", "\N{NEGATIVE SQUARED CROSS MARK}"] and msg.id == reaction.message.id
         
-        reaction, _ = await ctx.bot.wait_for(
+        reaction, _ = await bot.wait_for(
             "reaction_add", 
             check=check, 
             timeout=300, 
@@ -322,8 +322,8 @@ if __name__ == '__main__':
         await msg.delete()
         if reaction.emoji == "\N{WHITE HEAVY CHECK MARK}":
             bot.maintenance = True                
-            task = bot.get_cog("Meta").rotate_status
-            tasks_hourly = bot.get_cog("Meta").tasks_hourly
+            task = bot.meta.rotate_status
+            tasks_hourly = bot.meta.tasks_hourly
             tasks_hourly.remove(task)
 
             await bot.change_presence(activity=discord.Game(name="Going down for maintenance soon"))
@@ -334,20 +334,22 @@ if __name__ == '__main__':
                 await bot.change_presence(activity=discord.Game(name="n!help for help"))
                 return await ctx.send("Shut down aborted.")
 
-            await ctx.bot.change_presence(activity=discord.Game(name="Bot shutting down...", type=0))
+            await bot.change_presence(activity=discord.Game(name="Bot shutting down...", type=0))
             
             with open("rings/utils/data/settings.json", "w") as file:
-                json.dump(ctx.bot.settings, file)
+                json.dump(bot.settings, file)
 
-            ctx.bot.meta.hourly_loop.cancel()
-            ctx.bot.get_cog("RSS").task.cancel()
-            for reminder in ctx.bot.reminders.values():
+            bot.meta.hourly_loop.cancel()
+            bot.get_cog("RSS").task.cancel()
+            bot.get_cog("Bridge").task.cancel()
+            for reminder in bot.reminders.values():
                 reminder.cancel()
 
-            await ctx.bot.session.close()
-            await ctx.bot.pool.close()
-            await ctx.bot.get_bot_channel().send("**Bot Offline**")
-            await ctx.bot.close()
+            await bot.session.close()
+            await bot.pool.close()
+
+            await bot.get_bot_channel().send("**Bot Offline**")
+            await bot.close()
 
     @off.command(name="abort")
     @commands.is_owner()

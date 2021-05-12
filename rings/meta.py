@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 
-from rings.db import DatabaseError
 from rings.utils.converters import time_converter
 
 try:

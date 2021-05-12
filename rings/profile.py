@@ -475,12 +475,12 @@ class Profile(commands.Cog):
 
         if user is not None:
             stars = await self.bot.db.query_executer(
-                "SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1 AND user_id = $2 AND link != '' ORDER BY $3 DESC",
+                "SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1 AND user_id = $2 AND link != 'None' ORDER BY $3 DESC",
                 ctx.guild.id, user.id, order
             )
         else:
             stars = await self.bot.db.query_executer(
-                "SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1 AND link != '' ORDER BY $2 DESC",
+                "SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1 AND link != 'None' ORDER BY $2 DESC",
                 ctx.guild.id, order
             )
 
