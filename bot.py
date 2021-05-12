@@ -298,13 +298,13 @@ if __name__ == '__main__':
         except commands.ExtensionNotFound:
             pass
 
-    @bot.command(hidden=True)
+    @bot.group(invoke_without_command=True, hidden=True)
     @commands.is_owner()
     async def off(ctx):
         """Saves all the data and terminate the bot. (Permission level required: 7+ (The Bot Smith))
          
         {usage}"""
-        msg = await ctx.send("Shut down?")
+        msg = await ctx.send("Shut down in 5 minutes?")
         await msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
         await msg.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
 
@@ -319,10 +319,21 @@ if __name__ == '__main__':
             propagate=False
         )
 
-        if reaction.emoji == "\N{NEGATIVE SQUARED CROSS MARK}":
-            await msg.delete()
-        elif reaction.emoji == "\N{WHITE HEAVY CHECK MARK}":
-            await msg.delete()
+        await msg.delete()
+        if reaction.emoji == "\N{WHITE HEAVY CHECK MARK}":
+            bot.maintenance = True                
+            task = bot.get_cog("Meta").rotate_status
+            tasks_hourly = bot.get_cog("Meta").tasks_hourly
+            tasks_hourly.remove(task)
+
+            await bot.change_presence(activity=discord.Game(name="Going down for maintenance soon"))
+
+            await asyncio.sleep(300)
+            if not bot.maintenance:
+                tasks_hourly.append(task)
+                await bot.change_presence(activity=discord.Game(name="n!help for help"))
+                return await ctx.send("Shut down aborted.")
+
             await ctx.bot.change_presence(activity=discord.Game(name="Bot shutting down...", type=0))
             
             with open("rings/utils/data/settings.json", "w") as file:
@@ -337,6 +348,13 @@ if __name__ == '__main__':
             await ctx.bot.pool.close()
             await ctx.bot.get_bot_channel().send("**Bot Offline**")
             await ctx.bot.close()
+
+    @off.command(name="abort")
+    @commands.is_owner()
+    async def off_abort(ctx):
+        bot.maintenance = False
+        await ctx.send(":white_check_mark: | Shut down cancelled")
+
 
     for extension in extensions:
         bot.load_extension(f"rings.{extension}")   

@@ -500,23 +500,6 @@ class Admin(commands.Cog):
 
         del self.gates[ctx.channel.id]
         del self.gates[channel.id] 
-            
-    @commands.command()
-    @commands.is_owner()
-    async def maintenance(self, ctx, message = None):
-        """Set the bot as going down for maintenance soon.
-        
-        {usage}
-        """
-        self.bot.maintenance = True
-        msg = "going down for maintenance soon"
-        if message is not None:
-            msg = message
-            
-        self.bot.meta.hourly_task.cancel()
-        await self.bot.change_presence(activity=discord.Game(name=msg))
-
-        await ctx.send(":white_check_mark: | Set to go down soon")
 
     @commands.command()
     @commands.is_owner()
