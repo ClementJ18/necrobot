@@ -271,10 +271,13 @@ class Database(commands.Cog):
             user_id, value
         )
         
+    # mixup with column names
+    # - 'starred' in the code is the message that has received the stars
+    # - 'starred' in the db is the message that ctx.send to the starboard
     async def add_star(self, starred, message, stars):
         await self.query_executer(
             "INSERT INTO necrobot.Starred VALUES ($1, $2, $3, $4, $5, $6);",
-            starred.id, message.id, starred.guild.id, starred.author.id, stars, message.jump_url
+            starred.id, message.id, starred.guild.id, starred.author.id, stars, starred.jump_url
         )
 
     async def update_stars(self, message_id, increment):
