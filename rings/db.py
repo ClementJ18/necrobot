@@ -280,10 +280,10 @@ class Database(commands.Cog):
             starred.id, message.id, starred.guild.id, starred.author.id, stars, starred.jump_url
         )
 
-    async def update_stars(self, message_id, increment):
+    async def update_stars(self, message_id, user_id, increment):
         await self.query_executer(
-            "UPDATE necrobot.Starred SET stars = stars + $2 WHERE message_id = $1",
-            message_id, increment
+            "UPDATE necrobot.Starred SET stars = stars + $3 WHERE message_id = $1 AND user_id != $2",
+            message_id, user_id, increment
         )
         
     async def update_prefix(self, guild_id, prefix):

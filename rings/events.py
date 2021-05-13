@@ -66,7 +66,7 @@ class Events(commands.Cog):
         self.bot.polls[payload.message_id]["voters"].append(payload.user_id)
         
     async def starred_reaction_handler(self, payload):
-        await self.bot.db.update_stars(payload.message_id, 1)
+        await self.bot.db.update_stars(payload.message_id, payload.user_id, 1)
 
         if not self.is_starrable(payload.guild_id, payload.channel_id, payload.message_id):
             return
@@ -435,7 +435,7 @@ class Events(commands.Cog):
                 if not message["message"].author.id == payload.user_id:
                     message["count"] -= 1
 
-            await self.bot.db.update_stars(payload.message_id, -1)
+            await self.bot.db.update_stars(payload.message_id, payload.user_id, -1)
     
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
