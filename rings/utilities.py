@@ -436,7 +436,7 @@ class Utilities(commands.Cog):
         `{pre}leaderboard award 340` - award 340 points
         `{pre}leaderboard award -34` - award -34 points, effectively removing 34 points.
         """
-        message, symbol = await self.bot.db.get_leaderboard(ctx.guild.id)
+        _, symbol = await self.bot.db.get_leaderboard(ctx.guild.id)
         
         await self.bot.db.update_leaderboard_member(ctx.guild.id, user.id, points)
         if points > 0:

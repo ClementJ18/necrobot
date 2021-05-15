@@ -41,11 +41,12 @@ class Literature(commands.Cog):
                 description=definition
             )
             
-            embed.add_field(
-                name="Examples", 
-                value=entry["example"][:2048].replace("[", "").replace("]", ""), 
-                inline=False
-            )
+            if entry["example"]:
+                embed.add_field(
+                    name="Examples", 
+                    value=entry["example"][:2048].replace("[", "").replace("]", ""), 
+                    inline=False
+                )
             
             return embed
             

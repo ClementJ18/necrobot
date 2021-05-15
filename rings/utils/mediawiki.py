@@ -70,11 +70,10 @@ async def search(self, query, fandom=None):
         "gsrsearch": query,
     }
         
-    raw_results = await _wiki_request(self, search_params, fandom)
+    request = await _wiki_request(self, search_params, fandom)
+    _check_error_response(request, query)
 
-    _check_error_response(raw_results, query)
-
-    return list(raw_results["query"]["pages"].values())
+    return list(request["query"]["pages"].values())
     
 async def page(self, page_id, fandom=None):
     query_params = {
@@ -89,6 +88,7 @@ async def page(self, page_id, fandom=None):
     }
     
     request = await _wiki_request(self, query_params, fandom)
+    _check_error_response(request, page_id)
     result = request['query']['pages'][str(page_id)]
     
     return result
@@ -101,12 +101,7 @@ async def parse(self, page_id, fandom=None):
         "section": 0,
     }
 
-    result = await _wiki_request(self, query_params, fandom)
-    return result
+    request = await _wiki_request(self, query_params, fandom)
+    _check_error_response(request, page_id)
+    return request
 
-
-async def related(self, page_id):
-    pass
-    
-async def suggest(self, title):
-    pass

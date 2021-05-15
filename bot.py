@@ -251,52 +251,55 @@ if __name__ == '__main__':
     
     @bot.command(hidden=True)
     @commands.is_owner()
-    async def load(ctx, extension_name : str):
+    async def load(ctx, *extension_names : str):
         """Loads the extension name if in NecroBot's list of rings.
         
         {usage}"""
-        try:
-            bot.load_extension(f"rings.{extension_name}")
-            await ctx.send(f"{extension_name} loaded.")
-        except commands.ExtensionFailed as e:
-            await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
-        except commands.ExtensionNotFound:
-            pass
+        for extension_name in extension_names:
+            try:
+                bot.load_extension(f"rings.{extension_name}")
+                await ctx.send(f"{extension_name} loaded.")
+            except commands.ExtensionFailed as e:
+                await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
+            except commands.ExtensionNotFound:
+                pass
 
     @bot.command(hidden=True)
     @commands.is_owner()
-    async def unload(ctx, extension_name : str):
+    async def unload(ctx, *extension_names : str):
         """Unloads the extension name if in NecroBot's list of rings.
          
         {usage}"""
-        try:
-            bot.unload_extension(f"rings.{extension_name}")
-            await ctx.send(f"{extension_name} unloaded.")
-        except commands.ExtensionFailed as e:
-            await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
-        except commands.ExtensionNotLoaded:
-            pass
+        for extension_name in extension_names:
+            try:
+                bot.unload_extension(f"rings.{extension_name}")
+                await ctx.send(f"{extension_name} unloaded.")
+            except commands.ExtensionFailed as e:
+                await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
+            except commands.ExtensionNotLoaded:
+                pass
 
     @bot.command(hidden=True)
     @commands.is_owner()
-    async def reload(ctx, extension_name : str):
+    async def reload(ctx, *extension_names : str):
         """Unload and loads the extension name if in NecroBot's list of rings.
          
         {usage}"""
-        try:
-            bot.unload_extension(f"rings.{extension_name}")
-        except commands.ExtensionFailed as e:
-            await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
-        except commands.ExtensionNotLoaded:
-            pass
-            
-        try:
-            bot.load_extension(f"rings.{extension_name}")
-            await ctx.send(f"{extension_name} reloaded.")
-        except commands.ExtensionFailed as e:
-            await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
-        except commands.ExtensionNotFound:
-            pass
+        for extension_name in extension_names:
+            try:
+                bot.unload_extension(f"rings.{extension_name}")
+            except commands.ExtensionFailed as e:
+                await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
+            except commands.ExtensionNotLoaded:
+                pass
+                
+            try:
+                bot.load_extension(f"rings.{extension_name}")
+                await ctx.send(f"{extension_name} reloaded.")
+            except commands.ExtensionFailed as e:
+                await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
+            except commands.ExtensionNotFound:
+                pass
 
     @bot.group(invoke_without_command=True, hidden=True)
     @commands.is_owner()

@@ -26,7 +26,7 @@ class Decisions(commands.Cog):
     ## Commands
     #######################################################################
 
-    @commands.command(aliases=["choice"])
+    @commands.command(aliases=["choice", "chose"])
     async def choose(self, ctx, *, choices):
         """Returns a single choice from the list of choices given. Use `,` to seperate each of the choices. You can
         make multiple choices with a single command by separating them with `|`.
