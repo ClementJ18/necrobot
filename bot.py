@@ -40,7 +40,6 @@ class NecroBot(commands.Bot):
         self.version = 3.4
         self.ready = False
         self.prefixes = ["n!", "N!", "n@", "N@"]
-        self.admin_prefixes = ["n@", "N@"]
         self.new_commands = ["star"]
         self.statuses = ["n!help for help", "currently in {guild} guilds", "with {members} members", "n!report for bug/suggestions"]
         self.perms_name = ["User", "Helper", "Moderator", "Semi-Admin", "Admin", "Server Owner", "Bot Admin", "Bot Smiths"]
@@ -72,15 +71,15 @@ class NecroBot(commands.Bot):
             self.settings = {**default_settings(), **json.load(infile)}
         
         @self.check
-        def disabled_check(ctx):
+        async def disabled_check(ctx):
             """This is the backbone of the disable command. If the command name is in disabled then
             we check to make sure that it's not an admin trying to invoke it with an admin prefix """
             if isinstance(ctx.message.channel, discord.DMChannel):
                 return True
 
-            disabled = self.guild_data[ctx.message.guild.id]["disabled"]
+            disabled = self.guild_data[ctx.guild.id]["disabled"]
 
-            if ctx.command.name in disabled and ctx.prefix not in self.admin_prefixes:
+            if ctx.command.name in disabled and not (await self.bot.db.get_permission(ctx.author.id, ctx.guild.id)) > 0:
                 raise commands.CheckFailure("This command has been disabled")
 
             return True
@@ -96,11 +95,8 @@ class NecroBot(commands.Bot):
             user_id = ctx.author.id
             guild_id = ctx.guild.id
 
-            if ctx.prefix in self.admin_prefixes:
-                permission_level = await self.db.get_permission(user_id, guild_id)
-                if permission_level > 0:
-                    return True
-                raise commands.CheckFailure("You are not allowed to use admin prefixes")
+            if (await self.db.get_permission(user_id, guild_id)) > 0:
+                return True
 
             if user_id in self.guild_data[guild_id]["ignore-command"]:
                 raise commands.CheckFailure("You are being ignored by the bot")

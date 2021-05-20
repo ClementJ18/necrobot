@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 
 import re
-import asyncio
 import datetime
 import itertools
 
@@ -90,7 +89,10 @@ async def react_menu(ctx, entries, per_page, generator, *, page=0, timeout=300):
             if page > max_pages:
                 page = 0
 
-        await reaction.remove(user)
+        try:
+            await reaction.remove(user)
+        except discord.Forbidden:
+            pass
         
         subset = entries[page*per_page:(page+1)*per_page]
         await msg.edit(embed=generator((page + 1, max_pages + 1), subset[0] if per_page == 1 else subset))
@@ -103,8 +105,7 @@ async def get_pre(bot, message):
         guild_pre = bot.guild_data[message.guild.id]["prefix"]
         if guild_pre != "":
             guild_pre = map(''.join, itertools.product(*((c.upper(), c.lower()) for c in guild_pre)))
-            prefixes = [*guild_pre, *bot.admin_prefixes]
-            return commands.when_mentioned_or(*prefixes)(bot, message)
+            return commands.when_mentioned_or(*guild_pre)(bot, message)
 
     return commands.when_mentioned_or(*bot.prefixes)(bot, message)
     

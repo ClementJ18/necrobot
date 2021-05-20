@@ -392,6 +392,21 @@ class Admin(commands.Cog):
             await ctx.send(result)
         else:
             await ctx.send(":white_check_mark:")
+
+    @commands.command()
+    @commands.is_owner()
+    async def blacklist(self, ctx, object_id : int):
+        """Blacklist a user
+
+        {usage}
+        """
+        if object_id in self.bot.settings["blacklist"]:
+            self.bot.settings["blacklist"].remove(object_id)
+            await ctx.send(":white_check_mark: | Pardoned")
+        else:
+            self.bot.settings["blacklist"].append(object_id)
+            await ctx.send(":white_check_mark: | Blacklisted")
+
             
     @commands.command()
     @has_perms(6)
@@ -405,7 +420,7 @@ class Admin(commands.Cog):
         else:
             sql = "SELECT user_id, command, guild_id, message, time_used, can_run FROM necrobot.Logs ORDER BY time_used DESC"
 
-        results = await self.bot.query_executer(sql)
+        results = await self.bot.db.query_executer(sql)
 
         def embed_maker(pages, entries):
             page, max_page = pages
