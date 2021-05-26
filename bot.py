@@ -37,7 +37,7 @@ class NecroBot(commands.Bot):
         self.uptime_start = time.time()
         self.counter = datetime.datetime.now().hour
         
-        self.version = 3.4
+        self.version = 3.5
         self.ready = False
         self.prefixes = ["n!", "N!", "n@", "N@"]
         self.new_commands = ["star"]
@@ -95,11 +95,11 @@ class NecroBot(commands.Bot):
             user_id = ctx.author.id
             guild_id = ctx.guild.id
 
-            if (await self.db.get_permission(user_id, guild_id)) > 0:
-                return True
-
             if user_id in self.guild_data[guild_id]["ignore-command"]:
                 raise commands.CheckFailure("You are being ignored by the bot")
+
+            if (await self.db.get_permission(user_id, guild_id)) > 0:
+                return True
 
             if ctx.channel.id in self.guild_data[guild_id]["ignore-command"]:
                 raise commands.CheckFailure("Commands not allowed in this channel.")
