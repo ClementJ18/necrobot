@@ -20,9 +20,9 @@ class Meta(commands.Cog):
         self.hourly_loop = self.bot.loop.create_task(self.hourly())
         
         self.tasks_hourly = [
-            self.broadcast,
             self.rotate_status,
             self.check_processes,
+            self.broadcast
         ]
 
         self.tasks_daily = [
@@ -195,30 +195,6 @@ class Meta(commands.Cog):
         if downed:
             await self.bot.get_bot_channel().send(f":negative_squared_cross_mark: | The following processes are down: {', '.join(downed)}")
             self.bot.check_enabled = False
-                
-    async def broadcast(self):
-        def guild_check(guild):
-            if self.bot.guild_data[guild]["broadcast-time"] < 1:
-                return False
-
-            if self.bot.get_guild(guild) is None:
-                return False
-
-            if self.bot.get_channel(self.bot.guild_data[guild]["broadcast-channel"]) is None:
-                return False
-                
-            return self.bot.counter % self.bot.guild_data[guild]["broadcast-time"] == 0
-
-        broadcast_guilds = [guild for guild in self.bot.guild_data if guild_check(guild)]
-
-        for guild in broadcast_guilds:
-            try:
-                channel = self.bot.get_channel(self.bot.guild_data[guild]["broadcast-channel"])
-                await channel.send(self.bot.guild_data[guild]["broadcast"])
-            except Exception as e:
-                await self.bot.get_error_channel().send(
-                    f"Broadcast error with guild {guild}\n{e}", 
-                    allowed_mentions=discord.AllowedMentions())
         
     async def clear_potential_star(self):
         ids = list(self.bot.potential_stars.keys())
@@ -311,9 +287,6 @@ class Meta(commands.Cog):
         
         g = self.bot.guild_data[guild.id]
 
-        if g["broadcast-channel"] not in channels:
-            await self.bot.db.update_broadcast_channel(guild.id)
-
         if g["starboard-channel"] not in channels:
             await self.bot.db.update_starboard_channel(guild.id)
             
@@ -329,8 +302,13 @@ class Meta(commands.Cog):
         await self.bot.db.sync_invites(guild)
         
         await self.bot.db.query_executer(
-            "DELETE FROM necrobot.Youtube WHERE guild_id = $1 AND NOT(channel_id = any($2))",
+            "DELETE FROM necrobot.Youtube WHERE guild_id = $1 AND NOT(channel_id = ANY($2))",
             guild.id, channels            
+        )
+
+        await self.bot.db.query_executer(
+            "DELETE FROM necrobot.Broadcasts WHERE guild_id = $1 AND NOT(channel_id = ANY($2))",
+            guild.id, channels
         )
         
         combined = [*channels, *roles, *members]
@@ -351,10 +329,27 @@ class Meta(commands.Cog):
         channel = self.bot.get_channel(channel_id)
         user = self.bot.get_user(user_id)
         if channel is not None and user is not None:
-            await channel.send(f":alarm_clock: | {user.mention} reminder: **{message}**")
+            if message is None or message == "":
+                await channel.send(f":alarm_clock: | {user.mention}, you asked to be reminded!")
+            else:
+                await channel.send(f":alarm_clock: | {user.mention} reminder: **{message}**")
         
         del self.bot.reminders[reminder_id]
         await self.bot.db.delete_reminder(reminder_id)
+
+    async def broadcast(self):
+        broadcasts = await self.bot.db.query_executer(
+            "SELECT * FROM necrobot.Broadcasts WHERE MOD(($1 - start_time), interval) = 0 AND enabled=True",
+            self.bot.counter
+        )
+
+        for broadcast in broadcasts:
+            try:
+                await self.bot.get_channel(broadcast[2]).send(broadcast[5], allowed_mentions=discord.AllowedMentions())
+            except discord.Forbidden:
+                pass
+            except Exception as e:
+                await self.bot.get_error_channel().send(f"Broadcast error with guild {broadcast[1]}\n{e}")
         
 def setup(bot):
     bot.add_cog(Meta(bot))

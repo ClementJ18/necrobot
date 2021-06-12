@@ -293,27 +293,6 @@ class Database(commands.Cog):
         )
         self.bot.guild_data[guild_id]["prefix"] = prefix
         
-    async def update_broadcast_channel(self, guild_id, channel_id = 0):        
-        await self.query_executer(
-            "UPDATE necrobot.Guilds SET broadcast_channel = $2 WHERE guild_id = $1;",
-            guild_id, channel_id if channel_id else 0
-        )
-        self.bot.guild_data[guild_id]["broadcast-channel"] = channel_id
-        
-    async def update_broadcast_message(self, guild_id, message = ""):
-        await self.query_executer(
-            "UPDATE necrobot.Guilds SET broadcast_message = $1 WHERE guild_id = $2",
-            message, guild_id    
-        )
-        self.bot.guild_data[guild_id]["broadcast"] = message
-        
-    async def update_broadcast_interval(self, guild_id, interval = 0):
-        await self.query_executer(
-            "UPDATE necrobot.Guilds SET broadcast_time = $1 WHERE guild_id = $2",
-            interval, guild_id    
-        )
-        self.bot.guild_data[guild_id]["broadcast-time"] = interval
-        
     async def update_starboard_channel(self, guild_id, channel_id = 0):
         await self.query_executer(
             "UPDATE necrobot.Guilds SET starboard_channel = $2 WHERE guild_id = $1;", 
@@ -349,7 +328,7 @@ class Database(commands.Cog):
         )
         
         self.bot.guild_data[guild_id]["goodbye"] = message
-        
+
     async def update_automod_channel(self, guild_id, channel_id = 0):
         self.bot.guild_data[guild_id]["automod"] = channel_id
         await self.query_executer(

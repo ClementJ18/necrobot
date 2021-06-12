@@ -193,22 +193,21 @@ class Events(commands.Cog):
     async def on_guild_channel_delete(self, channel):
         guild_id = channel.guild.id
         guild = self.bot.guild_data[guild_id]
-
-        if channel.id == guild["broadcast-channel"]:
-            await self.bot.db.update_broadcast_channel(guild_id)
             
         if channel.id == guild["starboard-channel"]:
             await self.bot.db.update_starboard_channel(guild_id)
             
         if channel.id == guild["welcome-channel"]:
             await self.bot.db.update_greeting_channel(guild_id)
-            
-        if channel.id == guild["automod"]:
-            await self.bot.db.update_automod_channel(guild_id)
         
         await self.bot.db.delete_automod_ignore(guild_id, channel.id)
         await self.bot.db.delete_command_ignore(guild_id, channel.id)
         await self.bot.db.delete_rss_channel(guild_id, channel_id=channel.id)
+
+        await self.bot.db.query_executer(
+            "DELETE FROM necrobot.Broadcasts WHERE channel_id = $1",
+            channel.id
+        )
     
     @commands.Cog.listener()
     async def on_guild_role_delete(self, role):

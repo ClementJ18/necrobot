@@ -174,7 +174,7 @@ class Utilities(commands.Cog):
         `{pre}remindme do the dishes in 4d2h45m` - will remind you to do the dishes in 4 days, 2 hours and 45 minutes
         """
         if "in" not in message:
-            raise BotError(" Something went wrong, you need to use the format <message> in <time>")
+            raise BotError(" Something went wrong, you need to use the format: **<message> in <time>**")
 
         text, _, time = message.rpartition(" in ")
         sleep = time_converter(time)

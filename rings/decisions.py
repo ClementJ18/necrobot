@@ -63,7 +63,7 @@ class Decisions(commands.Cog):
 
         await ctx.send(msg)
 
-    @commands.command()
+    @commands.command(aliases=["dice"])
     async def roll(self, ctx, dices="1d6"):
         """Rolls one or multiple x sided dices and returns the result. 
         Structure of the argument: `[number of die]d[number of faces]`. 
@@ -79,7 +79,10 @@ class Decisions(commands.Cog):
         except TypeError:
             t = dice_list
 
-        await ctx.send(f":game_die: | **{ctx.author.display_name}** rolled {dice_list} for a total of: **{t}**")
+        if len(str(dice_list)) > 1900:
+            dice_list = "a lot of dice"
+
+        await ctx.send(f":game_die: | **{ctx.author.display_name}** rolled **{dice_list}** for a total of: **{t}**")
 
     @commands.command(name="8ball")
     async def ball8(self, ctx, *, message):

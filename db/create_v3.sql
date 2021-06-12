@@ -227,3 +227,12 @@ CREATE TABLE necrobot.InternalRankedLogs(
     log_date TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE necrobot.Broadcasts(
+    broadcast_id serial PRIMARY KEY,
+    guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
+    channel_id bigint,
+    start_time int,
+    interval int,
+    message varchar(2000),
+    enabled boolean DEFAULT True
+);
