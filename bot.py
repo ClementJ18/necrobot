@@ -77,7 +77,7 @@ class NecroBot(commands.Bot):
                 return True
 
             disabled = self.guild_data[ctx.guild.id]["disabled"]
-            if ctx.command.name in disabled and not (await self.bot.db.get_permission(ctx.author.id, ctx.guild.id)) > 0:
+            if ctx.command.name in disabled and not (await self.db.get_permission(ctx.author.id, ctx.guild.id)) > 0:
                 raise commands.CheckFailure("This command has been disabled")
 
             return True
