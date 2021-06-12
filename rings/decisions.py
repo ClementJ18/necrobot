@@ -3,18 +3,10 @@ from discord.ext.commands.cooldowns import BucketType
 
 from rings.utils.converters import MoneyConverter
 from rings.utils.var import ball8_list
+from rings.utils.converters import CoinConverter
 
 import dice
 import random
-
-class CoinConverter(commands.Converter):
-    async def convert(self, ctx, argument):
-        if argument.lower() in ["h", "head"]:
-            return "h"
-        if argument.lower() in ["t", "tail"]:
-            return "t"
-
-        raise commands.BadArgument("Choices must be one of: `t`, `tail`, `h` or `head`")
 
 class Decisions(commands.Cog):
     """Helpful commands to help you make decisions"""

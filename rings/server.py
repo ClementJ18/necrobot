@@ -1,8 +1,9 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import has_perms, react_menu, BotError, check_channel
+from rings.utils.utils import react_menu, BotError, check_channel
 from rings.utils.converters import TimeConverter, range_check, UserConverter, MemberConverter, RoleConverter
+from rings.utils.checks import has_perms
 
 from typing import Union
 import re

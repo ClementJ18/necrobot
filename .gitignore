@@ -10,3 +10,4 @@ unwiki
 db/dump.sql
 db/v2_backup.sql
 test_er.py
+db/logs

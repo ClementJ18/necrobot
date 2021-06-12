@@ -32,24 +32,7 @@ def has_automod(bot, message):
     if any(x in role_ids for x in bot.guild_data[message.guild.id]["ignore-automod"]):
         return False
         
-    return True 
-    
-def has_perms(level):
-    async def predicate(ctx):
-        if await ctx.bot.db.is_admin(ctx.message.author.id):
-            return True 
-            
-        if ctx.guild is None:
-            return False
-        
-        perms = await ctx.bot.db.get_permission(ctx.message.author.id, ctx.guild.id)
-        if perms < level:
-            raise commands.CheckFailure(f"You do not have the required NecroBot permissions. Your permission level must be {level}")
-        
-        return True
-
-    predicate.level = level
-    return commands.check(predicate)
+    return True
     
 async def react_menu(ctx, entries, per_page, generator, *, page=0, timeout=300):
     max_pages = max(0, ((len(entries)-1)//per_page))
@@ -135,18 +118,6 @@ def midnight():
         day=tomorrow.day, hour=0, minute=0, second=0
     )
     return time - datetime.datetime.now()
-
-def guild_only(guild_id):
-    def predicate(ctx):
-        if ctx.guild is None:
-            raise commands.CheckFailure("This command cannot be executed in DMs")
-            
-        if ctx.guild.id not in (guild_id, 311630847969198082):
-            raise commands.CheckFailure("This command cannot be executed in this server")
-            
-        return True
-        
-    return commands.check(predicate)
 
 def default_settings():
     return {

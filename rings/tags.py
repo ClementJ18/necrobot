@@ -2,23 +2,10 @@ import discord
 from discord.ext import commands
 
 from rings.utils.utils import react_menu, BotError
+from rings.utils.converters import Tag
 from rings.db import DatabaseError
 
 import re
-
-class Tag(commands.Converter):
-    async def convert(self, ctx, argument):
-        argument = argument.lower()
-        tag = await ctx.bot.db.query_executer("""
-            SELECT t.name, t.content, t.owner_id, t.uses, t.created_at FROM necrobot.Tags t, necrobot.Aliases a 
-            WHERE t.name = a.original AND a.alias = $1 AND a.guild_id = $2 AND t.guild_id = $2
-            """, argument, ctx.guild.id
-        )
-        
-        if not tag:
-            raise commands.BadArgument(f"Tag {argument} not found.")
-            
-        return tag[0]
 
 class Tags(commands.Cog):
     def __init__(self, bot):

@@ -216,3 +216,49 @@ class Grudge(commands.Converter):
             raise commands.BadArgument("No grudge with such id")
             
         return grudge[0]
+
+class MUConverter(commands.Converter):
+    async def convert(self, ctx, argument):
+        try:
+            return await MemberConverter().convert(ctx, argument)
+        except commands.BadArgument:
+            pass
+            
+        user_id  = await ctx.bot.db.query_executer(
+            "SELECT user_id FROM necrobot.MU_Users WHERE username_lower = $1",
+            argument.lower(), fetchval=True
+        )
+        
+        if user_id is None:
+            raise commands.BadArgument(f"Member {argument} does not exist")
+            
+        user = ctx.guild.get_member(user_id)
+        if user is None:
+            user = object()
+            user.id = user_id
+            user.display_name = "User Left"
+        
+        return user
+
+class CoinConverter(commands.Converter):
+    async def convert(self, ctx, argument):
+        if argument.lower() in ["h", "head"]:
+            return "h"
+        if argument.lower() in ["t", "tail"]:
+            return "t"
+
+        raise commands.BadArgument("Choices must be one of: `t`, `tail`, `h` or `head`")
+
+class Tag(commands.Converter):
+    async def convert(self, ctx, argument):
+        argument = argument.lower()
+        tag = await ctx.bot.db.query_executer("""
+            SELECT t.name, t.content, t.owner_id, t.uses, t.created_at FROM necrobot.Tags t, necrobot.Aliases a 
+            WHERE t.name = a.original AND a.alias = $1 AND a.guild_id = $2 AND t.guild_id = $2
+            """, argument, ctx.guild.id
+        )
+        
+        if not tag:
+            raise commands.BadArgument(f"Tag {argument} not found.")
+            
+        return tag[0]

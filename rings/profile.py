@@ -2,9 +2,10 @@ import discord
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
-from rings.utils.utils import midnight, react_menu, BotError, has_perms
+from rings.utils.utils import midnight, react_menu, BotError
 from rings.utils.converters import MoneyConverter, BadgeConverter, MemberConverter, range_check
 from rings.db import DatabaseError
+from rings.utils.checks import has_perms
 
 import random
 import functools
@@ -17,10 +18,10 @@ from typing import Union
 class Profile(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.font17 = ImageFont.truetype(f"rings/utils/profile/fonts/Ringbearer Medium.ttf", 17)
-        self.font20 = ImageFont.truetype(f"rings/utils/profile/fonts/Ringbearer Medium.ttf", 20)
-        self.font21 = ImageFont.truetype(f"rings/utils/profile/fonts/Ringbearer Medium.ttf", 21)
-        self.font30 = ImageFont.truetype(f"rings/utils/profile/fonts/Ringbearer Medium.ttf", 30)
+        self.font17 = ImageFont.truetype("rings/utils/profile/fonts/Ringbearer Medium.ttf", 17)
+        self.font20 = ImageFont.truetype("rings/utils/profile/fonts/Ringbearer Medium.ttf", 20)
+        self.font21 = ImageFont.truetype("rings/utils/profile/fonts/Ringbearer Medium.ttf", 21)
+        self.font30 = ImageFont.truetype("rings/utils/profile/fonts/Ringbearer Medium.ttf", 30)
         self.overlay = Image.open("rings/utils/profile/overlay.png").convert("RGBA")
         self.badges_coords = [
             (580, 295, 680, 395), (685, 295, 785, 395), (790, 295, 890, 395), (895, 295, 995, 395), 
@@ -458,7 +459,7 @@ class Profile(commands.Cog):
         await ctx.send(":white_check_mark: | Done generating and updating")
 
     @commands.group(invoke_without_command=True, aliases=["star"])
-    async def stars(self, ctx, user : Union[discord.Member, str] = None, order : str = "date"):
+    async def stars(self, ctx, user : Union[MemberConverter, str] = None, order : str = "date"):
         """
         See all the starred messages of a user or all the ones on the server. Order by most recent first,
         can change order with keywords:

@@ -1,9 +1,10 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, react_menu, guild_only
+from rings.utils.utils import BotError, react_menu
 from rings.utils.config import MU_Username, MU_Password
-from rings.utils.converters import MemberConverter
+from rings.utils.converters import MemberConverter, MUConverter
+from rings.utils.checks import mu_moderator, mu_moderator_check, guild_only
 
 import re
 import asyncio
@@ -11,47 +12,6 @@ import logging
 import traceback
 from bs4 import BeautifulSoup
 from robobrowser.forms.form import Form
-
-class FakeUser:
-    pass
-
-class MUConverter(commands.Converter):
-    async def convert(self, ctx, argument):
-        try:
-            return await MemberConverter().convert(ctx, argument)
-        except commands.BadArgument:
-            pass
-            
-        user_id  = await ctx.bot.db.query_executer(
-            "SELECT user_id FROM necrobot.MU_Users WHERE username_lower = $1",
-            argument.lower(), fetchval=True
-        )
-        
-        if user_id is None:
-            raise commands.BadArgument(f"Member {argument} does not exist")
-            
-        user = ctx.guild.get_member(user_id)
-        if user is None:
-            user = FakeUser()
-            user.id = user_id
-            user.display_name = "User Left"
-        
-        return user
-    
-def mu_moderator(guild):
-    ids = []
-    for role in ["Edain Team", "Edain Community Moderator"]:
-        obj = discord.utils.get(guild.roles, name=role)
-        if not obj is None:
-            ids.extend([x.id for x in obj.members])
-    
-    return ids
-    
-def mu_moderator_check():
-    def predicate(ctx):
-        return ctx.author.id in mu_moderator(ctx.guild)
-        
-    return commands.check(predicate)
 
 class Bridge(commands.Cog):
     """A cog for all commands specific to certain servers."""

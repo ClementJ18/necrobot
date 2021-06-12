@@ -16,7 +16,6 @@ import traceback
 logging.basicConfig(filename='discord.log',level=logging.ERROR)
 # logging.basicConfig(level=logging.CRITICAL)
 
-
 class NecroBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
@@ -39,7 +38,7 @@ class NecroBot(commands.Bot):
         
         self.version = 3.5
         self.ready = False
-        self.prefixes = ["n!", "N!", "n@", "N@"]
+        self.prefixes = ["n!", "N!"]
         self.new_commands = ["star"]
         self.statuses = ["n!help for help", "currently in {guild} guilds", "with {members} members", "n!report for bug/suggestions"]
         self.perms_name = ["User", "Helper", "Moderator", "Semi-Admin", "Admin", "Server Owner", "Bot Admin", "Bot Smiths"]
@@ -73,12 +72,11 @@ class NecroBot(commands.Bot):
         @self.check
         async def disabled_check(ctx):
             """This is the backbone of the disable command. If the command name is in disabled then
-            we check to make sure that it's not an admin trying to invoke it with an admin prefix """
-            if isinstance(ctx.message.channel, discord.DMChannel):
+            we check to make sure that it's not an admin trying to invoke it"""
+            if ctx.guild is None:
                 return True
 
             disabled = self.guild_data[ctx.guild.id]["disabled"]
-
             if ctx.command.name in disabled and not (await self.bot.db.get_permission(ctx.author.id, ctx.guild.id)) > 0:
                 raise commands.CheckFailure("This command has been disabled")
 
@@ -88,7 +86,7 @@ class NecroBot(commands.Bot):
         
         @self.check
         async def allowed_summon(ctx):
-            if isinstance(ctx.message.channel, discord.DMChannel):
+            if ctx.guild is None:
                 return True
                 
             roles = [role.id for role in ctx.author.roles]
@@ -173,11 +171,7 @@ class NecroBot(commands.Bot):
             print(self.guild_data)
             print('------')
             print(f"Logged in as {self.user}")
-            
-    # async def on_resumed(self):
-    #     """Bot is resuming, log it and move on"""
-    #     await self.get_bot_channel().send(f"**Bot Resumed**\nMessage Cache: {len(self._connection._messages)}")
-        
+   
     async def on_error(self, event, *args, **kwargs): 
         """Something has gone wrong so we just try to send a helpful traceback to the channel. If
         the traceback is too big we just send the method/event that errored out and hope that
@@ -355,7 +349,6 @@ if __name__ == '__main__':
     async def off_abort(ctx):
         bot.maintenance = False
         await ctx.send(":white_check_mark: | Shut down cancelled")
-
 
     for extension in extensions:
         bot.load_extension(f"rings.{extension}")   

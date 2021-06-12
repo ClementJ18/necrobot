@@ -1,27 +1,15 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import has_perms, react_menu, time_converter, BotError
+from rings.utils.utils import react_menu, time_converter, BotError
 from rings.utils.converters import MemberConverter
+from rings.utils.checks import leaderboard_enabled, has_perms
 
 import random
 import aiohttp
 import datetime
 from simpleeval import simple_eval
 from collections import defaultdict
-
-def leaderboard_enabled():
-    async def predicate(ctx):
-        settings = (await ctx.bot.db.query_executer(
-            "SELECT message FROM necrobot.Leaderboards WHERE guild_id=$1", 
-            ctx.guild.id, fetchval=True)
-        )
-        if settings != "":
-            return True
-            
-        raise commands.CheckFailure("Leaderboard isn't currently enabled, enable it by setting a message")
-        
-    return commands.check(predicate)
 
 class Utilities(commands.Cog):
     """A bunch of useful commands to do various tasks."""

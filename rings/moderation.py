@@ -1,19 +1,12 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import has_perms, BotError, react_menu
+from rings.utils.utils import BotError, react_menu
 from rings.utils.converters import TimeConverter, MemberConverter, RoleConverter
+from rings.utils.checks import has_perms, requires_mute_role
 
 import asyncio
-
-def requires_mute_role():
-    def predicate(ctx):
-        if not ctx.bot.guild_data[ctx.guild.id]["mute"]:
-            raise commands.CheckFailure("Please set up the mute role with `n!mute role [rolename]` first.")
-        
-        return True
-        
-    return commands.check(predicate)
+from typing import Union
 
 class Moderation(commands.Cog):
     """All of the tools moderators can use from the most basic such as `nick` to the most complex like `purge`. 
@@ -48,6 +41,31 @@ class Moderation(commands.Cog):
     #######################################################################
     ## Commands
     #######################################################################
+
+    @commands.command()
+    @has_perms(3)
+    @commands.bot_has_permissions(ban_members=True)
+    async def ban(self, ctx, user : Union[MemberConverter, int], reason = None):
+        """Ban a user, sending them a message and add the message as a reason
+
+        {usage}
+
+        __Examples__
+        `{pre}ban NecroBot` - ban Necrobot
+        `{pre}ban Necrobot good bot` - ban Necrobot and send it a message"""
+        
+        if isinstance(user, discord.Member) and reason is not None:
+            try:
+                await user.send(f"__Banned from {ctx.guild.name}__\nReason: {reason}")
+                await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
+            except discord.Forbidden:
+                await ctx.message.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
+
+        if isinstance(user, int):
+            user = discord.Object(id=user)
+
+        await ctx.guild.ban(user, reason=reason)
+
     
     @commands.command()
     @has_perms(1)
