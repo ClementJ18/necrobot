@@ -421,7 +421,7 @@ class Admin(commands.Cog):
             for row in entries:
                 user = self.bot.get_user(row["user_id"])
                 guild = self.bot.get_guild(row["guild_id"])
-                embed.add_field(name=row["command"], value=f"From {user} ({user.id}) on {guild} ({guild.id}) on {row['time_used']}\n **Message**\n{row['message'][:1000]}", inline=False)
+                embed.add_field(name=row["command"], value=f"From {user} ({row['user_id']}) on {guild} ({row['guild_id']}) on {row['time_used']}\n **Message**\n{row['message'][:1000]}", inline=False)
 
             return embed
 

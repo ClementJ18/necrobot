@@ -167,6 +167,7 @@ class Meta(commands.Cog):
         while not self.bot.is_closed():
             if self.bot.counter >= 24:
                 self.bot.counter = 0
+                self.bot.settings["day"] += 1
                 for task in self.tasks_daily:
                     await task()
 
@@ -177,10 +178,10 @@ class Meta(commands.Cog):
             except asyncio.CancelledError:
                 return
             
-            self.bot.counter += 1
-            
             for task in self.tasks_hourly:
                 await task()
+
+            self.bot.counter += 1
 
     async def check_processes(self):
         if not self.bot.check_enabled:
@@ -338,9 +339,11 @@ class Meta(commands.Cog):
         await self.bot.db.delete_reminder(reminder_id)
 
     async def broadcast(self):
+        total_hours = (self.bot.settings["day"] * 24) + self.bot.counter
+
         broadcasts = await self.bot.db.query_executer(
             "SELECT * FROM necrobot.Broadcasts WHERE MOD(($1 - start_time), interval) = 0 AND enabled=True",
-            self.bot.counter
+            total_hours
         )
 
         for broadcast in broadcasts:

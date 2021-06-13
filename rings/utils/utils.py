@@ -125,5 +125,6 @@ def default_settings():
         "news": [],
         "disabled": [],
         "shop": [],
-        "messages": {}
+        "messages": {},
+        "days": 0
     }

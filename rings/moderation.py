@@ -64,7 +64,10 @@ class Moderation(commands.Cog):
         if isinstance(user, int):
             user = discord.Object(id=user)
 
-        await ctx.guild.ban(user, reason=reason)
+        if reason is not None:
+            await ctx.guild.ban(user, reason=reason)
+        else:
+            await ctx.guild.ban(user)
 
     
     @commands.command()
