@@ -532,7 +532,7 @@ class Server(commands.Cog):
 
         def embed_maker(index, entry):
             embed = discord.Embed(
-                title=f"Broadcast #{entry[0]} of {len(broadcasts)}", 
+                title=f"Broadcast ({index[0]}/{index[1]})", 
                 description=entry[5], 
                 colour=discord.Colour(0x277b0)
             )
@@ -556,7 +556,9 @@ class Server(commands.Cog):
 
     @broadcast.command(name="add")
     @has_perms(4)
-    async def broadcast_add(self, ctx, 
+    async def broadcast_add(
+            self, 
+            ctx, 
             channel : discord.TextChannel,
             start : range_check(0, 23) = None, 
             interval: range_check(1, 24) = None, *, 
@@ -583,43 +585,55 @@ class Server(commands.Cog):
             return embed
 
         def start_check(m):
-            if not m.content.isdigit():
+            if not m.author == ctx.author or not m.channel == ctx.channel:
                 return False
 
-            if not m.author == ctx.author or not m.channel == ctx.channel:
+            if m.content.lower() == "exit":
+                raise BotError("Exited setup")
+
+            if not m.content.isdigit():
                 return False
 
             return 0 <= int(m.content) <= 23
 
         def interval_check(m):
-            if not m.content.isdigit():
+            if not m.author == ctx.author or not m.channel == ctx.channel:
                 return False
 
-            if not m.author == ctx.author or not m.channel == ctx.channel:
+            if m.content.lower() == "exit":
+                raise BotError("Exited setup")
+
+            if not m.content.isdigit():
                 return False
 
             return 1 <= int(m.content) <= 24
 
         def message_check(m):
-            return m.author == ctx.author and m.channel == ctx.channel
+            if not m.author == ctx.author or not m.channel == ctx.channel:
+                return False
+
+            if m.content.lower() == "exit":
+                raise BotError("Exited setup")
+
+            return True
 
         check_channel(channel)
         msg = await ctx.send(embed=embed_maker())
 
         if start is None:
-            await ctx.send(f"What hour of the day (0-23) you want the broadcast to start? It is currently hour {self.bot.counter} for the bot")
+            await ctx.send(f"What hour of the day (0-23) you want the broadcast to start? The next hour for the bot is hour {self.bot.counter}. Type exit to cancel.")
             start_m = await self.bot.wait_for("message", check=start_check, timeout=300)
             start = int(start_m.content)
             await msg.edit(embed=embed_maker())
 
         if interval is None:
-            await ctx.send("How often do you want the message to be posted? It can be every hour (1) up to once every 24 hours (24)")
+            await ctx.send("How often do you want the message to be posted? It can be every hour (1) up to once every 24 hours (24). Type exit to cancel.")
             interval_m = await self.bot.wait_for("message", check=interval_check, timeout=300)
             interval = int(interval_m.content)
             await msg.edit(embed=embed_maker())
 
         if message is None:
-            await ctx.send("What do you want the message to be?")
+            await ctx.send("What do you want the message to be?. Type exit to cancel.")
             message_m = await self.bot.wait_for("message", check=message_check, timeout=300)
             message = message_m.content
             await msg.edit(embed=embed_maker())
