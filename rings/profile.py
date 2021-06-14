@@ -60,7 +60,7 @@ class Profile(commands.Cog):
         if index < 0:
             raise BotError("Please pick an index that is more than or equal to 0")
 
-        monies = await self.bot.db.query_executer(
+        monies = await self.bot.db.query(
             "SELECT user_id, necroins FROM necrobot.Users WHERE user_id = any($1) ORDER BY necroins DESC",
             [x.id for x in ctx.guild.members]    
         )
@@ -68,7 +68,7 @@ class Profile(commands.Cog):
         def _embed_generator(index, entries):
             embed = discord.Embed(
                 title=f"Money Ranking ({index[0]}/{index[1]})", 
-                colour=self.bot.color, 
+                colour=self.bot.bot_color, 
                 description="Ranking of user's money on the server"
             )
             
@@ -97,7 +97,7 @@ class Profile(commands.Cog):
         if index < 0:
             raise BotError("Please pick an index that us more than or equal to 0")
 
-        monies = await self.bot.db.query_executer(
+        monies = await self.bot.db.query(
             "SELECT user_id, necroins FROM necrobot.Users WHERE user_id = ANY($1) ORDER BY necroins DESC",
             [x.id for x in self.bot.users]    
         )
@@ -105,7 +105,7 @@ class Profile(commands.Cog):
         def _embed_generator(index, entries):
             embed = discord.Embed(
                 title=f"Money Ranking ({index[0]}/{index[1]})", 
-                colour=self.bot.color, 
+                colour=self.bot.bot_color, 
                 description="Ranking of user's money throughout Discord"
             )
             
@@ -135,7 +135,7 @@ class Profile(commands.Cog):
         `{pre}daily @NecroBot` - give your daily to Necrobot and they will received 200 + a random bonus
 
         """
-        day = await self.bot.db.query_executer(
+        day = await self.bot.db.query(
             "UPDATE necrobot.Users SET daily = current_date WHERE user_id = $1 AND daily != current_date RETURNING user_id",
             ctx.author.id    
         )
@@ -215,7 +215,7 @@ class Profile(commands.Cog):
 
         embed = discord.Embed(
             title=user.display_name, 
-            colour=self.bot.color, 
+            colour=self.bot.bot_color, 
             description=f"**Title**: {await self.bot.db.get_title(user.id)}"
         )
         
@@ -283,7 +283,7 @@ class Profile(commands.Cog):
             level = await self.bot.db.get_permission(user.id, ctx.guild.id) 
             title = await self.bot.db.get_title(user.id)
             
-            badges = await self.bot.db.query_executer(
+            badges = await self.bot.db.query(
                 """SELECT s.file_name, b.spot FROM necrobot.Badges b, necrobot.BadgeShop s
                 WHERE b.user_id = $1 AND s.name = b.badge AND spot > 0
                 ORDER BY spot""",
@@ -402,7 +402,7 @@ class Profile(commands.Cog):
         
         {usage}
         """ 
-        badges = await self.bot.db.query_executer("SELECT * FROM necrobot.BadgeShop ORDER BY cost = 0 nulls last, cost")
+        badges = await self.bot.db.query("SELECT * FROM necrobot.BadgeShop ORDER BY cost = 0 nulls last, cost")
         
         def draw_centered_text(draw, text, W, H, font):
             w, h = font.getsize(text)
@@ -459,7 +459,7 @@ class Profile(commands.Cog):
         await ctx.send(":white_check_mark: | Done generating and updating")
 
     @commands.group(invoke_without_command=True, aliases=["star"])
-    async def stars(self, ctx, user : Union[MemberConverter, str] = None, order : str = "date"):
+    async def stars(self, ctx, user : Union[MemberConverter, str] = None, key : str = "date"):
         """
         See all the starred messages of a user or all the ones on the server. Order by most recent first,
         can change order with keywords:
@@ -473,33 +473,33 @@ class Profile(commands.Cog):
         `{pre}starboard stars @Necrobot`
         """
         mapping = {"stars": "stars", "date": "starred_id"}
-        if user is not None and isinstance(user, discord.Member):
-            order = mapping.get(order, "starred_id")
-            stars = await self.bot.db.query_executer(
-                "SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1 AND user_id = $2 AND link != 'None' ORDER BY $3 DESC",
-                ctx.guild.id, user.id, order
+        if isinstance(user, discord.Member):
+            order = mapping.get(key, "starred_id")
+            stars = await self.bot.db.query(
+                f"SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1 AND user_id = $2 AND link != 'None' ORDER BY {order} DESC",
+                ctx.guild.id, user.id
             )
         else:
             order = mapping.get(user, "starred_id")
-            stars = await self.bot.db.query_executer(
-                "SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1 AND link != 'None' ORDER BY $2 DESC",
-                ctx.guild.id, order
+            stars = await self.bot.db.query(
+                f"SELECT user_id, stars, link FROM necrobot.Starred WHERE guild_id = $1 AND link != 'None' ORDER BY {order} DESC",
+                ctx.guild.id
             )
 
 
         total_stars = sum([x[1] for x in stars])
+        
         def embed_maker(index, entries):
             star_str = "\n".join([f"{x[1]} :star: - [Link]({x[2]}) ({ctx.guild.get_member(x[0]) if ctx.guild.get_member(x[0]) is not None else 'User Left'})" for x in entries])
             embed = discord.Embed(
                 title=f"Stars ({index[0]}/{index[1]})", 
                 description=f"Total Stars: {total_stars} \n Total Message: {len(stars)} \n {star_str}", 
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             
             embed.set_footer(**self.bot.bot_footer)
 
             return embed
-
 
         await react_menu(ctx, stars, 15, embed_maker)
 
@@ -513,7 +513,7 @@ class Profile(commands.Cog):
         mapping = {"messages": "COUNT(message_id)", "stars": "SUM(stars)"}
         order = mapping.get(order, "COUNT(message_id)")
 
-        results = await self.bot.db.query_executer(
+        results = await self.bot.db.query(
             f"""SELECT user_id, COUNT(message_id), SUM(stars) FROM necrobot.Starred 
             WHERE guild_id = $1 AND user_id IS NOT null AND link != 'None'
             GROUP BY user_id 
@@ -531,7 +531,7 @@ class Profile(commands.Cog):
             embed = discord.Embed(
                 title=f"Starboard Leaderboard ({index[0]}/{index[1]})", 
                 description=f"A leaderboard to rank people by the amount of their messages that were starred. \n {description}", 
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             embed.set_footer(**self.bot.bot_footer)
             return embed
@@ -540,7 +540,7 @@ class Profile(commands.Cog):
 
     @stars_ranking.command(name="old")
     async def stars_ranking_old(self, ctx):
-        results = await self.bot.db.query_executer(
+        results = await self.bot.db.query(
             """SELECT user_id, COUNT(message_id) FROM necrobot.Starred 
             WHERE guild_id = $1 AND user_id IS NOT null 
             GROUP BY user_id 
@@ -558,7 +558,7 @@ class Profile(commands.Cog):
             embed = discord.Embed(
                 title=f"Starboard Leaderboard ({index[0]}/{index[1]})", 
                 description=f"A leaderboard to rank people by the amount of their messages that were starred. \n {description}", 
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             embed.set_footer(**self.bot.bot_footer)
             return embed

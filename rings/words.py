@@ -37,7 +37,7 @@ class Literature(commands.Cog):
             embed = discord.Embed(
                 title=f"{word.title()} ({page}/{max_page})", 
                 url="http://www.urbandictionary.com/", 
-                colour=self.bot.color, 
+                colour=self.bot.bot_color, 
                 description=definition
             )
             
@@ -91,7 +91,7 @@ class Literature(commands.Cog):
         def embed_maker(index, entry):
             page, max_page = index
             description = "\n -".join(entry["shortdef"])
-            embed = discord.Embed(title=f"{word.title()} ({page}/{max_page})", url="https://www.merriam-webster.com/", colour=self.bot.color, description=f"-{description}")
+            embed = discord.Embed(title=f"{word.title()} ({page}/{max_page})", url="https://www.merriam-webster.com/", colour=self.bot.bot_color, description=f"-{description}")
             embed.set_footer(**self.bot.bot_footer)
         
             return embed

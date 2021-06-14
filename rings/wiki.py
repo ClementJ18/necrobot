@@ -175,7 +175,7 @@ class Wiki(commands.Cog):
 
         embed = discord.Embed(
             title=page["title"], 
-            colour=self.bot.color, 
+            colour=self.bot.bot_color, 
             url=url, 
             description=re.sub(r'\[.*?\]', "", description)
         )
@@ -242,7 +242,7 @@ class Wiki(commands.Cog):
 
         embed = discord.Embed(
             title="Frequently Asked Questions", 
-            colour=self.bot.color, 
+            colour=self.bot.bot_color, 
             url=base, 
             description="\n".join(message)
         )

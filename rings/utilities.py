@@ -57,7 +57,7 @@ class Utilities(commands.Cog):
         
         {usage}"""
         guild = ctx.guild
-        embed = discord.Embed(title=guild.name, colour=self.bot.color, description="Info on this server")
+        embed = discord.Embed(title=guild.name, colour=self.bot.bot_color, description="Info on this server")
         embed.set_thumbnail(url=guild.icon_url)
         embed.set_footer(**self.bot.bot_footer)
 
@@ -136,7 +136,7 @@ class Utilities(commands.Cog):
             page, max_page = index
             embed = discord.Embed(
                 title=res['date'], 
-                colour=self.bot.color, 
+                colour=self.bot.bot_color, 
                 url=res["url"], 
                 description=f"Necrobot is proud to present: **{choice} today in History**\n Page {page}/{max_page}"
             )
@@ -220,7 +220,7 @@ class Utilities(commands.Cog):
             embed = discord.Embed(
                 title=f"Reminders ({index[0]}/{index[1]})", 
                 description=f"Here is the list of **{user.display_name}**'s currently active reminders.", 
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             
             embed.set_footer(**self.bot.bot_footer)
@@ -251,7 +251,7 @@ class Utilities(commands.Cog):
             embed = discord.Embed(
                 title=f"Queue ({index[0]}/{index[1]})", 
                 description="Here is the list of members currently queued:\n- {}".format('\n- '.join(entries)), 
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             
             embed.set_footer(**self.bot.bot_footer)
@@ -349,7 +349,7 @@ class Utilities(commands.Cog):
         """   
         message, symbol = await self.bot.db.get_leaderboard(ctx.guild.id)
                 
-        results = await self.bot.db.query_executer(
+        results = await self.bot.db.query(
             "SELECT * FROM necrobot.LeaderboardPoints WHERE guild_id=$1 ORDER BY points DESC",
             ctx.guild.id
         )
@@ -365,7 +365,7 @@ class Utilities(commands.Cog):
             msg = f"{message}\n\n{users}"
             embed = discord.Embed(
                 title=f"Leaderboard ({index[0]}/{index[1]})", 
-                colour=self.bot.color, 
+                colour=self.bot.bot_color, 
                 description=msg
             )
             

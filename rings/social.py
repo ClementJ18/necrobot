@@ -113,7 +113,7 @@ class Social(commands.Cog):
         fusion2 = soup.find(id="select2").find(selected="selected").string
         url = soup.find(id="permalink")["value"]
         
-        embed = discord.Embed(title=f"<:pokeball:351444031949111297> {name}", colour=self.bot.color, url=url, description=f"{fusion1} + {fusion2}")
+        embed = discord.Embed(title=f"<:pokeball:351444031949111297> {name}", colour=self.bot.bot_color, url=url, description=f"{fusion1} + {fusion2}")
         embed.set_footer(**self.bot.bot_footer)
         embed.set_image(url=image)
 
@@ -138,7 +138,7 @@ class Social(commands.Cog):
         else:
             quote = random.choice(got_quotes)
 
-        embed = discord.Embed(title=quote["character"], colour=self.bot.color, description=quote["quote"])
+        embed = discord.Embed(title=quote["character"], colour=self.bot.bot_color, description=quote["quote"])
         embed.set_author(name="Game of Thrones Quotes")
         embed.set_footer(**self.bot.bot_footer)
 

@@ -86,7 +86,7 @@ class Meta(commands.Cog):
                 "mutes": [],
             }
             
-            await self.bot.db.query_executer(
+            await self.bot.db.query(
                 "INSERT INTO necrobot.Guilds(guild_id, welcome_message, goodbye_message) VALUES($1, $2, $3);",
                 guild_id, welcome_message, goodbye_message
             )
@@ -98,13 +98,13 @@ class Meta(commands.Cog):
             return
             
         del self.bot.guild_data[guild_id]
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "DELETE FROM necrobot.Guilds WHERE guild_id = $1",
             guild_id
         )    
         
     async def new_member(self, user, guild = None):
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "INSERT INTO necrobot.Users(user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING", 
             user.id
         )
@@ -139,7 +139,7 @@ class Meta(commands.Cog):
 
         starboard = self.bot.get_channel(self.bot.guild_data[message.guild.id]["starboard-channel"])
 
-        embed = discord.Embed(colour=self.bot.color, description = message.content)
+        embed = discord.Embed(colour=self.bot.bot_color, description = message.content)
         embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url_as(format="png", size=128))
         embed.set_footer(**self.bot.bot_footer)
         if message.embeds:
@@ -217,7 +217,7 @@ class Meta(commands.Cog):
             except discord.Forbidden:
                 return
 
-            await self.bot.db.query_executer(
+            await self.bot.db.query(
                 "DELETE FROM necrobot.Invites WHERE guild_id = $1 AND id != ANY ($2)",
                 guild.id, ids
             )
@@ -302,12 +302,12 @@ class Meta(commands.Cog):
         await self.bot.db.delete_self_roles(guild.id, *[role for role in g["self-roles"] if role not in roles])
         await self.bot.db.sync_invites(guild)
         
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "DELETE FROM necrobot.Youtube WHERE guild_id = $1 AND NOT(channel_id = ANY($2))",
             guild.id, channels            
         )
 
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "DELETE FROM necrobot.Broadcasts WHERE guild_id = $1 AND NOT(channel_id = ANY($2))",
             guild.id, channels
         )
@@ -316,7 +316,7 @@ class Meta(commands.Cog):
         await self.bot.db.delete_automod_ignore(guild.id, [x for x in g["ignore-automod"] if x not in combined])
         await self.bot.db.delete_command_ignore(guild.id, [x for x in g["ignore-command"] if x not in combined])
         
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "DELETE FROM necrobot.Permissions WHERE guild_id = $1 AND not(user_id = any($2))",
             guild.id, members    
         )
@@ -341,7 +341,7 @@ class Meta(commands.Cog):
     async def broadcast(self):
         total_hours = (self.bot.settings["day"] * 24) + self.bot.counter
 
-        broadcasts = await self.bot.db.query_executer(
+        broadcasts = await self.bot.db.query(
             "SELECT * FROM necrobot.Broadcasts WHERE MOD(($1 - start_time), interval) = 0 AND enabled=True",
             total_hours
         )

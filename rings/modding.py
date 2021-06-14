@@ -31,7 +31,7 @@ class Modding(commands.Cog):
             page = index[0]
             embed = discord.Embed(
                 title=game.name,
-                colour=self.bot.color, 
+                colour=self.bot.bot_color, 
                 url=url, 
                 description=game.summary
             )
@@ -86,7 +86,7 @@ class Modding(commands.Cog):
             page = index[0]
             embed = discord.Embed(
                 title=mod.name, 
-                colour=self.bot.color, 
+                colour=self.bot.bot_color, 
                 url=url, 
                 description=mod.summary
             )

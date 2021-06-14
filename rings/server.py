@@ -90,7 +90,7 @@ class Server(commands.Cog):
             return await ctx.send(f"**{user.display_name}** is **{level}** ({self.bot.perms_name[level]})")
 
         if level is None and user is None:
-            members = await self.bot.db.query_executer(
+            members = await self.bot.db.query(
                 "SELECT user_id, level FROM necrobot.Permissions WHERE level > 0 AND guild_id = $1 ORDER BY level DESC",
                 ctx.guild.id    
             )
@@ -103,7 +103,7 @@ class Server(commands.Cog):
                     
                     string += f"\n -**{name}**: {level} ({self.bot.perms_name[level]})"
 
-                embed = discord.Embed(title="Permissions on your server", description=string, colour=self.bot.color)
+                embed = discord.Embed(title="Permissions on your server", description=string, colour=self.bot.bot_color)
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
 
@@ -177,7 +177,7 @@ class Server(commands.Cog):
                 string = '\n- '.join(entries)
                 embed = discord.Embed(
                     title=f"Ignored by Automod ({index[0]}/{index[1]})", 
-                    colour=self.bot.color, 
+                    colour=self.bot.bot_color, 
                     description=f"Channels(**C**), Users(**U**) and Roles (**R**) ignored by auto moderation:\n- {string}") 
                 
                 embed.set_footer(**self.bot.bot_footer)
@@ -253,7 +253,7 @@ class Server(commands.Cog):
                 string = '\n- '.join(entries)
                 embed = discord.Embed(
                     title=f"Ignored by command ({index[0]}/{index[1]})", 
-                    colour=self.bot.color, 
+                    colour=self.bot.bot_color, 
                     description=f"Channels(**C**), Users(**U**) and Roles (**R**) ignored by the bot:\n- {string}") 
                 
                 embed.set_footer(**self.bot.bot_footer)
@@ -287,7 +287,7 @@ class Server(commands.Cog):
 
         {usage}"""
         server = self.bot.guild_data[ctx.guild.id] 
-        embed = discord.Embed(title="Server Settings", colour=self.bot.color, description="Info on the NecroBot settings for this server")
+        embed = discord.Embed(title="Server Settings", colour=self.bot.bot_color, description="Info on the NecroBot settings for this server")
         embed.add_field(
             name="Welcome Channel", 
             value=self.bot.get_channel(server["welcome-channel"]).mention if server["welcome-channel"] else "Disabled"
@@ -534,7 +534,7 @@ class Server(commands.Cog):
             embed = discord.Embed(
                 title=f"Broadcast ({index[0]}/{index[1]})", 
                 description=entry[5], 
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             
             embed.add_field(name="Channel", value=ctx.guild.get_channel(entry[2]).mention)
@@ -547,7 +547,7 @@ class Server(commands.Cog):
             return embed
 
 
-        broadcasts = await self.bot.db.query_executer(
+        broadcasts = await self.bot.db.query(
             "SELECT * FROM necrobot.Broadcasts WHERE guild_id = $1",
             ctx.guild.id
         )
@@ -578,7 +578,7 @@ class Server(commands.Cog):
             embed = discord.Embed(
                 title="New Broadcast!", 
                 description=message, 
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             
             embed.add_field(name="Channel", value=channel.mention)
@@ -639,7 +639,7 @@ class Server(commands.Cog):
             message = message_m.content
             await msg.edit(embed=embed_maker())
 
-        broadcast_id = await self.bot.db.query_executer(
+        broadcast_id = await self.bot.db.query(
             "INSERT INTO necrobot.Broadcasts(guild_id, channel_id, start_time, interval, message) VALUES ($1, $2, $3, $4, $5) RETURNING broadcast_id",
             ctx.guild.id, channel.id, start, interval, message, fetchval=True
 
@@ -684,7 +684,7 @@ class Server(commands.Cog):
             if value < 1:
                 raise BotError("Please specific a number between 1 and 24")
 
-        check = await self.bot.db.query_executer(
+        check = await self.bot.db.query(
             f"UPDATE necrobot.Broadcasts SET {key}=$1 WHERE broadcast_id=$2 AND guild_id=$3 RETURNING broadcast_id",
             value, broadcast_id, ctx.guild.id, fetchval=True
         )
@@ -701,7 +701,7 @@ class Server(commands.Cog):
 
         {usage}
         """
-        value = await self.bot.db.query_executer(
+        value = await self.bot.db.query(
             "DELETE FROM necrobot.Broadcasts WHERE broadcast_id = $1 AND guild_id = $2 RETURNING broadcast_id",
             broadcast_id, ctx.guild.id, fetchval=True
         )
@@ -720,7 +720,7 @@ class Server(commands.Cog):
         {usage}
 
         """
-        changed = await self.bot.db.query_executer(
+        changed = await self.bot.db.query(
             "UPDATE necrobot.Broadcasts SET enabled=(NOT enabled) WHERE broadcast_id = $1 AND guild_id = $2 RETURNING enabled",
             broadcast_id, ctx.guild.id, fetchval=True
 
@@ -755,7 +755,7 @@ class Server(commands.Cog):
                 embed = discord.Embed(
                     title=f"Self Assignable Roles ({index[0]}/{index[1]})", 
                     description='- ' + '\n- '.join(entries), 
-                    colour=self.bot.color
+                    colour=self.bot.bot_color
                 )
                 
                 embed.set_footer(**self.bot.bot_footer)
@@ -808,8 +808,8 @@ class Server(commands.Cog):
     @commands.group()
     @commands.guild_only()
     async def starboard(self, ctx):
-        """Base of the concept of R.Danny's starboard but simplified. This will post a message in a desired channel once it hits
-        a certain number of :star: reactions. Default limit is 5, you can change the limit with `{pre}starboard limit`.
+        """This will post a message in a desired channel once it hits a certain number of :star: 
+        reactions. Default limit is 5, you can change the limit with `{pre}starboard limit`.
 
         {usage}
 
@@ -914,7 +914,7 @@ class Server(commands.Cog):
         emoji_list = await self.add_reactions(poll, content=message)
         
         self.bot.polls[poll.id] = {'votes': votes, 'voters':[], 'list': emoji_list}
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "INSERT INTO necrobot.Polls VALUES($1, $2, $3, $4, $5)", 
             poll.id, poll.guild.id, poll.jump_url, votes, emoji_list
         )
@@ -930,7 +930,7 @@ class Server(commands.Cog):
         `{pre}results 3` - get the results of the polls from this server stating at the 3rd one.
         """
         
-        results = await self.bot.db.query_executer(
+        results = await self.bot.db.query(
             """
             SELECT p.link, p.emoji_list, ARRAY_AGG(v.votes)
             FROM necrobot.Polls p, (

@@ -33,7 +33,7 @@ class RSS(commands.Cog):
     #######################################################################
     
     async def youtube_sub_task(self):
-        feeds = await self.bot.db.query_executer("""
+        feeds = await self.bot.db.query("""
             SELECT youtuber_id, min(last_update), array_agg((channel_id, filter)::channel_filter_hybrid) 
             FROM necrobot.Youtube 
             GROUP BY youtuber_id
@@ -147,7 +147,7 @@ class RSS(commands.Cog):
         __Example__
         `{pre}youtube delete Jojo` - remove the channel called Jojo
         """
-        deleted = await self.bot.db.query_executer(
+        deleted = await self.bot.db.query(
             "DELETE FROM necrobot.Youtube WHERE guild_id = $1 AND LOWER(youtuber_name) = LOWER($2) RETURNING youtuber_name",
             ctx.guild.id, youtuber_name    
         )

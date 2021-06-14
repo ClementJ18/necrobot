@@ -46,7 +46,7 @@ class Admin(commands.Cog):
         {usage}"""
         channel = self.bot.get_channel(723281310235492503)
         
-        embed = discord.Embed(title="Grudge Record", colour=self.bot.color, description=grudge)
+        embed = discord.Embed(title="Grudge Record", colour=self.bot.bot_color, description=grudge)
         embed.add_field(name="User", value=f"{user} ({user.id})")
         embed.add_field(name="Date", value=datetime.date.today().strftime('%A %-d of %B, %Y'))
         embed.set_footer(**self.bot.bot_footer) 
@@ -54,7 +54,7 @@ class Admin(commands.Cog):
         await channel.send(embed=embed)
         await ctx.send(embed=embed)
         
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "INSERT INTO necrobot.Grudges(user_id, name, grudge) VALUES($1, $2, $3)",
             user.id, str(user), grudge    
         )
@@ -68,7 +68,7 @@ class Admin(commands.Cog):
         if isinstance(user, discord.User):
             user = user.id
         
-        grudges = await self.bot.db.query_executer(
+        grudges = await self.bot.db.query(
             "SELECT * FROM necrobot.Grudges WHERE user_id = $1",
             user    
         )   
@@ -83,7 +83,7 @@ class Admin(commands.Cog):
                 
             embed = discord.Embed(
                 title=f"Grudges ({index[0]}/{index[1]})", 
-                colour=self.bot.color, 
+                colour=self.bot.bot_color, 
                 description=f"List of grudges for {name}"
             )
             
@@ -107,7 +107,7 @@ class Admin(commands.Cog):
         else:
             name = grudge[2]
                 
-        embed = discord.Embed(title=f"Grudge `{grudge[0]}`", colour=self.bot.color, description=grudge[3])
+        embed = discord.Embed(title=f"Grudge `{grudge[0]}`", colour=self.bot.bot_color, description=grudge[3])
         embed.add_field(name="User", value=f"{name} ({grudge[1]})")
         embed.add_field(name="Date", value=grudge[4].strftime('%A %-d of %B, %Y'))
         embed.add_field(name="Avenged", value=str(grudge[5]))
@@ -121,7 +121,7 @@ class Admin(commands.Cog):
         """Mark a grudge as settled
         
         {usage}"""
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "UPDATE necrobot.Grudges SET avenged = $1 WHERE id = $2",
             str(settlement), grudge["id"]   
         )
@@ -282,7 +282,7 @@ class Admin(commands.Cog):
         await to_edit.edit(content=f":speech_left: | **User: {msg.author}** said :**{msg.content[1950:]}**")
         
     @commands.command()
-    @commands.has_perms(6)
+    @has_perms(6)
     async def get(self, ctx, obj_id : int):
         """Returns the name of the user or server based on the given id. Used to debug errors.
         
@@ -409,12 +409,12 @@ class Admin(commands.Cog):
         else:
             sql = "SELECT user_id, command, guild_id, message, time_used, can_run FROM necrobot.Logs ORDER BY time_used DESC"
 
-        results = await self.bot.db.query_executer(sql)
+        results = await self.bot.db.query(sql)
 
         def embed_maker(pages, entries):
             page, max_page = pages
             
-            embed = discord.Embed(title="Command Log", colour=self.bot.color, description=f"{page}/{max_page}")
+            embed = discord.Embed(title="Command Log", colour=self.bot.bot_color, description=f"{page}/{max_page}")
             embed.set_footer(**self.bot.bot_footer)
             for row in entries:
                 user = self.bot.get_user(row["user_id"])
@@ -456,7 +456,7 @@ class Admin(commands.Cog):
             resp = (await r.json())[:5]
 
         description = "\n".join([f"[`{c['sha'][:7]}`]({c['url']}) - {c['commit']['message']}" for c in resp])
-        embed = discord.Embed(title="Information", colour=self.bot.color, description=description)
+        embed = discord.Embed(title="Information", colour=self.bot.bot_color, description=description)
         embed.set_footer(**self.bot.bot_footer)
 
         members = {x : set() for x in discord.Status if x != discord.Status.invisible}

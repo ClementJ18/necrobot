@@ -91,7 +91,7 @@ class Bridge(commands.Cog):
             else:
                 raise ValueError(f"Retried three times, unable to get form for {pending['message'].id}")
         
-        username = await self.bot.db.query_executer(
+        username = await self.bot.db.query(
             "SELECT username FROM necrobot.MU_Users WHERE user_id=$1", 
             pending["message"].author.id, fetchval=True
         )
@@ -110,7 +110,7 @@ class Bridge(commands.Cog):
             soup = BeautifulSoup(await resp.read(), "html.parser")
             url = soup.find_all("div", class_="keyinfo")[-1].h5.a["href"]
 
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "INSERT INTO necrobot.MU(user_id, url, guild_id, approver_id) VALUES ($1, $2, $3, $4)",
             pending["message"].author.id, url, pending["message"].guild.id, approver_id
         )
@@ -165,7 +165,7 @@ class Bridge(commands.Cog):
         if user is None:
             user = ctx.author
             
-        username = await self.bot.db.query_executer(
+        username = await self.bot.db.query(
             "SELECT (username, active) FROM necrobot.MU_Users WHERE user_id = $1",
             user.id, fetchval=True
         )
@@ -173,13 +173,13 @@ class Bridge(commands.Cog):
         if not username:
             raise BotError("This user is not currently registered to use the MU-Discord system.")
             
-        posts = await self.bot.db.query_executer(
+        posts = await self.bot.db.query(
             """SELECT post_date, ARRAY_AGG((url, approver_id)) FROM necrobot.MU WHERE user_id = $1 AND guild_id = $2 
             GROUP BY post_date ORDER BY post_date DESC""",
             user.id, ctx.guild.id    
         )
         
-        total = await self.bot.db.query_executer(
+        total = await self.bot.db.query(
             "SELECT COUNT(url) FROM necrobot.MU WHERE user_id = $1 AND guild_id = $2",
             user.id, ctx.guild.id, fetchval=True    
         )
@@ -188,7 +188,7 @@ class Bridge(commands.Cog):
             embed = discord.Embed(
                 title=f"{user.display_name} ({index[0]}/{index[1]})", 
                 description=f"Username: {username[0]}\nStatus: {'Active' if username[1] else 'Banned'}\nTotal Posts: {total}",
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             
             embed.set_footer(**self.bot.bot_footer)
@@ -219,7 +219,7 @@ class Bridge(commands.Cog):
         `{pre}mu register` - see all registered users
         """
         if username is None:
-            users = await self.bot.db.query_executer(
+            users = await self.bot.db.query(
                 "SELECT user_id, username FROM necrobot.MU_Users WHERE active = True"    
             )
             
@@ -233,7 +233,7 @@ class Bridge(commands.Cog):
                 embed = discord.Embed(
                     title=f"MU Users ({index[0]}/{index[1]})", 
                     description=string,
-                    colour=self.bot.color
+                    colour=self.bot.bot_color
                 )
             
                 embed.set_footer(**self.bot.bot_footer)
@@ -248,7 +248,7 @@ class Bridge(commands.Cog):
         if username.lower() in self.in_process:
             raise BotError("A registration for that nickname is currently in progress. Please wait for it to complete, if the registration successfully completed please pick another nickname.")
             
-        already_registered = await self.bot.db.query_executer(
+        already_registered = await self.bot.db.query(
             "SELECT * FROM necrobot.MU_Users WHERE user_id = $1 OR username_lower = $2",
             ctx.author.id, username.lower()    
         )
@@ -282,7 +282,7 @@ class Bridge(commands.Cog):
             await msg.clear_reactions()
         elif reaction.emoji == "\N{WHITE HEAVY CHECK MARK}":
             await msg.clear_reactions()
-            await self.bot.db.query_executer(
+            await self.bot.db.query(
                 "INSERT INTO necrobot.MU_Users VALUES($1, $2, $3, True)", 
                 ctx.author.id, username, username.lower(), 
             )
@@ -302,7 +302,7 @@ class Bridge(commands.Cog):
         `{pre}mu rename @Necro NotNecro` - rename user Necro to NotNecro on their MU profile
         """
         try:
-            await self.bot.db.query_executer(
+            await self.bot.db.query(
                 "UPDATE FROM necrobot.MU_Users SET username=$1, username_lower=$2 WHERE user_id=$3", 
                 new_username, new_username.lower(), user.id
             )
@@ -322,7 +322,7 @@ class Bridge(commands.Cog):
         __Examples__
         `{pre}mu ban @Necro @Necrobot` - ban both users
         """
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "UPDATE necrobot.MU_Users SET active=False WHERE user_id = any($1)",
             [user.id for user in users]    
         )
@@ -341,7 +341,7 @@ class Bridge(commands.Cog):
         __Examples__
         `{pre}mu unban @Necro @Necrobot` - unban both users
         """
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "UPDATE necrobot.MU_Users SET active=True WHERE user_id = any($1)",
             [user.id for user in users]    
         )
@@ -372,7 +372,7 @@ class Bridge(commands.Cog):
             embed = discord.Embed(
                 title=f"{user.display_name} ({index[0]}/{index[1]})", 
                 description=entry["text"],
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             
             embed.add_field(name="Thread", value=entry["thread"])
@@ -406,7 +406,7 @@ class Bridge(commands.Cog):
             embed = discord.Embed(
                 title=f"{user.display_name} ({index[0]}/{index[1]})", 
                 description=entry["text"],
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             
             embed.add_field(name="Thread", value=entry["thread"])
@@ -439,7 +439,7 @@ class Bridge(commands.Cog):
         if message.channel.id not in self.mu_channels:
             return
         
-        registered = await self.bot.db.query_executer(
+        registered = await self.bot.db.query(
             "SELECT active FROM necrobot.MU_Users WHERE user_id=$1", 
             message.author.id, fetchval=True
         )

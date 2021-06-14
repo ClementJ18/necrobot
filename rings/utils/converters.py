@@ -207,7 +207,7 @@ class Grudge(commands.Converter):
         if not argument.isdigit():
             raise commands.BadArgument("Please supply a valid id")
         
-        grudge = await ctx.bot.db.query_executer(
+        grudge = await ctx.bot.db.query(
             "SELECT * FROM necrobot.Grudges WHERE id = $1",
             int(argument)    
         )
@@ -224,7 +224,7 @@ class MUConverter(commands.Converter):
         except commands.BadArgument:
             pass
             
-        user_id  = await ctx.bot.db.query_executer(
+        user_id  = await ctx.bot.db.query(
             "SELECT user_id FROM necrobot.MU_Users WHERE username_lower = $1",
             argument.lower(), fetchval=True
         )
@@ -252,7 +252,7 @@ class CoinConverter(commands.Converter):
 class Tag(commands.Converter):
     async def convert(self, ctx, argument):
         argument = argument.lower()
-        tag = await ctx.bot.db.query_executer("""
+        tag = await ctx.bot.db.query("""
             SELECT t.name, t.content, t.owner_id, t.uses, t.created_at FROM necrobot.Tags t, necrobot.Aliases a 
             WHERE t.name = a.original AND a.alias = $1 AND a.guild_id = $2 AND t.guild_id = $2
             """, argument, ctx.guild.id

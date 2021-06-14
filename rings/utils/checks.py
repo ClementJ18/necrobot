@@ -35,7 +35,7 @@ def leaderboard_enabled():
         if ctx.guild is None:
             raise commands.CheckFailure("Cannot use this command in DMs")
 
-        settings = (await ctx.bot.db.query_executer(
+        settings = (await ctx.bot.db.query(
             "SELECT message FROM necrobot.Leaderboards WHERE guild_id=$1", 
             ctx.guild.id, fetchval=True
         ))

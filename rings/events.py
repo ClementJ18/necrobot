@@ -59,7 +59,7 @@ class Events(commands.Cog):
                     await channel.send(f":warning:| User {user.mention} tried adding more reactions than allowed to a poll")
             return
             
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "INSERT INTO necrobot.Votes VALUES($1, $2, $3)", 
             payload.message_id, payload.user_id, payload.emoji.name
         )
@@ -150,7 +150,7 @@ class Events(commands.Cog):
                 guild = "DM"
                 channel = "DM"
 
-            embed = discord.Embed(title="Command Error", description=f"```py\n{error_traceback[:2048]}\n```", colour=self.bot.color)
+            embed = discord.Embed(title="Command Error", description=f"```py\n{error_traceback[:2048]}\n```", colour=self.bot.bot_color)
             embed.set_footer(**self.bot.bot_footer)
             embed.add_field(name="Command", value=ctx.command.name)
             embed.add_field(name="Author", value=ctx.author.mention)
@@ -204,7 +204,7 @@ class Events(commands.Cog):
         await self.bot.db.delete_command_ignore(guild_id, channel.id)
         await self.bot.db.delete_rss_channel(guild_id, channel_id=channel.id)
 
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "DELETE FROM necrobot.Broadcasts WHERE channel_id = $1",
             channel.id
         )
@@ -249,7 +249,7 @@ class Events(commands.Cog):
             guildname = ctx.guild.name
             guildid = ctx.guild.id
 
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             """INSERT INTO necrobot.Logs (user_id, username, command, guild_id, guildname, message, can_run) 
             VALUES($1,$2,$3,$4,$5,$6,$7);""", 
             ctx.author.id, ctx.author.name, ctx.command.name, guildid, guildname, ctx.message.content, can_run
@@ -276,7 +276,7 @@ class Events(commands.Cog):
             if not message.content:
                 message.content = "\U0000200b"
 
-            embed = discord.Embed(title="Message Deleted", description=message.content, colour=self.bot.color)
+            embed = discord.Embed(title="Message Deleted", description=message.content, colour=self.bot.bot_color)
             embed.set_author(name=message.author, icon_url=message.author.avatar_url)
             embed.set_footer(**self.bot.bot_footer)
             embed.add_field(name="Info", value=f"In {message.channel.mention} by {message.author.mention}")
@@ -293,7 +293,7 @@ class Events(commands.Cog):
             return
 
         if has_automod(self.bot, after):
-            embed = discord.Embed(title="Message Edited", description=f"In {before.channel.mention} by {before.author.mention}", colour=self.bot.color)
+            embed = discord.Embed(title="Message Edited", description=f"In {before.channel.mention} by {before.author.mention}", colour=self.bot.bot_color)
             if not after.content:
                 after.content = "\U0000200b"
                 
@@ -343,7 +343,7 @@ class Events(commands.Cog):
         if self.bot.guild_data[member.guild.id]["automod"]:
             channel = member.guild.get_channel(self.bot.guild_data[member.guild.id]["automod"])
             if invite:
-                embed = discord.Embed(title="Member Joined", description=f"{member.mention} has joined the server using {invite.url}", colour=self.bot.color)
+                embed = discord.Embed(title="Member Joined", description=f"{member.mention} has joined the server using {invite.url}", colour=self.bot.bot_color)
                 embed.add_field(name="Invite", value=invite.inviter)
                 embed.set_footer(**self.bot.bot_footer)
                 
@@ -353,7 +353,7 @@ class Events(commands.Cog):
                     pass
                     
             else:
-                embed = discord.Embed(title="Member Joined", description=f"{member.mention} has joined the server but didn't use an invite... somehow...", colour=self.bot.color)
+                embed = discord.Embed(title="Member Joined", description=f"{member.mention} has joined the server but didn't use an invite... somehow...", colour=self.bot.bot_color)
                 embed.set_footer(**self.bot.bot_footer)
 
                 try:
@@ -419,7 +419,7 @@ class Events(commands.Cog):
             if payload.user_id == self.bot.user.id:
                 return
                 
-            result = await self.bot.db.query_executer(
+            result = await self.bot.db.query(
                 "DELETE FROM necrobot.Votes WHERE message_id = $1 AND user_id = $2 AND reaction = $3 RETURNING user_id", 
                 payload.message_id, payload.user_id, payload.emoji.name
                 ) 

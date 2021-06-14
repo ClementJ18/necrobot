@@ -58,7 +58,7 @@ class Tags(commands.Cog):
                 )
             )
 
-            await self.bot.db.query_executer(
+            await self.bot.db.query(
                 "UPDATE necrobot.Tags SET uses = uses + 1 WHERE guild_id = $1 AND name = $2", 
                 ctx.guild.id, tag["name"]
             )
@@ -117,12 +117,12 @@ class Tags(commands.Cog):
             raise BotError("Tag not created, tag name is a reserved keyword")
          
         try:   
-            await self.bot.db.query_executer(
+            await self.bot.db.query(
                 "INSERT INTO necrobot.Tags(guild_id, name, content, owner_id) VALUES ($1, $2, $3, $4)", 
                 ctx.guild.id, tag, content, ctx.author.id
             )
             
-            await self.bot.db.query_executer(
+            await self.bot.db.query(
                 "INSERT INTO necrobot.Aliases VALUES ($1, $1, $2)",
                 tag, ctx.guild.id
             )
@@ -142,7 +142,7 @@ class Tags(commands.Cog):
         `{pre}tag delete necro` - removes the tag 'necro' if you are the owner of if you have a permission level of 4+"""
         await self.is_tag_owner(ctx, tag)
 
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "DELETE FROM necrobot.Tags WHERE guild_id = $1 AND name = $2",
             ctx.guild.id, tag["name"]    
         )
@@ -167,7 +167,7 @@ class Tags(commands.Cog):
 
         await self.is_tag_owner(ctx, tag)
 
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "DELETE FROM necrobot.Aliases WHERE guild_id = $1 and alias = $2", 
             ctx.guild.id, alias
         )
@@ -186,7 +186,7 @@ class Tags(commands.Cog):
         `{pre}tag edit necro cool server` - replaces the content of the 'necro' tag with 'cool server'"""
         await self.is_tag_owner(ctx, tag)
 
-        await self.bot.db.query_executer(
+        await self.bot.db.query(
             "UPDATE necrobot.Tags SET content = $1 WHERE guild_id = $2 AND name = $3", 
             content, ctx.guild.id, tag["name"]
         )
@@ -210,7 +210,7 @@ class Tags(commands.Cog):
         """Returns the list of tags present on the guild.
         
         {usage}"""
-        tag_list = await self.bot.db.query_executer(
+        tag_list = await self.bot.db.query(
             "SELECT alias from necrobot.Aliases WHERE guild_id = $1",
             ctx.guild.id    
         )
@@ -220,7 +220,7 @@ class Tags(commands.Cog):
             embed = discord.Embed(
                 title=f"Tags on this server ({index[0]}/{index[1]})", 
                 description=tag_str, 
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             
             embed.set_footer(**self.bot.bot_footer)
@@ -240,7 +240,7 @@ class Tags(commands.Cog):
         `{pre}tag info necro` - prints info for the tag 'necro'"""
         embed = discord.Embed(
             title=tag["name"],
-            colour=self.bot.color, 
+            colour=self.bot.bot_color, 
             description=f'Created on {tag["created_at"]}'
         )
         
@@ -268,7 +268,7 @@ class Tags(commands.Cog):
             raise BotError("Alias name is a reserved keyword")
           
         try:  
-            await self.bot.db.query_executer(
+            await self.bot.db.query(
                 "INSERT INTO necrobot.Aliases VALUES ($1, $2, $3)", 
                 new_name, tag['name'], ctx.guild.id
             )

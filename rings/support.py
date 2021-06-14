@@ -28,7 +28,7 @@ class Support(commands.Cog):
         {usage}"""
 
         bot_desc = "Hello! :wave: I'm NecroBot, a moderation bot with many commands for a wide variety of server and a high modularity which means you can enable/disable just about every part of me as you wish."
-        embed = discord.Embed(title="NecroBot", colour=self.bot.color, description=bot_desc)
+        embed = discord.Embed(title="NecroBot", colour=self.bot.bot_color, description=bot_desc)
         embed.set_footer(**self.bot.bot_footer)
         embed.add_field(name="About", value=f"I'm currently in {len(list(self.bot.guilds))} guilds and I can see {len(list(self.bot.users))} members. I was created using Python and the d.py library. ", inline=False)
         embed.add_field(name="Version", value=self.bot.version)
@@ -50,7 +50,7 @@ class Support(commands.Cog):
         `{pre}report settings while using the sub-command mute it told me there was no such role when there is indeed` - report a bug for 
         `settings`"""
 
-        embed = discord.Embed(title=":bulb: A report has just came in :bulb:", description=message, colour=self.bot.color)
+        embed = discord.Embed(title=":bulb: A report has just came in :bulb:", description=message, colour=self.bot.bot_color)
         embed.set_footer(**self.bot.bot_footer)
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
         embed.add_field(name="Helpful Info", value=f"User: {ctx.author.mention} \nServer: {ctx.guild.name} \nServer ID: {ctx.guild.id}")

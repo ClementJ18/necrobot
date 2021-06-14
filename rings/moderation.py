@@ -262,7 +262,7 @@ class Moderation(commands.Cog):
         if user is None:
             user = ctx.author
             
-        warnings = await self.bot.db.query_executer(
+        warnings = await self.bot.db.query(
             "SELECT * FROM necrobot.Warnings WHERE guild_id = $1 AND user_id = $2",
             ctx.guild.id, user.id    
         )
@@ -270,7 +270,7 @@ class Moderation(commands.Cog):
         def embed_maker(index, entries):            
             embed = discord.Embed(
                 title=f"Warnings ({index[0]}/{index[1]})", 
-                colour=self.bot.color, 
+                colour=self.bot.bot_color, 
                 description=f"List of warnings for {user.display_name}"
             )
             
@@ -292,7 +292,7 @@ class Moderation(commands.Cog):
         __Examples__
         `{pre}warn get 4` - get warning with id 4
         """
-        warning = await self.bot.db.query_executer(
+        warning = await self.bot.db.query(
             "SELECT * FROM necrobot.Warnings WHERE warn_id = $1 AND guild_id = $2",
             warn_id, ctx.guild.id    
         )
@@ -304,7 +304,7 @@ class Moderation(commands.Cog):
             
         embed = discord.Embed(
             title=f"`{warn_id}`",
-            colour=self.bot.color, 
+            colour=self.bot.bot_color, 
             description=warning["warning_content"]
         )
         
@@ -469,7 +469,7 @@ class Moderation(commands.Cog):
             embed = discord.Embed(
                 title="Mute Evasion", 
                 description=f"User **{member}** has left the server while muted.", 
-                colour=self.bot.color
+                colour=self.bot.bot_color
             )
             embed.set_footer(**self.bot.bot_footer)
             
@@ -490,7 +490,7 @@ class Moderation(commands.Cog):
                 embed = discord.Embed(
                     title="Mute Evasion Countered", 
                     description=f"User **{member}** has rejoined the server and has resumed their mute.", 
-                    colour=self.bot.color
+                    colour=self.bot.bot_color
                 )
                 embed.set_footer(**self.bot.bot_footer)
                 
