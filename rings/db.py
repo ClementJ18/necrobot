@@ -19,7 +19,7 @@ class DatabaseError(Exception):
         formatted = traceback.format_exception(type(self), self, self.__traceback__, chain=False)
         msg = f"```py\n{' '.join(formatted)}\n```"
         
-        embed = discord.Embed(title="DB Error", description=msg, colour=discord.Colour(0x277b0))
+        embed = discord.Embed(title="DB Error", description=msg, colour=self.bot.color)
         embed.add_field(name='Event', value=self.message, inline=False)
         embed.add_field(name="Query", value=self.query, inline=False)
         embed.add_field(name="Arguments", value=self.args, inline=False)
