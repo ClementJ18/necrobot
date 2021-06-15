@@ -95,7 +95,7 @@ async def get_pre(bot, message):
 def time_converter(argument):
     time = 0
 
-    pattern = re.compile(r"([0-9]+)\s?([dhms])")
+    pattern = re.compile(r"([0-9]*(?:\.|\,)?[0-9]*)\s?([dhms])")
     matches = re.findall(pattern, argument)
 
     convert = {
@@ -106,7 +106,10 @@ def time_converter(argument):
     }
 
     for match in matches:
-        time += convert[match[1]] * int(match[0])
+        if not match[0]:
+            continue
+        
+        time += convert[match[1]] * float(match[0].replace(",", "."))
 
     return time
 

@@ -74,7 +74,7 @@ class Server(commands.Cog):
     ## Commands
     #######################################################################
 
-    @commands.command(aliases=["perms"])
+    @commands.group(invoke_without_command=True, aliases=["perms"])
     @has_perms(4)
     async def permissions(self, ctx, user : MemberConverter = None, level : range_check(0, 7) = None):
         """Sets the NecroBot permission level of the given user, you can only set permission levels lower than your own. 
@@ -98,12 +98,12 @@ class Server(commands.Cog):
             def _embed_maker(index, entries):
                 string = ""
                 for member in entries:
-                    name = ctx.guild.get_member(member[0]).display_name
+                    name = ctx.guild.get_member(member[0]).mention
                     level = member[1]
                     
                     string += f"\n -**{name}**: {level} ({self.bot.perms_name[level]})"
 
-                embed = discord.Embed(title="Permissions on your server", description=string, colour=self.bot.bot_color)
+                embed = discord.Embed(title="Permissions on the server", description=string, colour=self.bot.bot_color)
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
 
@@ -124,6 +124,36 @@ class Server(commands.Cog):
             
         else:
             raise BotError("You do not have the required NecroBot permission to grant this permission level")
+
+    @permissions.command(name="commands")
+    @has_perms(1)
+    async def permissions_commands(self, ctx, level : range_check(1, 7)):
+        """See what permission level has access to which commands
+
+        {usage}
+
+        """
+        c = []
+        for command in self.bot.commands:
+            if command.hidden:
+                continue
+
+            perms_check = discord.utils.find(lambda x: x.__qualname__.startswith("has_perms"), command.checks)
+            if perms_check is not None and perms_check.level == level:
+                c.append(f"- {command.name}")
+
+        def embed_maker(index, entries):
+            string = '\n'.join(entries)
+            embed = discord.Embed(
+                title=f"Commands for {self.bot.perms_name[level]} {level}+ ({index[0]}/{index[1]})", 
+                colour=self.bot.bot_color, 
+                description=string) 
+            
+            embed.set_footer(**self.bot.bot_footer)
+            return embed
+
+        await react_menu(ctx, c, 10, embed_maker)
+
 
     @commands.command()
     @has_perms(4)
@@ -169,20 +199,18 @@ class Server(commands.Cog):
         from it (since we added it above)
         `{pre}automod @ARole` - adds role ARole to the list of roles ignored by automoderation
         """
+        def _embed_maker(index, entries):
+            string = '\n- '.join(entries)
+            embed = discord.Embed(
+                title=f"Ignored by Automod ({index[0]}/{index[1]})", 
+                colour=self.bot.bot_color, 
+                description=f"Channels(**C**), Users(**U**) and Roles (**R**) ignored by auto moderation:\n- {string}") 
+            
+            embed.set_footer(**self.bot.bot_footer)
+            return embed
 
         if not mentions:
-            ignored = self.bot.guild_data[ctx.guild.id]["ignore-automod"] 
-            
-            def _embed_maker(index, entries):
-                string = '\n- '.join(entries)
-                embed = discord.Embed(
-                    title=f"Ignored by Automod ({index[0]}/{index[1]})", 
-                    colour=self.bot.bot_color, 
-                    description=f"Channels(**C**), Users(**U**) and Roles (**R**) ignored by auto moderation:\n- {string}") 
-                
-                embed.set_footer(**self.bot.bot_footer)
-                return embed
-                
+            ignored = self.bot.guild_data[ctx.guild.id]["ignore-automod"]     
             return await react_menu(ctx, self.get_all(ctx, ignored), 10, _embed_maker)                       
 
         to_add = []
@@ -807,28 +835,17 @@ class Server(commands.Cog):
 
     @commands.group()
     @commands.guild_only()
-    async def starboard(self, ctx):
-        """This will post a message in a desired channel once it hits a certain number of :star: 
-        reactions. Default limit is 5, you can change the limit with `{pre}starboard limit`.
-
-        {usage}
-
-        """
-        pass
-
-    @starboard.command(name="channel")
-    @has_perms(4)
-    async def starboard_channel(self, ctx, channel : discord.TextChannel = 0):
+    async def starboard(self, ctx, channel : discord.TextChannel = None):
         """Sets a channel for the starboard messages, required in order for starboard to be enabled. Call the command
         without a channel to disable starboard.
 
         {usage}
 
         __Examples__
-        `{pre}starboard channel #a-channel` - sets the starboard channel to #a-channel, all starred messages will be sent to
+        `{pre}starboard #a-channel` - sets the starboard channel to #a-channel, all starred messages will be sent to
         there
-        `{pre}starboard channel` - disables starboard"""
-        if not channel:
+        `{pre}starboard` - disables starboard"""
+        if channel is None:
             await self.bot.db.update_starboard_channel(ctx.guild.id)
             await ctx.send(":white_check_mark: | Starboard messages disabled.")
         else:

@@ -169,15 +169,24 @@ class Utilities(commands.Cog):
         {usage}
 
         __Examples__
-        `{pre}remindme do the dishes in 40s` - will remind you to do the dishes in 40 seconds
+        `{pre}remindme do the dishes in 40seconds` - will remind you to do the dishes in 40 seconds
         `{pre}remindme do the dishes in 2m` - will remind you to do the dishes in 2 minutes
-        `{pre}remindme do the dishes in 4d2h45m` - will remind you to do the dishes in 4 days, 2 hours and 45 minutes
+        `{pre}remindme do the dishes in 4day 2h45minutes` - will remind you to do the dishes in 4 days, 2 hours and 45 minutes
+        `{pre}remindme in 2 hours` - send you a ping in 2 hours
         """
-        if "in" not in message:
-            raise BotError(" Something went wrong, you need to use the format: **<message> in <time>**")
+        err = "Something went wrong, you need to use the format: **<optional_message> in <time>**"
 
-        text, _, time = message.rpartition(" in ")
+        if "in" not in message:
+            raise BotError(err)
+
+        text, sep, time = message.rpartition("in ")
         sleep = time_converter(time)
+
+        if not sep:
+            raise BotError(err)
+
+        if sleep < 1:
+            raise BotError("Can't have a reminder that's less than one second!")
 
         reminder_id = await self.bot.db.insert_reminder(ctx.author.id, ctx.channel.id, text, time, datetime.datetime.now())
         task = self.bot.loop.create_task(self.bot.meta.reminder_task(reminder_id, sleep, text, ctx.channel.id, ctx.author.id))
