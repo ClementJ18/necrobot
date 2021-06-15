@@ -1,11 +1,10 @@
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
-from rings.utils.converters import MoneyConverter
+from rings.utils.converters import MoneyConverter, CoinConverter
 from rings.utils.var import ball8_list
-from rings.utils.converters import CoinConverter
+from rings.utils.utils import BotError
 
-import dice
 import random
 
 class Decisions(commands.Cog):
@@ -64,7 +63,7 @@ class Decisions(commands.Cog):
         await ctx.send(msg)
 
     @commands.command(aliases=["dice"])
-    async def roll(self, ctx, dices="1d6"):
+    async def roll(self, ctx, dices : str = "1d6"):
         """Rolls one or multiple x sided dices and returns the result. 
         Structure of the argument: `[number of die]d[number of faces]`. 
         
@@ -73,11 +72,16 @@ class Decisions(commands.Cog):
         __Example__
         `{pre}roll 3d8` - roll three 8-sided die
         `{pre}roll` - roll one 6-sided die"""
-        dice_list = dice.roll(dices)
         try:
-            t = sum(dice_list)
-        except TypeError:
-            t = dice_list
+            no, value = dices.split("d")
+        except:
+            raise BotError("Please pass a correct dice amount and value")
+
+        if not no.isdigit() or not value.isdigit():
+            raise BotError("Please pass intengers for the dice amount and value")
+
+        dice_list = [random.randint(1, int(value)) for _ in range(int(no))]
+        t = sum(dice_list)
 
         if len(str(dice_list)) > 1900:
             dice_list = "a lot of dice"
