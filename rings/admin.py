@@ -159,27 +159,14 @@ class Admin(commands.Cog):
             raise BotError("Operation not recognized.")
 
         msg = await ctx.send(f":white_check_mark: | Operation successful. Change {user} balance to **{operation}**?")
+        result = await self.bot.confirmation_menu(msg, ctx.author)
 
-        await msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
-        await msg.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
-
-        def check(reaction, user):
-            return msg.id == reaction.message.id and user == ctx.author and str(reaction.emoji) in ["\N{WHITE HEAVY CHECK MARK}", "\N{NEGATIVE SQUARED CROSS MARK}"]
-
-        reaction, _ = await self.bot.wait_for(
-            "reaction_add", 
-            check=check, 
-            timeout=300,
-            handler=msg.clear_reactions,
-            propagate=False
-        )
-
-        if reaction.emoji == "\N{NEGATIVE SQUARED CROSS MARK}":
-            await ctx.send(":white_check_mark: | Cancelled.")
-        elif reaction.emoji == "\N{WHITE HEAVY CHECK MARK}":
+        if result:
             await self.bot.db.update_money(user.id, update=operation)
             await ctx.send(":atm: | **{}'s** balance is now **{:,}** :euro:".format(user.display_name, operation))
-        
+        else:
+            await ctx.send(":white_check_mark: | Cancelled.")
+            
         await msg.delete()
         
         

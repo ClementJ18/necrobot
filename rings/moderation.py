@@ -63,11 +63,22 @@ class Moderation(commands.Cog):
 
         if isinstance(user, int):
             user = discord.Object(id=user)
+            user.name = "Hackbanned"
 
         if reason is not None:
             await ctx.guild.ban(user, reason=reason)
         else:
             await ctx.guild.ban(user)
+
+        automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
+        if automod is not None:
+            embed = discord.Embed(title="User Banned", description=f"{user.name} ({user.id}) banned by {ctx.author.mention}", colour=self.bot.bot_color)
+            embed.add_field(name="Reason", value=reason)
+
+            embed.set_footer(**self.bot.bot_footer)
+
+            await automod.send(embed=embed)
+
 
     
     @commands.command()
@@ -90,8 +101,19 @@ class Moderation(commands.Cog):
         else:
             msg = f":white_check_mark: | User **{user.display_name}** renamed to **{nickname}**"
 
+        old_name = user.display_name
+
         await user.edit(nick=nickname)
         await ctx.send(msg)
+
+        automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
+        if automod is not None:
+            embed = discord.Embed(title="User Renamed", description=f"{user.mention} renamed by {ctx.author.mention}", colour=self.bot.bot_color)
+            embed.set_footer(**self.bot.bot_footer)
+            embed.add_field(name="Old Name", value=old_name)
+            embed.add_field(name="New Name", value=user.display_name)
+
+            await automod.send(embed=embed)
 
     @commands.group(invoke_without_command = True)
     @has_perms(2)
@@ -121,6 +143,13 @@ class Moderation(commands.Cog):
 
         if time:
             self.bot.loop.create_task(self.mute_task(ctx, user, role, time))
+
+        automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
+        if automod is not None:
+            embed = discord.Embed(title="User Muted", description=f"{user.mention} muted by {ctx.author.mention}", colour=self.bot.bot_color)
+            embed.set_footer(**self.bot.bot_footer)
+            embed.add_field(name="Duration", value=f"{time} seconds" if time else "Permanently")
+            await automod.send(embed=embed)
             
 
     @mute.group(name="role", invoke_without_command=True)
@@ -209,6 +238,12 @@ class Moderation(commands.Cog):
             await ctx.send(f":white_check_mark: | User **{user.display_name}** has been unmuted")
         else:
             await ctx.send(f":negative_squared_cross_mark: | User **{user.display_name}** is not muted", delete_after=5)
+
+        automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
+        if automod is not None:
+            embed = discord.Embed(title="User Unmuted", description=f"{user.mention} unmuted by {ctx.author.mention}", colour=self.bot.bot_color)
+            embed.set_footer(**self.bot.bot_footer)
+            await automod.send(embed=embed)
     
     @commands.group(invoke_without_command = True)
     @has_perms(1)
@@ -232,6 +267,13 @@ class Moderation(commands.Cog):
             except discord.Forbidden:
                 pass
 
+        automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
+        if automod is not None:
+            embed = discord.Embed(title="User Warned", description=f"{user.mention} warned by {ctx.author.mention}", colour=self.bot.bot_color)
+            embed.set_footer(**self.bot.bot_footer)
+            embed.add_field(name="ID", value=warning_id)
+            await automod.send(embed=embed)
+
     @warn.command(name="delete")
     @has_perms(3)
     async def warn_delete(self, ctx, warning_id : int):
@@ -248,6 +290,13 @@ class Moderation(commands.Cog):
            
         user = ctx.guild.get_member(deleted) 
         await ctx.send(f":white_check_mark: | Warning `{warning_id}` removed from warning list of user **{user.display_name if user else 'User Left'}**")
+
+
+        automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
+        if automod is not None:
+            embed = discord.Embed(title="User Warning Deleted", description=f"{ctx.author.mention} deleted {warning_id}", colour=self.bot.bot_color)
+            embed.set_footer(**self.bot.bot_footer)
+            await automod.send(embed=embed)
 
     @warn.command(name="list")
     async def warn_list(self, ctx, user : MemberConverter = None):
@@ -367,6 +416,12 @@ class Moderation(commands.Cog):
 
         await ctx.send(f":wastebasket: | **{len(deleted)-1}** messages purged.", delete_after=5)
 
+        automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
+        if automod is not None:
+            embed = discord.Embed(title="Purge", description=f"{ctx.author.mention} purged {deleted} messages", colour=self.bot.bot_color)
+            embed.set_footer(**self.bot.bot_footer)
+            await automod.send(embed=embed)
+
     @commands.command()
     @has_perms(3)
     async def speak(self, ctx, channel : discord.TextChannel, *, message : str):
@@ -377,6 +432,12 @@ class Moderation(commands.Cog):
         __Example__
         `{pre}speak #general Hello` - sends hello to the mentionned #general channel"""
         await channel.send(f":loudspeaker: | {message}")
+
+        automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
+        if automod is not None:
+            embed = discord.Embed(title="Moderator Proxied", description=f"{ctx.author.mention} spoke using the bot", colour=self.bot.bot_color)
+            embed.set_footer(**self.bot.bot_footer)
+            await automod.send(embed=embed)
         
     @commands.command()
     @has_perms(4)

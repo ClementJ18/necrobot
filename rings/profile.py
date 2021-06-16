@@ -169,21 +169,9 @@ class Profile(commands.Cog):
         payer = ctx.author
 
         msg = await ctx.send(f"Are you sure you want to pay **{amount}** to user **{payee.display_name}**? Press :white_check_mark: to confirm transaction. Press :negative_squared_cross_mark: to cancel the transaction.")
-        await msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
-        await msg.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
+        result = await self.bot.confirmation_menu(msg, payer)
 
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["\N{WHITE HEAVY CHECK MARK}", "\N{NEGATIVE SQUARED CROSS MARK}"] and msg.id == reaction.message.id
-
-        reaction, _ = await self.bot.wait_for(
-            "reaction_add", 
-            check=check, 
-            timeout=300, 
-            handler=msg.clear_reactions, 
-            propagate=False
-        )
-
-        if reaction.emoji == "\N{NEGATIVE SQUARED CROSS MARK}":
+        if not result:
             return await ctx.send(f":white_check_mark: | **{payer.display_name}** cancelled the transaction.")
             
         try:

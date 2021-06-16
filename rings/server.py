@@ -179,10 +179,8 @@ class Server(commands.Cog):
     @has_perms(4)
     async def permissions_bind(self, ctx, level : range_check(1, 4) = None, role : RoleConverter = None):
         """See current bindings, create a binding or remove a binding. Bindings between a role and a level mean that 
-        the bot automatically assigns that permission level to the users when they are given the role (if it is higher).
-
-        When creating a binding it will update all the permission levels of the users currently with the role, however, it
-        will not reset the permissions if the binding is removed. Pass no arguments to see a list of current bindings.
+        the bot automatically assigns that permission level to the users when they are given the role (if it is higher 
+        than their current).
 
         Bindings do not work if the bot is offline and the bot will not retro-actively apply them when it comes back online.
 
@@ -210,9 +208,6 @@ class Server(commands.Cog):
 
             return await ctx.send(embed=embed)
 
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["\N{WHITE HEAVY CHECK MARK}", "\N{NEGATIVE SQUARED CROSS MARK}"] and msg.id == reaction.message.id
-
         #remove binding
         if role is None:
             role_id = await self.bot.db.query(
@@ -226,24 +221,13 @@ class Server(commands.Cog):
                     return await ctx.send(":white_check_mark: | Removed permission link!")
 
                 msg = await ctx.send(":white_check_mark: | Removed permission link! Re-calculate permissions of members with the role? (This can take a while based on the number of members with the role)")
-                await msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
-                await msg.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
-
-                reaction, _ = await self.bot.wait_for(
-                    "reaction_add", 
-                    check=check, 
-                    timeout=300, 
-                    handler=msg.clear_reactions, 
-                    propagate=False
-                )
-
-                if reaction.emoji == "\N{NEGATIVE SQUARED CROSS MARK}":
-                    return await msg.clear_reactions()
+                result = await self.bot.confirmation_menu(msg, ctx.author)
+                if not result:
+                    return
 
                 counter = await self.update_bindings(role)
-                await msg.edit(content=f":white_check_mark: | Permissions of **{counter}** member(s) updated")
-                return await msg.clear_reactions()
-
+                return await msg.edit(content=f":white_check_mark: | Permissions of **{counter}** member(s) updated")
+                
             raise BotError("No role set for that permission level")
 
         #add binding
@@ -259,19 +243,9 @@ class Server(commands.Cog):
             return await ctx.send(":white_check_mark: | Permission binding created!")
 
         msg = await ctx.send(":white_check_mark: | Permission binding created! Re-calculate permissions of members with the role?")
-        await msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
-        await msg.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
-
-        reaction, _ = await self.bot.wait_for(
-            "reaction_add", 
-            check=check, 
-            timeout=300, 
-            handler=msg.clear_reactions, 
-            propagate=False
-        )
-
-        if reaction.emoji == "\N{NEGATIVE SQUARED CROSS MARK}":
-            return await msg.clear_reactions()
+        result = await self.bot.confirmation_menu(msg, ctx.author)
+        if not result:
+            return
 
         updated = await self.bot.db.query(
             """WITH updt AS (
@@ -290,9 +264,6 @@ class Server(commands.Cog):
             updated = len(updated)
 
         await msg.edit(content=f":white_check_mark: | Permissions of **{updated}** member(s) updated")
-        await msg.clear_reactions()
-    
-
 
     @commands.command()
     @has_perms(4)

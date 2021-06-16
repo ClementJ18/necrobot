@@ -168,6 +168,32 @@ class NecroBot(commands.Bot):
                 
                 raise e
 
+    async def confirmation_menu(self, msg, user, cleanup=None):
+        emoji_list = ["\N{WHITE HEAVY CHECK MARK}", "\N{NEGATIVE SQUARED CROSS MARK}"]
+
+        def check(reaction, u):
+            if user != u or msg.id != reaction.message.id:
+                return False
+
+            return str(reaction.emoji) in emoji_list
+
+        if cleanup is None:
+            cleanup = msg.clear_reactions
+
+        for emoji in emoji_list:
+            await msg.add_reaction(emoji)
+
+        reaction, _ = await self.wait_for(
+            "reaction_add", 
+            check=check, 
+            timeout=300, 
+            handler=cleanup, 
+            propagate=False
+        )
+
+        await msg.clear_reactions()
+        return str(reaction.emoji) == "\N{WHITE HEAVY CHECK MARK}"
+
     async def on_ready(self):
         """If this is the first time the bot is booting then we load the cache and set the
         ready variable to True to signify the bot is ready. Else we assume that it means the
@@ -304,51 +330,39 @@ async def off(ctx):
      
     {usage}"""
     msg = await ctx.send("Shut down in 5 minutes?")
-    await msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
-    await msg.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
+    result = await ctx.bot.confirmation_menu(msg, ctx.author)
+    if not result:
+        return
 
-    def check(reaction, user):
-        return user.id == 241942232867799040 and str(reaction.emoji) in ["\N{WHITE HEAVY CHECK MARK}", "\N{NEGATIVE SQUARED CROSS MARK}"] and msg.id == reaction.message.id
+    bot.maintenance = True                
+    task = bot.meta.rotate_status
+    tasks_hourly = bot.meta.tasks_hourly
+    tasks_hourly.remove(task)
+
+    await bot.change_presence(activity=discord.Game(name="Going down for maintenance soon"))
+
+    await asyncio.sleep(300)
+    if not bot.maintenance:
+        tasks_hourly.append(task)
+        await bot.change_presence(activity=discord.Game(name="n!help for help"))
+        return await ctx.send("Shut down aborted.")
+
+    await bot.change_presence(activity=discord.Game(name="Bot shutting down...", type=0))
     
-    reaction, _ = await bot.wait_for(
-        "reaction_add", 
-        check=check, 
-        timeout=300, 
-        handler=msg.clear_reactions,
-        propagate=False
-    )
+    with open("rings/utils/data/settings.json", "w") as file:
+        json.dump(bot.settings, file)
 
-    await msg.delete()
-    if reaction.emoji == "\N{WHITE HEAVY CHECK MARK}":
-        bot.maintenance = True                
-        task = bot.meta.rotate_status
-        tasks_hourly = bot.meta.tasks_hourly
-        tasks_hourly.remove(task)
+    bot.meta.hourly_loop.cancel()
+    bot.get_cog("RSS").task.cancel()
+    bot.get_cog("Bridge").task.cancel()
+    for reminder in bot.reminders.values():
+        reminder.cancel()
 
-        await bot.change_presence(activity=discord.Game(name="Going down for maintenance soon"))
+    await bot.session.close()
+    await bot.pool.close()
 
-        await asyncio.sleep(300)
-        if not bot.maintenance:
-            tasks_hourly.append(task)
-            await bot.change_presence(activity=discord.Game(name="n!help for help"))
-            return await ctx.send("Shut down aborted.")
-
-        await bot.change_presence(activity=discord.Game(name="Bot shutting down...", type=0))
-        
-        with open("rings/utils/data/settings.json", "w") as file:
-            json.dump(bot.settings, file)
-
-        bot.meta.hourly_loop.cancel()
-        bot.get_cog("RSS").task.cancel()
-        bot.get_cog("Bridge").task.cancel()
-        for reminder in bot.reminders.values():
-            reminder.cancel()
-
-        await bot.session.close()
-        await bot.pool.close()
-
-        await bot.get_bot_channel().send("**Bot Offline**")
-        await bot.close()
+    await bot.get_bot_channel().send("**Bot Offline**")
+    await bot.close()
 
 @off.command(name="abort")
 @commands.is_owner()

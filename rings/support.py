@@ -56,25 +56,10 @@ class Support(commands.Cog):
         embed.add_field(name="Helpful Info", value=f"User: {ctx.author.mention} \nServer: {ctx.guild.name} \nServer ID: {ctx.guild.id}")
         
         msg = await ctx.send("You are about to send this report, are you sure? Abusing the report command can result in blacklisting", embed=embed)
-        await msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
-        await msg.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
+        result = await self.bot.confirmation_menu(msg, ctx.author)
 
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["\N{WHITE HEAVY CHECK MARK}", "\N{NEGATIVE SQUARED CROSS MARK}"] and msg.id == reaction.message.id
-
-        reaction, _ = await self.bot.wait_for(
-            "reaction_add", 
-            check=check, 
-            timeout=300, 
-            handler=msg.clear_reactions, 
-            propagate=False
-        )
-
-        if reaction.emoji == "\N{NEGATIVE SQUARED CROSS MARK}":
-            await msg.clear_reactions()
-        elif reaction.emoji == "\N{WHITE HEAVY CHECK MARK}":
+        if result:
             await ctx.send(":white_check_mark: | Report sent!")
-            await msg.clear_reactions()
             await self.bot.get_channel(398894681901236236).send(embed=embed)
         
 
@@ -125,27 +110,13 @@ class Support(commands.Cog):
         news_e = {**news , **base_d}
         embed = discord.Embed.from_data(news_e)
         msg = await ctx.send(embed=embed)
-        await msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
-        await msg.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
+        result = await self.bot.confirmation_menu(msg, ctx.author)
 
-        def check(reaction, user):
-            return user == ctx.author and reaction.emoji in ["\N{NEGATIVE SQUARED CROSS MARK}", "\N{WHITE HEAVY CHECK MARK}"] and msg.id == reaction.message.id
-
-        reaction, _ = await self.bot.wait_for(
-            "reaction_add", 
-            check=check, 
-            handler=msg.clear_reactions, 
-            propagate=False
-        )
-
-        if reaction.emoji == "\N{WHITE HEAVY CHECK MARK}":
+        if result:
             self.bot.settings["news"] = [news, *self.bot.settings["news"]]
             await ctx.send(f":white_check_mark: | Added **{news['title']}** news")
             channel = self.bot.get_channel(436595183010709514)
             await channel.send(embed=embed)
-
-        await msg.clear_reactions()
-
 
     @news.command("delete")
     @has_perms(6)

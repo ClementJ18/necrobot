@@ -258,36 +258,23 @@ class Bridge(commands.Cog):
         
         self.in_process.append(username.lower())
         msg = await ctx.send(f"By registering to use the bot's MU-Discord communication service you agree to the following forum rules: <https://modding-union.com/index.php/topic,30385.0.html>. If you break these rules, access to the channel may be restricted or taken away. React with :white_check_mark: if you agree or with :negative_squared_cross_mark: if you do not agree.")
-        await msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
-        await msg.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
-
-        def check(reaction, user):
-            return user.id == ctx.author.id and str(reaction.emoji) in ["\N{WHITE HEAVY CHECK MARK}", "\N{NEGATIVE SQUARED CROSS MARK}"] and msg.id == reaction.message.id
 
         async def cleanup():
             await msg.edit(content=":negative_squared_cross_mark: | User was too slow, please react within 5 minutes next time.")
             await msg.clear_reactions()
             self.in_process.remove(username.lower())
             
-        reaction, _ = await self.bot.wait_for(
-            "reaction_add", 
-            check=check, 
-            timeout=600, 
-            handler=cleanup, 
-            propagate=False
-        )
 
-        if reaction.emoji == "\N{NEGATIVE SQUARED CROSS MARK}":
-            await msg.edit(content=":negative_squared_cross_mark: | User did not agree to forum rules.")
-            await msg.clear_reactions()
-        elif reaction.emoji == "\N{WHITE HEAVY CHECK MARK}":
-            await msg.clear_reactions()
+        result = await self.bot.confirmation_menu(msg, ctx.author, cleanup=cleanup)
+        if result:
             await self.bot.db.query(
                 "INSERT INTO necrobot.MU_Users VALUES($1, $2, $3, True)", 
                 ctx.author.id, username, username.lower(), 
             )
             await msg.edit(content=":white_check_mark: | You have now succesfully registered to the bot's modding union channel. You may now post in it.")
-            
+        else:
+            await msg.edit(content=":negative_squared_cross_mark: | User did not agree to forum rules.")
+
         self.in_process.remove(username.lower())
 
     @mu.command(name="rename")
