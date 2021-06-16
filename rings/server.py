@@ -355,16 +355,16 @@ class Server(commands.Cog):
         `{pre}automod channel disable` - disables automoderation for the entire server
         `{pre}automod channel` - see what the automod channel is currently"""
 
-        if channel:
+        if isinstance(channel, discord.TextChannel):
             check_channel(channel)
             await self.bot.db.update_automod_channel(ctx.guild.id, channel.id)
             await ctx.send(f":white_check_mark: | Okay, all automoderation messages will be posted in {channel.mention} from now on.")
-        elif channel.lower() == "disable":
+        elif str(channel).lower() == "disable":
             await self.bot.db.update_automod_channel(ctx.guild.id)
             await ctx.send(":white_check_mark: | Auto-moderation **disabled**")
         else:
             channel = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
-            await ctx.send(f"Automod channel is currently set to {channel.mention if channel else 'Disabled'}. Use `{ctx.command.prefix}automod channel disable` to disable")
+            await ctx.send(f"Automod channel is currently set to {channel.mention if channel else 'Disabled'}. Use `automod channel disable` to disable")
 
     @commands.command()
     @has_perms(4)
