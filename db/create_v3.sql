@@ -236,3 +236,10 @@ CREATE TABLE necrobot.Broadcasts(
     message varchar(2000),
     enabled boolean DEFAULT True
 );
+
+CREATE TABLE necrobot.PermissionRoles(
+    guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
+    level int,
+    role_id bigint,
+    PRIMARY KEY(guild_id, level)
+)

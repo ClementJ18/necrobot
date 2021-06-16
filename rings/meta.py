@@ -101,7 +101,7 @@ class Meta(commands.Cog):
         await self.bot.db.query(
             "DELETE FROM necrobot.Guilds WHERE guild_id = $1",
             guild_id
-        )    
+        )  
         
     async def new_member(self, user, guild = None):
         await self.bot.db.query(
@@ -317,8 +317,13 @@ class Meta(commands.Cog):
         await self.bot.db.delete_command_ignore(guild.id, [x for x in g["ignore-command"] if x not in combined])
         
         await self.bot.db.query(
-            "DELETE FROM necrobot.Permissions WHERE guild_id = $1 AND not(user_id = any($2))",
+            "DELETE FROM necrobot.Permissions WHERE guild_id = $1 AND NOT(user_id = any($2))",
             guild.id, members    
+        )
+
+        await self.bot.db.query(
+            "DELETE FROM necrobot.PermissionRoles WHERE guild_id = $1 AND NOT(role_id = any($2))",
+            guild.id, roles
         )
         
     async def reminder_task(self, reminder_id, time, message, channel_id, user_id):

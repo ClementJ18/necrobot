@@ -228,6 +228,8 @@ class Events(commands.Cog):
             
         if role.id in guild["ignore-command"]:
             await self.bot.db.delete_command_ignore(guild_id, role.id)
+
+        await self.bot.db.query("DELETE FROM necrobot.PermissionRoles WHERE role_id=$1", role.id)
             
     @commands.Cog.listener()
     async def on_guild_update(self, before, after):
@@ -309,6 +311,55 @@ class Events(commands.Cog):
                 await channel.send(embed=embed)
             except discord.Forbidden:
                 pass
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+        if len(before.roles) == len(after.roles):
+            return
+
+        #we have less roles than before
+        if len(before.roles) > len(after.roles):
+            #get the role that was removed
+            role = [x for x in before.roles if x.id not in [x.id for x in after.roles]][0]
+
+            #get all permision bindings that the member had before one was removed
+            before_bindings = await self.bot.db.query(
+                "SELECT level, role_id FROM necrobot.PermissionRoles WHERE role_id = ANY($1)", 
+                [x.id for x in before.roles]
+            )
+
+            #make sure that the role that was removed is a binding
+            if not role.id in [x["role_id"] for x in before_bindings]:
+                return
+
+            after_bindings = [x for x in before_bindings if x["role_id"] != role.id]
+            #check if they have any other bindings
+            if not after_bindings:
+                level = 0
+            else:
+                level = max(after_bindings, key=lambda x: x["level"])["level"]
+
+            #update accordingly
+            return await self.bot.db.query(
+                "UPDATE necrobot.Permissions SET level=$3 WHERE user_id = $1 AND guild_id = $2 AND level <= 4",
+                after.id, after.guild.id, level
+            )
+
+        #we have more roles than before
+        if len(after.roles) > len(before.roles):
+            #get the role that was added
+            role = [x for x in after.roles if x.id not in [x.id for x in before.roles]][0]
+
+            #does it have a binding?
+            level = await self.bot.db.query("SELECT level FROM necrobot.PermissionRoles WHERE role_id = $1", role.id)
+            if not level:
+                return
+
+            #update binding
+            return await self.bot.db.query(
+                "UPDATE necrobot.Permissions SET level=$1 WHERE guild_id = $2 AND user_id = $3 AND level < $1",
+                level[0]["level"], after.guild.id, after.id
+            )
             
     @commands.Cog.listener()
     async def on_member_join(self, member):

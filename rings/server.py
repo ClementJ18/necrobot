@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 
 from rings.utils.utils import react_menu, BotError, check_channel
+from rings.db import DatabaseError
 from rings.utils.converters import TimeConverter, range_check, UserConverter, MemberConverter, RoleConverter
 from rings.utils.checks import has_perms
 
@@ -69,6 +70,26 @@ class Server(commands.Cog):
                 pass
                 
         return final_list
+
+    async def update_binding(self, role):
+        roles = await self.bot.db.query("SELECT * FROM necrobot.PermissionRoles WHERE guild_id=$1", role.guild.id)
+
+        counter = 0
+        for member in role.members:
+            try:
+                level = max([x["level"] for x in roles if x["role_id"] != role.id and x["role_id"] in [x.id for x in member.roles]])
+            except ValueError:
+                level = 0
+
+            updated = await self.bot.db.query(
+                "UPDATE necrobot.Permissions SET level=$1 WHERE user_id=$2 AND guild_id=$3 AND level <= 4 RETURNING user_id",
+                level, member.id, role.guild.id, fetchval=True
+            )
+
+            if updated:
+                counter += 1
+
+        return counter
         
     #######################################################################
     ## Commands
@@ -153,6 +174,124 @@ class Server(commands.Cog):
             return embed
 
         await react_menu(ctx, c, 10, embed_maker)
+
+    @permissions.command(name="bind")
+    @has_perms(4)
+    async def permissions_bind(self, ctx, level : range_check(1, 4) = None, role : RoleConverter = None):
+        """See current bindings, create a binding or remove a binding. Bindings between a role and a level mean that 
+        the bot automatically assigns that permission level to the users when they are given the role (if it is higher).
+
+        When creating a binding it will update all the permission levels of the users currently with the role, however, it
+        will not reset the permissions if the binding is removed. Pass no arguments to see a list of current bindings.
+
+        Bindings do not work if the bot is offline and the bot will not retro-actively apply them when it comes back online.
+
+        {usage}
+
+        __Examples__
+        `{pre}perms bind 2 Trainee` - create a binding for permission level 2 with the role Trainee
+        `{pre}perms bind 2` - remove the binding between the permission level 2 and the role it is currently tied to
+        `{pre}perms bind` - seel all bindings
+        """
+
+        #show information
+        if level is None:
+            roles = await self.bot.db.query("SELECT * FROM necrobot.PermissionRoles WHERE guild_id=$1", ctx.guild.id)
+            
+            if not roles:
+                raise BotError("No bindings on this server")
+
+            string = ""
+            for r in roles:
+                string += f"- {ctx.guild.get_role(r[2]).mention}: {self.bot.perms_name[r[1]]} ({r[1]})\n"
+            
+            embed = discord.Embed(title="Roles tied to permissions", description=string, colour=self.bot.bot_color)
+            embed.set_footer(**self.bot.bot_footer)
+
+            return await ctx.send(embed=embed)
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["\N{WHITE HEAVY CHECK MARK}", "\N{NEGATIVE SQUARED CROSS MARK}"] and msg.id == reaction.message.id
+
+        #remove binding
+        if role is None:
+            role_id = await self.bot.db.query(
+                "DELETE FROM necrobot.PermissionRoles WHERE guild_id = $1 AND level = $2 RETURNING role_id",
+                ctx.guild.id, level, fetchval=True
+            )
+
+            if role_id:
+                role = ctx.guild.get_role(role_id)
+                if not role.members:
+                    return await ctx.send(":white_check_mark: | Removed permission link!")
+
+                msg = await ctx.send(":white_check_mark: | Removed permission link! Re-calculate permissions of members with the role? (This can take a while based on the number of members with the role)")
+                await msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
+                await msg.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
+
+                reaction, _ = await self.bot.wait_for(
+                    "reaction_add", 
+                    check=check, 
+                    timeout=300, 
+                    handler=msg.clear_reactions, 
+                    propagate=False
+                )
+
+                if reaction.emoji == "\N{NEGATIVE SQUARED CROSS MARK}":
+                    return await msg.clear_reactions()
+
+                counter = await self.update_bindings(role)
+                await msg.edit(content=f":white_check_mark: | Permissions of **{counter}** member(s) updated")
+                return await msg.clear_reactions()
+
+            raise BotError("No role set for that permission level")
+
+        #add binding
+        try:
+            await self.bot.db.query(
+                "INSERT INTO necrobot.PermissionRoles VALUES($1, $2, $3)",
+                ctx.guild.id, level, role.id, fetchval=True
+            )
+        except DatabaseError:
+            raise BotError("A binding already exists for that permission level, remove it before setting a new one")
+
+        if not role.members:
+            return await ctx.send(":white_check_mark: | Permission binding created!")
+
+        msg = await ctx.send(":white_check_mark: | Permission binding created! Re-calculate permissions of members with the role?")
+        await msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
+        await msg.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
+
+        reaction, _ = await self.bot.wait_for(
+            "reaction_add", 
+            check=check, 
+            timeout=300, 
+            handler=msg.clear_reactions, 
+            propagate=False
+        )
+
+        if reaction.emoji == "\N{NEGATIVE SQUARED CROSS MARK}":
+            return await msg.clear_reactions()
+
+        updated = await self.bot.db.query(
+            """WITH updt AS (
+                UPDATE necrobot.Permissions
+                SET level=$1
+                WHERE guild_id=$2 AND user_id = ANY($3) AND level < $1
+                RETURNING user_id
+            )
+            SELECT array_agg(user_id) FROM updt;""",
+            level, ctx.guild.id, [x.id for x in role.members], fetchval=True
+        )
+        
+        if updated is None:
+            updated = 0
+        else:
+            updated = len(updated)
+
+        await msg.edit(content=f":white_check_mark: | Permissions of **{updated}** member(s) updated")
+        await msg.clear_reactions()
+    
 
 
     @commands.command()
