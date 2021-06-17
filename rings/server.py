@@ -298,7 +298,9 @@ class Server(commands.Cog):
         given it will print out the list of ignored Users (**U**) and the list of ignored Channels (**C**). The automoderation 
         feature tracks the edits made by users to their own messages and the deleted messages, printing them in the server's automod 
         channel. If mentions are given then it will add any user/channel not already ignored and remove any user/channel already ignored. 
-        Set the automod channel using `{pre}settings automod`
+
+        The bot also uses the automod channel to inform you of moderation actions that take place around your server, invites used by users
+        joining and attempts at mute evasions.
          
         {usage}
 

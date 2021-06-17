@@ -425,6 +425,9 @@ class Bridge(commands.Cog):
     async def on_message(self, message):
         if message.channel.id not in self.mu_channels:
             return
+
+        if message.author.bot:
+            return
         
         registered = await self.bot.db.query(
             "SELECT active FROM necrobot.MU_Users WHERE user_id=$1", 

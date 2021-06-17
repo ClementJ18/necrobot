@@ -34,9 +34,14 @@ class Moderation(commands.Cog):
         if user.id in self.bot.guild_data[user.guild.id]["mutes"]:
             self.bot.guild_data[user.guild.id]["mutes"].remove(user.id)
         
+        automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
         if role in user.roles and ctx.guild.get_member(user.id) is not None:
             await user.remove_roles(role)
-            await ctx.send(f":white_check_mark: | User **{user.display_name}** has been automatically unmuted")
+
+            if automod is not None:
+                embed = discord.Embed(title="User Renamed", description=f"**{user.display_name}** has been automatically unmuted", colour=self.bot.bot_color)
+                embed.set_footer(**self.bot.bot_footer)
+                await automod.send(embed=embed)
     
     #######################################################################
     ## Commands
@@ -435,7 +440,7 @@ class Moderation(commands.Cog):
 
         automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
         if automod is not None:
-            embed = discord.Embed(title="Moderator Proxied", description=f"{ctx.author.mention} spoke using the bot", colour=self.bot.bot_color)
+            embed = discord.Embed(title="Moderator Proxied", description=f"{ctx.author.mention} spoke using the bot in {channel.mention}", colour=self.bot.bot_color)
             embed.set_footer(**self.bot.bot_footer)
             await automod.send(embed=embed)
         
