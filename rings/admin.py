@@ -310,7 +310,6 @@ class Admin(commands.Cog):
     @commands.is_owner()
     async def invites(self, ctx, *, guild : GuildConverter = None):
         """Returns invites (if the bot has valid permissions) for each server the bot is on if no guild id is specified. 
-        (
         
         {usage}"""
         async def get_invite(guild):

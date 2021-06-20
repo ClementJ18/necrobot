@@ -352,7 +352,7 @@ class Misc(commands.Cog):
         def embed_maker(index, entries):
             description = ""
             for entry in entries:
-                submitter = ctx.guild.get_member(entry[0])
+                submitter = self.bot.get_user(entry[0])
                 if submitter is None:
                     name = f"User Left ({entry[0]})"
                 else:

@@ -36,7 +36,7 @@ class NecroBot(commands.Bot):
         self.uptime_start = time.time()
         self.counter = datetime.datetime.now().hour
         
-        self.version = 3.7
+        self.version = 3.8
         self.ready = False
         self.prefixes = ["n!", "N!"]
         self.new_commands = ["star", "broadcast"]

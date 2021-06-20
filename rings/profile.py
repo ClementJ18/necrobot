@@ -284,14 +284,14 @@ class Profile(commands.Cog):
             await ctx.send(file=ifile)
 
     @commands.command()
-    async def settitle(self, ctx, *, text : str = ""):
+    async def title(self, ctx, *, text : str = ""):
         """Sets your NecroBot title to [text]. If no text is provided it will reset it. Limited to max 32 characters.
         
         {usage}
         
         __Example__
-        `{pre}settitle Cool Dood` - set your title to 'Cool Dood'
-        `{pre}settitle` - resets your title"""
+        `{pre}title Cool Dood` - set your title to 'Cool Dood'
+        `{pre}title` - resets your title"""
         if len(text) > 32:
             raise BotError("You have gone over the 32 character limit, your title wasn't set. ({len(text)}/32)")
         

@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, react_menu
+from rings.utils.utils import BotError, react_menu, range_check
 from rings.utils.converters import TimeConverter, MemberConverter, RoleConverter
 from rings.utils.checks import has_perms, requires_mute_role
 
@@ -391,7 +391,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @has_perms(4)
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge(self, ctx, number : int = 1, check = "", extra : MemberConverter = ""):
+    async def purge(self, ctx, number : int = range_check(0, 400), check = "", extra : MemberConverter = ""):
         """Removes number of messages from the channel it is called in. That's all it does at the moment 
         but later checks will also be added to allow for more flexible/specific purging
         
@@ -402,9 +402,6 @@ class Moderation(commands.Cog):
         `{pre}purge 15 link` - purges all messages containing links from the previous 15 messages
         `{pre}purge 20 mention @Necro` - purges all messages sent by @Necro from the previous 20 messages
         `{pre}purge 35 bot` - purges all messages sent by the bot from the previous 35 messages"""
-        if number > 400:
-            raise BotError("Cannot purge more than 400 messages")
-
         number += 1
         check = check.lower()
         

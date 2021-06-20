@@ -1001,6 +1001,12 @@ class Server(commands.Cog):
             raise BotError("Message not found, make sure you are in the channel with the message.")
 
         await self.bot.meta.star_message(message)
+        automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
+        if automod is not None:
+            embed = discord.Embed(title="Message Force Starred", description=f"{ctx.author.mention} force starred a message", colour=self.bot.bot_color)
+            embed.add_field(name="Link", value=message.jump_url)
+            embed.set_footer(**self.bot.bot_footer)
+            await automod.send(embed=embed)
     
     @commands.command()
     @has_perms(3)
