@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, react_menu, range_check
-from rings.utils.converters import TimeConverter, MemberConverter, RoleConverter
+from rings.utils.utils import BotError, react_menu
+from rings.utils.converters import TimeConverter, MemberConverter, RoleConverter, RangeConverter
 from rings.utils.checks import has_perms, requires_mute_role
 
 import asyncio
@@ -391,7 +391,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @has_perms(4)
     @commands.bot_has_permissions(manage_messages=True)
-    async def purge(self, ctx, number : int = range_check(0, 400), check = "", extra : MemberConverter = ""):
+    async def purge(self, ctx, number : int = RangeConverter(0, 400), check = "", extra : MemberConverter = ""):
         """Removes number of messages from the channel it is called in. That's all it does at the moment 
         but later checks will also be added to allow for more flexible/specific purging
         

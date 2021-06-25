@@ -3,7 +3,7 @@ from discord.ext import commands
 
 from rings.utils.utils import react_menu, BotError
 from rings.utils.config import github_key
-from rings.utils.converters import GuildConverter, BadgeConverter, range_check, UserConverter, Grudge, MemberConverter
+from rings.utils.converters import GuildConverter, BadgeConverter, RangeConverter, UserConverter, Grudge, MemberConverter
 from rings.utils.checks import has_perms
 
 import ast
@@ -221,7 +221,7 @@ class Admin(commands.Cog):
         
     @admin.command(name="badges")
     @commands.check_any(commands.is_owner(), has_perms(6))
-    async def admin_badges(self, ctx, subcommand : str, user : UserConverter, badge : BadgeConverter, spot : range_check(1, 8) = None):
+    async def admin_badges(self, ctx, subcommand : str, user : UserConverter, badge : BadgeConverter, spot : RangeConverter(1, 8) = None):
         """Used to grant special badges to users. Uses add/delete subcommand
 
         {usage}
@@ -242,6 +242,20 @@ class Admin(commands.Cog):
             await ctx.send(f":white_check_mark: | Reclaimed the **{badge['name']}** badge from user **{user}**")
         else:
             raise BotError("Users has/doesn't have the badge")
+
+    @admin.command(name="blacklist")
+    @commands.is_owner()
+    async def admin_blacklist(self, ctx, object_id : int):
+        """Blacklist a user
+
+        {usage}
+        """
+        if object_id in self.bot.settings["blacklist"]:
+            self.bot.settings["blacklist"].remove(object_id)
+            await ctx.send(":white_check_mark: | Pardoned")
+        else:
+            self.bot.settings["blacklist"].append(object_id)
+            await ctx.send(":white_check_mark: | Blacklisted")
                     
     @commands.command()
     @has_perms(6)
@@ -367,21 +381,6 @@ class Admin(commands.Cog):
             await ctx.send(result)
         else:
             await ctx.send(":white_check_mark:")
-
-    @commands.command()
-    @commands.is_owner()
-    async def blacklist(self, ctx, object_id : int):
-        """Blacklist a user
-
-        {usage}
-        """
-        if object_id in self.bot.settings["blacklist"]:
-            self.bot.settings["blacklist"].remove(object_id)
-            await ctx.send(":white_check_mark: | Pardoned")
-        else:
-            self.bot.settings["blacklist"].append(object_id)
-            await ctx.send(":white_check_mark: | Blacklisted")
-
             
     @commands.command()
     @has_perms(6)

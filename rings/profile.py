@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
 from rings.utils.utils import midnight, react_menu, BotError
-from rings.utils.converters import MoneyConverter, BadgeConverter, MemberConverter, range_check
+from rings.utils.converters import MoneyConverter, BadgeConverter, MemberConverter, RangeConverter
 from rings.db import DatabaseError
 from rings.utils.checks import has_perms
 
@@ -316,7 +316,7 @@ class Profile(commands.Cog):
         await ctx.send(f"__Badges__\n{string if string else 'None'}")
 
     @badges.command(name = "place")
-    async def badges_place(self, ctx, spot : range_check(1, 8), badge : BadgeConverter = None):
+    async def badges_place(self, ctx, spot : RangeConverter(1, 8), badge : BadgeConverter = None):
         """Opens the grid menu to allow you to place a badge or reset a badge. Simply supply a badge name to the command to
         place a badge or supply "none" to reset the grid location.
 
@@ -339,7 +339,7 @@ class Profile(commands.Cog):
             await ctx.send(f":white_check_mark: | **{badge['name']}** set on spot **{spot}**")
 
     @badges.command(name="buy")
-    async def badges_buy(self, ctx, badge : BadgeConverter, spot : range_check(1, 8) = 0):
+    async def badges_buy(self, ctx, badge : BadgeConverter, spot : RangeConverter(1, 8) = 0):
         """Allows to buy the given badge and place it on a specific spot
 
         {usage}

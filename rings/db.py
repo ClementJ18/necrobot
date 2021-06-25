@@ -102,6 +102,7 @@ class Database(commands.Cog):
         return await self.query(query, user_id, guild_id, fetchval=True)
         
     async def compare_user_permission(self, user_id, guild_id, compared_user):
+        #negative number: user_id has lower permissions than compared users
         return await self.query(
             """SELECT u1.level - u2.level FROM necrobot.Permissions u1, necrobot.Permissions u2
             WHERE u1.user_id = $1 AND u2.user_id = $2 

@@ -3,7 +3,7 @@ from discord.ext import commands
 
 from rings.utils.utils import react_menu, BotError, check_channel
 from rings.db import DatabaseError
-from rings.utils.converters import TimeConverter, range_check, UserConverter, MemberConverter, RoleConverter
+from rings.utils.converters import TimeConverter, RangeConverter, UserConverter, MemberConverter, RoleConverter
 from rings.utils.checks import has_perms
 
 from typing import Union
@@ -97,7 +97,7 @@ class Server(commands.Cog):
 
     @commands.group(invoke_without_command=True, aliases=["perms"])
     @has_perms(4)
-    async def permissions(self, ctx, user : MemberConverter = None, level : range_check(0, 7) = None):
+    async def permissions(self, ctx, user : MemberConverter = None, level : RangeConverter(0, 7) = None):
         """Sets the NecroBot permission level of the given user, you can only set permission levels lower than your own. 
         Permissions reset if you leave the server.
          
@@ -148,7 +148,7 @@ class Server(commands.Cog):
 
     @permissions.command(name="commands")
     @has_perms(1)
-    async def permissions_commands(self, ctx, level : range_check(1, 7)):
+    async def permissions_commands(self, ctx, level : RangeConverter(1, 7)):
         """See what permission level has access to which commands
 
         {usage}
@@ -177,7 +177,7 @@ class Server(commands.Cog):
 
     @permissions.command(name="bind")
     @has_perms(4)
-    async def permissions_bind(self, ctx, level : range_check(1, 4) = None, role : RoleConverter = None):
+    async def permissions_bind(self, ctx, level : RangeConverter(1, 4) = None, role : RoleConverter = None):
         """See current bindings, create a binding or remove a binding. Bindings between a role and a level mean that 
         the bot automatically assigns that permission level to the users when they are given the role (if it is higher 
         than their current).
@@ -404,7 +404,11 @@ class Server(commands.Cog):
         to_add = []
         to_remove = []
         
+        mentions = set(mentions)
         for x in mentions:
+            if isinstance(x, discord.Member) and (await self.bot.db.compare_user_permission(ctx.author.id, ctx.guild.id, x.id)) < 1:
+                raise BotError(f"You don't have the permissions required to ignore {x.mention}")
+
             if x.id in self.bot.guild_data[ctx.guild.id]["ignore-command"]:
                 to_remove.append(x)
             else:
@@ -700,8 +704,8 @@ class Server(commands.Cog):
             self, 
             ctx, 
             channel : discord.TextChannel,
-            start : range_check(0, 23) = None, 
-            interval: range_check(1, 24) = None, *, 
+            start : RangeConverter(0, 23) = None, 
+            interval: RangeConverter(1, 24) = None, *, 
             message : str = None
         ):
         """Start the process for adding a new broadcast, you can do this all in one go or have the bot help you through. You
@@ -789,7 +793,7 @@ class Server(commands.Cog):
 
     @broadcast.command(name="edit")
     @has_perms(4)
-    async def broadcast_edit(self, ctx, broadcast_id : int, key : str, *, value : Union[discord.TextChannel, range_check(0, 24), str]):
+    async def broadcast_edit(self, ctx, broadcast_id : int, key : str, *, value : Union[discord.TextChannel, RangeConverter(0, 24), str]):
         """ Edit a broadcast's settings
 
         Possible settings:

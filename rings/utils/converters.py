@@ -189,7 +189,7 @@ class MoneyConverter(commands.Converter):
         
         raise commands.BadArgument("You do not have enough money")
         
-def range_check(min_v, max_v):
+def RangeConverter(min_v, max_v):
     def check(argument):
         if not argument.isdigit():
             raise commands.BadArgument("Not a valid intenger")

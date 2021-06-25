@@ -23,10 +23,7 @@ class Literature(commands.Cog):
         __Example__
         `{pre}ud pimp` - searches for pimp on Urban dictionnary"""
         async with self.bot.session.get(f"http://api.urbandictionary.com/v0/define?term={word.lower()}") as r:
-            try:
-                definitions = (await r.json())["list"]   
-            except asyncio.TimeoutError:
-                return         
+            definitions = (await r.json())["list"]   
 
         if not definitions:
             raise BotError("No definition found for this word.")
