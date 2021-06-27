@@ -64,7 +64,8 @@ class RSS(commands.Cog):
 
         for feed in to_send:
             for entry in feed["entries"]:
-                embed = discord.Embed(title=entry["title"], description=entry["summary"].splitlines()[0], url=entry["link"])
+                description = entry["summary"].splitlines()
+                embed = discord.Embed(title=entry["title"], description=description[0] if description else "No description", url=entry["link"])
                 embed.set_author(name=entry["author_detail"]["name"], url=entry["author_detail"]["href"])
                 embed.set_thumbnail(url=entry["media_thumbnail"][0]["url"])
                 embed.set_footer(**self.bot.bot_footer)
