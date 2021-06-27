@@ -454,14 +454,7 @@ class Server(commands.Cog):
             name="Prefix", 
             value=f'`{server["prefix"]}`' if server["prefix"] else "`n!`"
         )
-        embed.add_field(
-            name="Broadcast Channel", 
-            value=self.bot.get_channel(server["broadcast-channel"]).mention if server["broadcast-channel"] else "Disabled"
-        )
-        embed.add_field(
-            name="Broadcast Frequency", 
-            value=f'Every {server["broadcast-time"]} hour(s)' if server["broadcast-time"] else "None"
-        )
+        
         embed.add_field(
             name="PM Warnings",
             value=server["pm-warning"],
