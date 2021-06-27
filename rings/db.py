@@ -622,21 +622,18 @@ class SyncDatabase:
         
         self.cur.execute("SELECT * FROM necrobot.Guilds;")
         for g in self.cur.fetchall():
-            guilds[g[0]] = {
-                "mute": g[1], 
-                "automod":g[2], 
-                "welcome-channel":g[3], 
-                "welcome":g[4], 
-                "goodbye":g[5], 
-                "prefix":g[6],
-                "broadcast-channel":g[7],
-                "broadcast":g[8],
-                "broadcast-time":g[9],
-                "starboard-channel":g[10],
-                "starboard-limit":g[11],
-                "auto-role":g[12],
-                "auto-role-timer":g[13],
-                "pm-warning": g[14],
+            guilds[g["guild_id"]] = {
+                "mute": g["mute"], 
+                "automod":g["automod_channel"], 
+                "welcome-channel":g["welcome_channel"], 
+                "welcome":g["welcome_message"], 
+                "goodbye":g["goodbye_message"], 
+                "prefix":g["prefix"],
+                "starboard-channel":g["starboard_channel"],
+                "starboard-limit":g["starboard_limit"],
+                "auto-role":g["auto_role"],
+                "auto-role-timer":g["auto_role_timer"],
+                "pm-warning": g["pm_warning"],
                 "ignore-command":[],
                 "ignore-automod":[],
                 "disabled":[],
@@ -644,21 +641,21 @@ class SyncDatabase:
                 "mutes": []
             }
             
-        self.cur.execute("SELECT guild_id, array_agg(command) FROM necrobot.Disabled GROUP BY guild_id;")
+        self.cur.execute("SELECT guild_id, array_agg(command) as commands FROM necrobot.Disabled GROUP BY guild_id;")
         for g in self.cur.fetchall():
-            guilds[g[0]]["disabled"] = g[1]
+            guilds[g["guild_id"]]["disabled"] = g["commands"]
 
-        self.cur.execute("SELECT guild_id, array_agg(id) FROM necrobot.IgnoreAutomod GROUP BY guild_id;")
+        self.cur.execute("SELECT guild_id, array_agg(id) as ids FROM necrobot.IgnoreAutomod GROUP BY guild_id;")
         for g in self.cur.fetchall():
-            guilds[g[0]]["ignore-automod"] = g[1]
+            guilds[g["guild_id"]]["ignore-automod"] = g["ids"]
 
-        self.cur.execute("SELECT guild_id, array_agg(id) FROM necrobot.IgnoreCommand GROUP BY guild_id;")
+        self.cur.execute("SELECT guild_id, array_agg(id) as ids FROM necrobot.IgnoreCommand GROUP BY guild_id;")
         for g in self.cur.fetchall():
-            guilds[g[0]]["ignore-command"] = g[1]
+            guilds[g["guild_id"]]["ignore-command"] = g["ids"]
             
-        self.cur.execute("SELECT guild_id, array_agg(id) FROM necrobot.SelfRoles GROUP BY guild_id;")
+        self.cur.execute("SELECT guild_id, array_agg(id) as roles FROM necrobot.SelfRoles GROUP BY guild_id;")
         for g in self.cur.fetchall():
-            guilds[g[0]]["self-roles"] = g[1]
+            guilds[g["guild_id"]]["self-roles"] = g["roles"]
             
         return guilds
         
@@ -666,11 +663,11 @@ class SyncDatabase:
         polls = {}
         self.cur.execute("SELECT message_id, votes, emoji_list FROM necrobot.Polls")
         for u in self.cur.fetchall():
-            polls[u[0]] = {'votes': u[1], 'voters':[], 'list': u[2] if u[2] else []}
+            polls[u["message_id"]] = {'votes': u["votes"], 'voters':[], 'list': u["emoji_list"] if u["emoji_list"] else []}
             
-        self.cur.execute("SELECT message_id, array_agg(user_id) FROM necrobot.Votes GROUP BY message_id;")
+        self.cur.execute("SELECT message_id, array_agg(user_id) as user_ids FROM necrobot.Votes GROUP BY message_id;")
         for u in self.cur.fetchall():
-            polls[u[0]]["voters"] = u[1]
+            polls[u["message_id"]]["voters"] = u["user_ids"]
             
         return polls
 
