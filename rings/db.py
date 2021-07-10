@@ -7,6 +7,7 @@ import asyncpg
 import psycopg2
 import traceback
 from datetime import datetime
+from psycopg2.extras import RealDictCursor
 
 class DatabaseError(Exception):
     def __init__(self, message, query = None, args = tuple()):
@@ -614,7 +615,7 @@ class Database(commands.Cog):
 
 class SyncDatabase:
     def __init__(self):
-        self.conn = psycopg2.connect(dbname="postgres", user=dbusername, password=dbpass)
+        self.conn = psycopg2.connect(dbname="postgres", user=dbusername, password=dbpass, cursor_factory=RealDictCursor)
         self.cur = self.conn.cursor()
         
     def load_guilds(self):

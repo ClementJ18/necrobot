@@ -155,7 +155,6 @@ class Moderation(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             embed.add_field(name="Duration", value=f"{time} seconds" if time else "Permanently")
             await automod.send(embed=embed)
-            
 
     @mute.group(name="role", invoke_without_command=True)
     @has_perms(4)
@@ -179,6 +178,7 @@ class Moderation(commands.Cog):
         else:
             await self.bot.db.update_mute_role(ctx.guild.id, role.id)
             await ctx.send(f":white_check_mark: | Okay, the mute role for your server will be {role.mention}")
+
             
     @mute_role.command(name="create")
     @has_perms(4)

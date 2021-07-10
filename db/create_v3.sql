@@ -214,9 +214,11 @@ CREATE TABLE necrobot.InternalRanked(
     enemy varchar(25),
     defeats int DEFAULT 0,
     victories int DEFAULT 0
+    PRIMARY KEY(faction, enemy)
 );
 
 CREATE TABLE necrobot.InternalRankedLogs(
+    id SERIAL PRIMARY KEY
     user_id bigint,
     faction varchar(25),
     enemy varchar(25),

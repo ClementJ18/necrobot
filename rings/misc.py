@@ -252,7 +252,7 @@ class Misc(commands.Cog):
 
         """
         def embed_maker(index, entries):
-            entries.sort(**sort.get(sort_key))
+            entries.sort(**sort.get(sort_key, sort["name"]))
             description = ""
             intro = ""
 
@@ -264,18 +264,18 @@ class Misc(commands.Cog):
                 emoji_id = self.bot.settings["messages"]["emotes"][index]
                 emoji = self.bot.get_emoji(emoji_id)
 
-                if entry[1] == entry[0]:
+                if entry['enemy'] == entry['faction']:
                     intro = f'{emoji} {self.bot.settings["messages"]["msg"][index]} {emoji}\n\n'
                     continue 
 
                 total = entry[3]+entry[2]
                 percent = entry[3]/total if total > 0 else 0
-                description += f"{emoji} **{entry[1]}** - {entry[3]}/{total} ({int(percent*100)}%)\n"
+                description += f"{emoji} **{entry['enemy']}** - {entry['victories']}/{total} ({int(percent*100)}%)\n"
 
                 wins += entry[3]
                 games += total
 
-            embed = discord.Embed(title=entries[0][0], description=intro + description, colour=self.bot.bot_color)
+            embed = discord.Embed(title=entries[0]['faction'], description=intro + description, colour=self.bot.bot_color)
             embed.set_footer(**self.bot.bot_footer)
 
             avg_wr = wins/games if games > 0 else 0
@@ -285,11 +285,11 @@ class Misc(commands.Cog):
             return embed
 
         sort = {
-            "winrate": {"key": lambda x: x[3]/(x[3]+x[2]) if x[3]+x[2] > 0 else -1, "reverse": True},
+            "winrate": {"key": lambda x: x['victories']/(x['victories']+x['defeats']) if x['victories']+x['defeats'] > 0 else -1, "reverse": True},
             "name": {"key": lambda x: x[1], "reverse": False},
-            "played": {"key": lambda x: x[3]+x[2], "reverse": True},
-            "victories": {"key": lambda x: x[3], "reverse": True},
-            "defeats": {"key": lambda x: x[2] if x[3]+x[2] > 0 else -1, "reverse": True}
+            "played": {"key": lambda x: x['victories']+x['defeats'], "reverse": True},
+            "victories": {"key": lambda x: x['victories'], "reverse": True},
+            "defeats": {"key": lambda x: x['defeats'] if x['victories']+x['defeats'] > 0 else -1, "reverse": True}
         }
 
         factions = None
@@ -299,7 +299,6 @@ class Misc(commands.Cog):
             factions = re.findall(self.faction_regex, arguments)
             arguments = re.sub(self.faction_regex, "", arguments).strip()
             sort_key = arguments if arguments != "" else sort_key
-
 
         if factions:
             faction = factions[0]
@@ -316,8 +315,8 @@ class Misc(commands.Cog):
                 "SELECT * FROM necrobot.InternalRanked"
             )
 
-            stats.sort(key=lambda x: x[0])
-            stats = itertools.groupby(stats, lambda x: x[0])
+            stats.sort(key=lambda x: x['faction'])
+            stats = itertools.groupby(stats, lambda x: x['faction'])
             await react_menu(ctx, [list(y) for x, y in stats], 1, embed_maker)
 
     @matchups.command(name="reset")
@@ -352,14 +351,14 @@ class Misc(commands.Cog):
         def embed_maker(index, entries):
             description = ""
             for entry in entries:
-                submitter = self.bot.get_user(entry[0])
+                submitter = self.bot.get_user(entry['user_id'])
                 if submitter is None:
-                    name = f"User Left ({entry[0]})"
+                    name = f"User Left ({entry['user_id']})"
                 else:
                     name = submitter.mention
 
                 time = entry[4].strftime("%Y-%m-%d %H:%M")
-                description += f"- At {time} by {name}: {entry[1]} {'won' if entry[3] else 'lost'} against {entry[2]}\n"
+                description += f"- {name}: **{entry['faction']}** won against **{entry['enemy']}** at {time} (ID: **{entry['id']}**)\n"
 
             embed = discord.Embed(title=f"Logs ({index[0]}/{index[1]})", description=description, colour=self.bot.bot_color)
             embed.set_footer(**self.bot.bot_footer)
@@ -368,15 +367,15 @@ class Misc(commands.Cog):
         
         def check_entry(entry):
             user = filters.get("user")
-            if user is not None and entry[0] != user:
+            if user is not None and entry['user_id'] != user:
                 return False
 
             winner = filters.get("winner")
-            if winner is not None and entry[1].lower() != winner:
+            if winner is not None and entry['faction'].lower() != winner:
                 return False
 
             loser = filters.get("loser")
-            if loser is not None and entry[2].lower() != loser:
+            if loser is not None and entry['enemy'].lower() != loser:
                 return False
 
             return True
@@ -420,6 +419,35 @@ class Misc(commands.Cog):
 
         await react_menu(ctx, logs, 15, embed_maker)
 
+    @matchups.command(name="delete")
+    @guild_only(496617962334060545)
+    @commands.check_any(commands.has_role(497009979857960963), has_perms(6)) #has Admin role on server or is Bot Admin
+    async def matchups_delete(self, ctx, log_id : int):
+        """Delete a log to remove the entry and remove it from the counters. Get the log_id 
+        from the `matchup logs` command.
+
+        {usage}"""
+        log = await self.bot.db.query(
+            "DELETE FROM necrobot.InternalRankedLogs WHERE id=$1 RETURNING (faction, enemy)",
+            log_id, fetchval=True
+        )
+
+        if not log:
+            raise BotError("No log with that ID")
+
+        await self.bot.db.query(
+            "UPDATE necrobot.InternalRanked SET victories = victories - 1 WHERE faction = $1 AND enemy = $2",
+            log[0], log[1]
+        )
+
+        await self.bot.db.query(
+            "UPDATE necrobot.InternalRanked SET defeats = defeats - 1 WHERE enemy = $1 AND faction = $2",
+            log[0], log[1]
+        )
+
+        await ctx.send(":white_check_mark: | Log removed, counters adjusted.")
+
+
     # @commands.command()
     async def pdf(self, ctx, *, doi):
         """Get a PDF from a doi using sci-hub
@@ -460,14 +488,7 @@ class Misc(commands.Cog):
         if g.get_role(497009979857960963) in g.get_member(payload.user_id).roles:
             return
 
-        if payload.message_id in self.bot.settings["messages"]["defeats"]:
-            index = "defeats"
-        elif payload.message_id in self.bot.settings["messages"]["victories"]:
-            index = "victories"
-        else:
-            return
-
-        faction_index = self.bot.settings["messages"][index].index(payload.message_id)
+        faction_index = self.bot.settings["messages"]["victories"].index(payload.message_id)
         faction_name = self.bot.settings["messages"]["factions"][faction_index]
 
         enemy_index = self.bot.settings["messages"]["emotes"].index(payload.emoji.id)
@@ -483,19 +504,18 @@ class Misc(commands.Cog):
 
         await asyncio.sleep(2)
         await self.bot.db.query(
-            f"UPDATE necrobot.InternalRanked SET {index} = {index} + 1 WHERE faction = $1 AND enemy = $2",
+            "UPDATE necrobot.InternalRanked SET victories = victories + 1 WHERE faction = $1 AND enemy = $2",
             faction_name, enemy_name
         )
 
-        reverse_index = "defeats" if index == "victories" else "victories"
         await self.bot.db.query(
-            f"UPDATE necrobot.InternalRanked SET {reverse_index} = {reverse_index} + 1 WHERE faction = $1 AND enemy = $2",
+            "UPDATE necrobot.InternalRanked SET defeats = defeats + 1 WHERE faction = $1 AND enemy = $2",
             enemy_name, faction_name
         )
 
         await self.bot.db.query(
             "INSERT INTO necrobot.InternalRankedLogs(user_id, faction, enemy, faction_won) VALUES ($1, $2, $3, $4)",
-            payload.user_id, faction_name, enemy_name, index == "victories"
+            payload.user_id, faction_name, enemy_name, True
         )
 
         await self.bot._connection.http.remove_reaction(payload.channel_id, payload.message_id, payload.emoji._as_reaction(), payload.user_id)
