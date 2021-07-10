@@ -329,24 +329,26 @@ async def off(ctx):
     """Saves all the data and terminate the bot. (Permission level required: 7+ (The Bot Smith))
      
     {usage}"""
-    msg = await ctx.send("Shut down in 5 minutes?")
-    result = await ctx.bot.confirmation_menu(msg, ctx.author)
-    if not result:
-        return
-
-    bot.maintenance = True                
-    task = bot.meta.rotate_status
-    tasks_hourly = bot.meta.tasks_hourly
-    tasks_hourly.remove(task)
-
-    await bot.change_presence(activity=discord.Game(name="Going down for maintenance soon"))
-
-    await asyncio.sleep(300)
     if not bot.maintenance:
-        tasks_hourly.append(task)
-        await bot.change_presence(activity=discord.Game(name="n!help for help"))
-        return await ctx.send("Shut down aborted.")
+        msg = await ctx.send("Shut down in 5 minutes?")
+        result = await bot.confirmation_menu(msg, ctx.author)
+        if not result:
+            return
 
+        bot.maintenance = True                
+        task = bot.meta.rotate_status
+        tasks_hourly = bot.meta.tasks_hourly
+        tasks_hourly.remove(task)
+
+        await bot.change_presence(activity=discord.Game(name="Going down for maintenance soon"))
+
+        await asyncio.sleep(300)
+        if not bot.maintenance:
+            tasks_hourly.append(task)
+            await bot.change_presence(activity=discord.Game(name="n!help for help"))
+            return await ctx.send("Shut down aborted.")
+
+    await asyncio.sleep(5)
     await bot.change_presence(activity=discord.Game(name="Bot shutting down...", type=0))
     
     with open("rings/utils/data/settings.json", "w") as file:
