@@ -64,6 +64,7 @@ class NecroBot(commands.Bot):
         self.reminders = {}
         self.pending_posts = {}
         self.denied_posts = []
+        self.events = {}
         self.queued_posts = asyncio.Queue()
 
         with open("rings/utils/data/settings.json", "rb") as infile:
@@ -266,7 +267,8 @@ extensions = [
     'moderation',
     'profile',
     'economy',
-    'bridge'
+    'bridge',
+    'waifu'
 ]
 
 bot = NecroBot()

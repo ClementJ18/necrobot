@@ -176,23 +176,39 @@ class TimeConverter(commands.Converter):
 class MoneyConverter(commands.Converter):
     async def convert(self, ctx, argument):
         if not argument.isdigit():
-            raise commands.BadArgument("Not a valid intenger")
+            raise commands.BadArgument("Not a valid integer")
         
         argument = int(argument)
 
         if argument < 0:
-            raise commands.BadArgument("Amount must be a positive intenger")
+            raise commands.BadArgument("Amount must be a positive integer")
         
-        money = await ctx.bot.db.get_money(ctx.message.author.id)
+        money = await ctx.bot.db.get_money(ctx.author.id)
         if money >= argument:
             return argument
         
         raise commands.BadArgument("You do not have enough money")
+
+class FlowerConverter(commands.Converter):
+    async def convert(self, ctx, argument):
+        if not argument.isdigit():
+            raise commands.BadArgument("Not a valid integer")
+        
+        argument = int(argument)
+
+        if argument < 0:
+            raise commands.BadArgument("Amount must be a positive integer")
+        
+        money = await ctx.bot.get_cog("Flowers").get_flowers(ctx.guild.id, ctx.author.id)
+        if money >= argument:
+            return argument
+        
+        raise commands.BadArgument("You do not have enough flowers")
         
 def RangeConverter(min_v, max_v):
     def check(argument):
         if not argument.isdigit():
-            raise commands.BadArgument("Not a valid intenger")
+            raise commands.BadArgument("Not a valid integer")
             
         value = int(argument)
         if not max_v >= value >= min_v:

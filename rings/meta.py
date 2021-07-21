@@ -89,6 +89,11 @@ class Meta(commands.Cog):
             )
         
         await self.bot.db.insert_leaderboard(guild_id)
+
+        await self.bot.db.query(
+            "INSERT INTO necrobot.FlowersGuild(guild_id) VALUES($1) ON CONFLICT DO NOTHING",
+            guild_id
+        )
         
     async def delete_guild(self, guild_id):
         if guild_id not in self.bot.guild_data:
@@ -129,6 +134,11 @@ class Meta(commands.Cog):
             await self.bot.db.insert_permission(user.id, guild.id, level)
             
         await self.bot.db.insert_leaderboard_member(guild.id, user.id)
+
+        await self.bot.db.query(
+            "INSERT INTO necrobot.Flowers(guild_id, user_id) VALUES($1, $2) ON CONFLICT DO NOTHING",
+            guild.id, user.id
+        )
         
     async def star_message(self, message):
         if self.bot.blacklist_check(message.author.id):

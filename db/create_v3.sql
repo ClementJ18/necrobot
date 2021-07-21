@@ -241,4 +241,17 @@ CREATE TABLE necrobot.PermissionRoles(
     level int,
     role_id bigint,
     PRIMARY KEY(guild_id, level)
-)
+);
+
+CREATE TABLE necrobot.Flowers(
+    guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
+    user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
+    flowers bigint DEFAULT 0,
+    PRIMARY KEY(guild_id, user_id)
+);
+
+CREATE TABLE necrobot.FlowersGuild(
+    guild_id bigint PRIMARY KEY REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
+    symbol varchar(50) DEFAULT ':cherry_blossom:'
+
+);

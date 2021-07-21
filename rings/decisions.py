@@ -73,7 +73,11 @@ class Decisions(commands.Cog):
         __Example__
         `{pre}roll 3d8` - roll three 8-sided die
         `{pre}roll` - roll one 6-sided die"""
-        dice_list = dice.roll(dices)
+        try:
+            dice_list = dice.roll(dices)
+        except dice.DiceException:
+            raise BotError("Something went frong with the format you gave")
+
         try:
             t = sum(dice_list)
         except TypeError:
