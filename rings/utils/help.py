@@ -74,7 +74,7 @@ class NecrobotHelp(cmd.HelpCommand):
         
         for command in cog.get_commands():
             name = await self.format_command_name(command)
-            help_msg += f"{name}- {await self.get_brief_signature(command)}\n"
+            help_msg += f"{name} - {await self.get_brief_signature(command)}\n"
             
         help_msg += self.get_ending_note()
         await self.get_destination().send(help_msg)

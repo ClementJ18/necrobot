@@ -149,7 +149,7 @@ class Flowers(commands.Cog):
 
     @commands.command()
     async def give(self, ctx, member : discord.Member, amount : FlowerConverter):
-        """Transfer :cherry_blossom: from one user to another.
+        """Transfer flowers from one user to another.
 
         {usage}
 
