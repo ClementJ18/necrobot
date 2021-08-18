@@ -4,6 +4,7 @@ from discord.ext import commands
 from rings.utils.utils import react_menu, time_converter, BotError
 from rings.utils.converters import MemberConverter
 from rings.utils.checks import leaderboard_enabled, has_perms
+from rings.utils.astral import Astral
 
 import random
 import aiohttp
@@ -440,6 +441,50 @@ class Utilities(commands.Cog):
             await ctx.send(f"{user.mention}, you have been awarded {points} {symbol}")
         else:
             await ctx.send(f"{user.mention}, {points} {symbol} has been taken from you")
-    
+
+
+    @commands.command()
+    async def sun(self, ctx, city : str, date : str = None):
+        """Get the sunrise and sunset for today based on a city, with an
+        optional date in DD/MM/YYYY
+
+        {usage}
+
+        __Examples__
+        `n!sun London` - get sunrise and sunset for today for London
+        `n!sun London 22/04/2019` - get sunrise and sunset for the 22 of april 2019 in London
+        """
+        def to_string(dt):
+            return dt.strftime("%H:%M")
+
+        def suffix(d):
+            return 'th' if 11<=d<=13 else {1:'st',2:'nd',3:'rd'}.get(d%10, 'th')
+
+        def custom_strftime(dt_format, t):
+            return t.strftime(dt_format).replace('{S}', str(t.day) + suffix(t.day))
+
+        a = Astral()
+        try:
+            location = a[city]
+        except KeyError:
+            raise BotError(f"City **{city}** not found in possible cities")
+
+        if date is not None:
+            try:
+                date = datetime.datetime.strptime(date, "%d/%m/%Y")
+            except ValueError:
+                raise BotError("Date not in DD/MM/YYYY format or not valid")
+        else:
+            date = datetime.datetime.now()
+
+        sun = location.sun(date)
+
+        date_string = custom_strftime("%A {S} %B, %Y", date)
+        description = f"**Sunrise**: {to_string(sun['sunrise'])} \n**Sunset**: {to_string(sun['sunset'])}"
+        embed = discord.Embed(colour=self.bot.bot_color, title=date_string, description=description)
+        embed.set_footer(**self.bot.bot_footer)
+
+        await ctx.send(embed=embed)
+
 def setup(bot):
     bot.add_cog(Utilities(bot))

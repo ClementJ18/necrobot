@@ -327,9 +327,13 @@ class Misc(commands.Cog):
 
         {usage}
         """
-        await self.bot.db.query("UPDATE necrobot.InternalRanked SET defeats = 0, victories = 0")
-        await self.bot.db.query("DELETE FROM necrobot.InternalRankedLogs")
-        await ctx.send(":white_check_mark: | All counters reset")
+        msg = await ctx.send("Do you want to delete all the ranked logs and reset the counters for the factions?")
+        result = await self.bot.confirmation_menu(msg, ctx.author)
+
+        if result:
+            await self.bot.db.query("UPDATE necrobot.InternalRanked SET defeats = 0, victories = 0")
+            await self.bot.db.query("DELETE FROM necrobot.InternalRankedLogs")
+            await ctx.send(":white_check_mark: | All counters reset")
 
     @matchups.command(name="logs")
     @guild_only(496617962334060545)
