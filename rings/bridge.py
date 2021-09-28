@@ -21,6 +21,26 @@ class Bridge(commands.Cog):
         self.cookies = False
         self.in_process = []
         self.task = self.bot.loop.create_task(self.post_task())
+        self.mapping = {
+            "angmar": {"id": 687748138345169075, "url": "https://modding-union.com/index.php/topic,33016.0.html"},
+            "erebor": {"id": 687748357543952417, "url": "https://modding-union.com/index.php/topic,31202.0.html"},
+            "gondor": {"id": 687747730684117012, "url": "https://modding-union.com/index.php/topic,30434.0.html"},
+            "imladris": {"id": 687748566105849890, "url": "https://modding-union.com/index.php/topic,33678.0.html"},
+            "isengard": {"id": 687748680182530086, "url": "https://modding-union.com/index.php/topic,30436.0.html"},
+            "lothlorien": {"id": 687748760054661152, "url": "https://modding-union.com/index.php/topic,32089.0.html"},
+            "mm": {"id": 688040356184588423, "url": ""},
+            "mordor": {"id": 687749364692549651, "url": "https://modding-union.com/index.php/topic,30433.0.html"},
+            "rohan": {"id": 687747731716177930, "url": "https://modding-union.com/index.php/topic,30435.0.html"},
+            "eothain": {"id": 361473129253568513, "url": "https://modding-union.com/index.php/topic,30438.0.html"}, #CAH
+            "onering": {"id": 342033729637711872, "url": "https://modding-union.com/index.php/topic,30437.0.html"}, #WotR
+            "LUL": {"id": 778021945685704724, "url": "https://modding-union.com/index.php/topic,31224.0.html"}, #Audio
+            "mu": {"id": 733692917318942801, "url": "https://modding-union.com/index.php/topic,35939.0.html"}, #Horde Maps
+            "edain": {"id": 339025957136629772, "url": "https://modding-union.com/index.php/topic,33017.0.html"}, #General
+            "dwarf_f": {"id": 778019875120742400, "url": "https://modding-union.com/index.php/topic,30440.0.html"}, #Maps
+            "gildor": {"id": 340577178192445441, "url": "https://modding-union.com/index.php/topic,30439.0.html"}, # AI
+
+        }
+
     
     #######################################################################
     ## Cog Functions
@@ -38,7 +58,7 @@ class Bridge(commands.Cog):
             try:
                 post = await self.bot.queued_posts.get()
                 await post["message"].remove_reaction("\N{SLEEPING SYMBOL}", post["message"].guild.me)
-                await self.mu_poster(post, post["approver"])
+                await self.mu_poster(post)
                 await asyncio.sleep(120)
             except Exception as e:
                 await post["message"].channel.send(f":negative_squared_cross_mark: | Error while sending: {e}")
@@ -76,7 +96,7 @@ class Bridge(commands.Cog):
         await self.submit_form(form)
         self.cookies = True
         
-    async def mu_poster(self, pending, approver_id, retry=0):
+    async def mu_poster(self, pending, retry=0):
         if pending is None:
             return
             
@@ -87,33 +107,19 @@ class Bridge(commands.Cog):
         if form is None:
             await self.new_cookies()
             if retry < 3:
-                await self.mu_poster(pending, approver_id, retry+1)
+                await self.mu_poster(pending, retry+1)
             else:
                 raise ValueError(f"Retried three times, unable to get form for {pending['message'].id}")
-        
-        username = await self.bot.db.query(
-            "SELECT username FROM necrobot.MU_Users WHERE user_id=$1", 
-            pending["message"].author.id, fetchval=True
-        )
-        
-        final_message = f"{pending['text']}\n[hr]\n{username} ({pending['message'].author.id})"
-        form["message"].value = final_message
 
-        del form.fields["attachment[]"]
+        form["message"].value = pending["content"]
+
+        # del form.fields["attachment[]"]
         del form.fields["preview"]
         
         if pending["message"].channel.id == 722040731946057789:
             await self.bot.get_bot_channel().send(f"Payload sent. {form.serialize().data}") #dud debug test
-            url = pending["url"]  
         else: 
-            resp = await self.submit_form(form) #actual submit
-            soup = BeautifulSoup(await resp.read(), "html.parser")
-            url = soup.find_all("div", class_="keyinfo")[-1].h5.a["href"]
-
-        await self.bot.db.query(
-            "INSERT INTO necrobot.MU(user_id, url, guild_id, approver_id) VALUES ($1, $2, $3, $4)",
-            pending["message"].author.id, url, pending["message"].guild.id, approver_id
-        )
+            await self.submit_form(form) #actual submit
         
         await pending["message"].delete()
         
@@ -151,7 +157,7 @@ class Bridge(commands.Cog):
     ## Commands
     #######################################################################
     
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, enabled=False, hidden=True)
     @guild_only(327175434754326539)
     async def mu(self, ctx, user : MUConverter = None):
         """Get info about the number of posts a user has made and their username.
@@ -414,7 +420,7 @@ class Bridge(commands.Cog):
     async def on_raw_message_edit(self, payload):
         if payload.message_id in self.bot.pending_posts:
             self.bot.pending_posts[payload.message_id]["message"]._update(payload.data)
-            await self.mu_parser(self.bot.pending_posts[payload.message_id]["message"], react=False)
+            self.bot.pending_posts[payload.message_id]["content"] = self.bot.pending_posts[payload.message_id]["message"].content
             
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
@@ -429,25 +435,20 @@ class Bridge(commands.Cog):
         if message.author.bot:
             return
         
-        registered = await self.bot.db.query(
-            "SELECT active FROM necrobot.MU_Users WHERE user_id=$1", 
-            message.author.id, fetchval=True
-        )
+        # registered = await self.bot.db.query(
+        #     "SELECT active FROM necrobot.MU_Users WHERE user_id=$1", 
+        #     message.author.id, fetchval=True
+        # )
         
         perms = await self.bot.db.get_permission(message.author.id, message.guild.id)
-        if registered is None:
-            if perms == 0:
-                await message.channel.send(f'{message.author.mention} | You are not registered, please register with the `register` command first.', delete_after=10)
-                await message.delete()
+        if perms > 0:
             return
-            
-        if not registered:
-            if perms == 0:
-                await message.channel.send(f'{message.author.mention} | Your account is banned from using the system, you may appeal with admins to have it unbanned', delete_after=10)
-                await message.delete()
-            return
-            
-        await self.mu_parser(message)
+
+        self.bot.pending_posts[message.id] = {"message": message, "content": message.content}
+
+        for reaction in self.mapping:
+            reaction_id = self.mapping[reaction]["id"]
+            await message.add_reaction(f"{reaction}:{reaction_id}")
         
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -459,22 +460,37 @@ class Bridge(commands.Cog):
             
         if not payload.message_id in self.bot.pending_posts:
             return
+
+        if not payload.user_id == 241942232867799040:
+            return
+
+        if not payload.emoji.name in self.mapping:
+            return
+
+        post = self.bot.pending_posts.pop(payload.message_id)
+        await post["message"].clear_reactions()
+        await post["message"].add_reaction("\N{GEAR}")
+        await post["message"].add_reaction("\N{SLEEPING SYMBOL}")
+        post["approver"] = payload.user_id
+        post["url"] = self.mapping[payload.emoji.name]["url"]
+        await self.bot.queued_posts.put(post)
+
             
-        ids = mu_moderator(self.bot.get_guild(payload.guild_id))
-        if str(payload.emoji) == "\N{WHITE HEAVY CHECK MARK}":
-            if payload.user_id in ids:
-                post = self.bot.pending_posts.pop(payload.message_id)
-                await post["message"].add_reaction("\N{GEAR}")
-                await post["message"].add_reaction("\N{SLEEPING SYMBOL}")
-                post["approver"] = payload.user_id
-                await self.bot.queued_posts.put(post)
-        elif str(payload.emoji) == "\N{NEGATIVE SQUARED CROSS MARK}":
-            ids.append(self.bot.pending_posts[payload.message_id]["message"].author.id)
-            if payload.user_id in ids:
-                post = self.bot.pending_posts.pop(payload.message_id)
-                post["denier"] = payload.user_id
-                self.bot.denied_posts.append(post)
-                await post["message"].delete() 
+        # ids = mu_moderator(self.bot.get_guild(payload.guild_id))
+        # if str(payload.emoji) == "\N{WHITE HEAVY CHECK MARK}":
+        #     if payload.user_id in ids:
+        #         post = self.bot.pending_posts.pop(payload.message_id)
+        #         await post["message"].add_reaction("\N{GEAR}")
+        #         await post["message"].add_reaction("\N{SLEEPING SYMBOL}")
+        #         post["approver"] = payload.user_id
+        #         await self.bot.queued_posts.put(post)
+        # elif str(payload.emoji) == "\N{NEGATIVE SQUARED CROSS MARK}":
+        #     ids.append(self.bot.pending_posts[payload.message_id]["message"].author.id)
+        #     if payload.user_id in ids:
+        #         post = self.bot.pending_posts.pop(payload.message_id)
+        #         post["denier"] = payload.user_id
+        #         self.bot.denied_posts.append(post)
+        #         await post["message"].delete() 
  
 def setup(bot):
     bot.add_cog(Bridge(bot))
