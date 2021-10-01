@@ -561,7 +561,7 @@ class Database(commands.Cog):
         )
         
     async def update_yt_filter(self, guild_id, youtuber_name, text):
-        await self.bot.db.query(
+        return await self.bot.db.query(
             "UPDATE necrobot.Youtube SET filter = $3 WHERE guild_id = $1 and LOWER(youtuber_name) = LOWER($2) RETURNING youtuber_name", 
             guild_id, youtuber_name, text,
             fetchval=True

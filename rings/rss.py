@@ -8,6 +8,7 @@ import feedparser
 import asyncio
 import datetime
 import re
+import random
 from bs4 import BeautifulSoup
 
 def convert(time):
@@ -120,7 +121,7 @@ class RSS(commands.Cog):
         
         check_channel(channel)
         try:        
-            async with self.bot.session.get(youtube) as resp:
+            async with self.bot.session.get(youtube, cookies={'CONSENT': 'YES+cb.20210328-17-p0.en-GB+FX+{}'.format(random.randint(100, 999))}) as resp:
                 if resp.status != 200:
                     raise BotError("This channel does not exist, double check the youtuber id.")
                 
@@ -128,15 +129,14 @@ class RSS(commands.Cog):
                     youtuber_id = re.findall(r'"external(?:Channel)?Id":"([^,.]*)"', await resp.text())[0]
                 except IndexError:
                     raise BotError("Could not find the user ID")            
-        except:
-            
-            raise BotError("Not a valid youtube URL")
+        except Exception as e:
+            raise BotError(f"Not a valid youtube URL: {e}")
             
         soup = BeautifulSoup(await resp.text(), "html.parser")
         name = soup.find("title").string.replace(" - YouTube", "")      
         
         await self.bot.db.upsert_yt_rss(ctx.guild.id, channel.id, youtuber_id, name)
-        await ctx.send(f":white_check_mark: | New videos from this channel will now be posted in {channel.mention}.")
+        await ctx.send(f":white_check_mark: | New videos from {name} will now be posted in {channel.mention}.")
 
     @youtube.command(name="delete")
     @has_perms(3)
@@ -179,9 +179,9 @@ class RSS(commands.Cog):
         
         
         if filters == "":
-            await ctx.send(":white_check_mark: | Filters have been disabled for this channel")
+            await ctx.send(f":white_check_mark: | Filters have been disabled for {youtuber_name}")
         else:
-            await ctx.send(f":white_check_mark: | Only videos with the words: **{filters}** will be posted for this yt channel")
+            await ctx.send(f":white_check_mark: | Only videos with the words **{filters}** will be posted for this {youtuber_name}")
 
 def setup(bot):
     bot.add_cog(RSS(bot))
