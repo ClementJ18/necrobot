@@ -121,7 +121,10 @@ class Bridge(commands.Cog):
         else: 
             await self.submit_form(form) #actual submit
         
-        await pending["message"].delete()
+        # await pending["message"].delete()
+
+        ids = [pending["message"].id] + [x.id for x in pending["replies"]]
+        await pending["message"].channel.purge(limit=100, check=lambda m: m.id in ids)
         
     async def mu_parser(self, message, react=True):
         regex = r"https:\/\/modding-union\.com\/index\.php(?:\/|\?)topic(?:=|,)([0-9]*)\S*"
@@ -440,11 +443,16 @@ class Bridge(commands.Cog):
         #     message.author.id, fetchval=True
         # )
         
+        if message.reference:
+            if message.reference.id in self.pending_posts:
+                self.bot.pending_posts[message.id]["replies"].append(message)
+                return
+
         perms = await self.bot.db.get_permission(message.author.id, message.guild.id)
         if perms > 0:
             return
 
-        self.bot.pending_posts[message.id] = {"message": message, "content": message.content}
+        self.bot.pending_posts[message.id] = {"message": message, "content": message.content, "replies": []}
 
         for reaction in self.mapping:
             reaction_id = self.mapping[reaction]["id"]
