@@ -266,7 +266,7 @@ class Bridge(commands.Cog):
             raise BotError("You are already registered or that username is taken.")
         
         self.in_process.append(username.lower())
-        msg = await ctx.send(f"By registering to use the bot's MU-Discord communication service you agree to the following forum rules: <https://modding-union.com/index.php/topic,30385.0.html>. If you break these rules, access to the channel may be restricted or taken away. React with :white_check_mark: if you agree or with :negative_squared_cross_mark: if you do not agree.")
+        msg = await ctx.send("By registering to use the bot's MU-Discord communication service you agree to the following forum rules: <https://modding-union.com/index.php/topic,30385.0.html>. If you break these rules, access to the channel may be restricted or taken away. React with :white_check_mark: if you agree or with :negative_squared_cross_mark: if you do not agree.")
 
         async def cleanup():
             await msg.edit(content=":negative_squared_cross_mark: | User was too slow, please react within 5 minutes next time.")

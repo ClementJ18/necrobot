@@ -236,9 +236,10 @@ class Utilities(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             
             for reminder in entries:
+                text = reminder["reminder"][:500] if reminder["reminder"][:500] else "`No Text`"
                 embed.add_field(
                     name=f'{reminder["id"]}: {reminder["timer"]}', 
-                    value=reminder["reminder"][:500], 
+                    value=text, 
                     inline=False
                 )
 

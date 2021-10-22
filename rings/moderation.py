@@ -420,7 +420,7 @@ class Moderation(commands.Cog):
 
         automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
         if automod is not None:
-            embed = discord.Embed(title="Purge", description=f"{ctx.author.mention} purged **{len(deleted)}** messages in {ctx.channel.mention}", colour=self.bot.bot_color)
+            embed = discord.Embed(title="Purge", description=f"{ctx.author.mention} purged **{len(deleted)-1}** messages in {ctx.channel.mention}", colour=self.bot.bot_color)
             embed.set_footer(**self.bot.bot_footer)
             await automod.send(embed=embed)
 

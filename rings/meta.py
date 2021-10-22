@@ -251,6 +251,8 @@ class Meta(commands.Cog):
         )
         
     async def load_cache(self):
+        await self.bot.wait_until_ready()
+        
         await self.bot.db.create_pool()
         self.bot.session = aiohttp.ClientSession(loop=self.bot.loop)
         
