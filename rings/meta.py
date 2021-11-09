@@ -9,6 +9,7 @@ except ImportError:
     import pbs as sh
 
 import io
+import re
 import aiohttp
 import asyncio
 import datetime
@@ -249,6 +250,42 @@ class Meta(commands.Cog):
                 members=len(self.bot.users)
             ))
         )
+
+    def is_scam(self, message : discord.Message) -> bool:
+        has_nitro = "nitro" in message.content.lower()
+        # has_nitro_link = any(("nitro" in x.lower() or "gift" in x.lower()) for x in re.findall(self.bot.url_pattern, message.content))
+        has_link = bool(re.findall(self.bot.url_pattern, message.content))
+        has_embed = bool(message.embeds)
+        has_everyone_ping = message.mention_everyone
+
+        return has_nitro and has_link and has_everyone_ping
+
+    async def restrain_scammer(self, scam_msg : discord.Message):
+        if scam_msg.guild is None:
+            return
+
+        try:
+            await scam_msg.delete()
+        except discord.Forbidden:
+            pass
+
+        if not self.guild_data[scam_msg.guild.id]["mute"]:
+            return
+
+        role = discord.utils.get(scam_msg.guild.roles, id=self.bot.guild_data[scam_msg.guild.id]["mute"])
+        if role in scam_msg.author.roles:
+            return
+
+        try:
+            await scam_msg.author.add_roles(role)
+        except discord.Forbidden:
+            pass
+
+        automod = scam_msg.guild.get_channel(self.bot.guild_data[scam_msg.guild.id]["automod"])
+        if automod is not None:
+            embed = discord.Embed(title="Scam Warning", description=f"{scam_msg.author.mention} triggered the scam filter. User has been muted while awaiting moderation review.", colour=self.bot.bot_color)
+            embed.set_footer(**self.bot.bot_footer)
+            await automod.send(embed=embed)
         
     async def load_cache(self):
         await self.bot.wait_until_ready()

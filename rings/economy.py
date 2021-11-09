@@ -64,7 +64,7 @@ class Hand(common.Hand):
         if self.value() >= other.value():
             return True
 
-        return not self.busted and self.value() >= WIN_MIN and self.value() >= other.value()
+        return not self.busted and self.value() >= other.value()
         
     def blackjack(self):
         return self.value() == 21
@@ -76,7 +76,7 @@ class Hand(common.Hand):
             return False
         if self.value() == WIN_MAX:
             return True
-        return self.value() >= WIN_MIN and self.value() > other.value()
+        return self.value() > other.value()
         
 class BlackJack:
     def __init__(self, ctx, bet):
