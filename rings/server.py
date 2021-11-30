@@ -944,6 +944,7 @@ class Server(commands.Cog):
 
     @commands.group()
     @commands.guild_only()
+    @has_perms(4)
     async def starboard(self, ctx, channel : discord.TextChannel = None):
         """Sets a channel for the starboard messages, required in order for starboard to be enabled. Call the command
         without a channel to disable starboard.
@@ -956,11 +957,11 @@ class Server(commands.Cog):
         `{pre}starboard` - disables starboard"""
         if channel is None:
             await self.bot.db.update_starboard_channel(ctx.guild.id)
-            await ctx.send(":white_check_mark: | Starboard messages disabled.")
+            await ctx.send(":white_check_mark: | Starboard disabled.")
         else:
             check_channel(channel)
             await self.bot.db.update_starboard_channel(ctx.guild.id, channel.id)
-            await ctx.send(f":white_check_mark: | Starboard messages will now be sent to {channel.mention}")
+            await ctx.send(f":white_check_mark: | Starred messages will now be sent to {channel.mention}")
 
     @starboard.command(name="limit")
     @has_perms(4)

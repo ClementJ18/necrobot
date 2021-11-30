@@ -33,6 +33,11 @@ def has_automod(bot, message):
         return False
         
     return True
+
+def format_dt(dt: datetime.datetime, /, style: str = None) -> str:
+    if style is None:
+        return f'<t:{int(dt.timestamp())}>'
+    return f'<t:{int(dt.timestamp())}:{style}>'
     
 async def react_menu(ctx, entries, per_page, generator, *, page=0, timeout=300):
     max_pages = max(0, ((len(entries)-1)//per_page))

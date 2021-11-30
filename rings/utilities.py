@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import react_menu, time_converter, BotError
+from rings.utils.utils import react_menu, time_converter, BotError, format_dt
 from rings.utils.converters import MemberConverter
 from rings.utils.checks import leaderboard_enabled, has_perms
 from rings.utils.astral import Astral
@@ -193,7 +193,9 @@ class Utilities(commands.Cog):
         task = self.bot.loop.create_task(self.bot.meta.reminder_task(reminder_id, sleep, text, ctx.channel.id, ctx.author.id))
         self.bot.reminders[reminder_id] = task
 
-        await ctx.send(f":white_check_mark: | I will remind you of that in **{time}**")
+
+        stamp = format_dt(datetime.datetime.now() + datetime.timedelta(seconds=sleep), style="f")
+        await ctx.send(f":white_check_mark: | I will remind you of that in **{stamp}**")
 
     @remindme.command(name="delete")
     async def remindme_delete(self, ctx, reminder_id : int):
@@ -236,9 +238,10 @@ class Utilities(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             
             for reminder in entries:
+                stamp = format_dt(reminder["start_date"] + datetime.timedelta(seconds=time_converter(reminder["timer"])), style="f")
                 text = reminder["reminder"][:500] if reminder["reminder"][:500] else "`No Text`"
                 embed.add_field(
-                    name=f'{reminder["id"]}: {reminder["timer"]}', 
+                    name=f'{reminder["id"]}: {stamp}', 
                     value=text, 
                     inline=False
                 )

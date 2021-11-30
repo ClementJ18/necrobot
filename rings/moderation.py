@@ -1,11 +1,12 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, react_menu
+from rings.utils.utils import BotError, react_menu, format_dt
 from rings.utils.converters import TimeConverter, MemberConverter, RoleConverter, RangeConverter
 from rings.utils.checks import has_perms, requires_mute_role
 
 import asyncio
+import datetime
 from typing import Union
 
 class Moderation(commands.Cog):
@@ -39,7 +40,7 @@ class Moderation(commands.Cog):
             await user.remove_roles(role)
 
             if automod is not None:
-                embed = discord.Embed(title="User Renamed", description=f"**{user.display_name}** has been automatically unmuted", colour=self.bot.bot_color)
+                embed = discord.Embed(title="User Unmuted", description=f"**{user.display_name}** has been automatically unmuted", colour=self.bot.bot_color)
                 embed.set_footer(**self.bot.bot_footer)
                 await automod.send(embed=embed)
     
@@ -153,7 +154,7 @@ class Moderation(commands.Cog):
         if automod is not None:
             embed = discord.Embed(title="User Muted", description=f"{user.mention} muted by {ctx.author.mention}", colour=self.bot.bot_color)
             embed.set_footer(**self.bot.bot_footer)
-            embed.add_field(name="Duration", value=f"{time} seconds" if time else "Permanently")
+            embed.add_field(name="Unmute Time", value=format_dt(datetime.datetime.now() + datetime.timedelta(seconds=time)) if time else "Permanently")
             await automod.send(embed=embed)
 
     @mute.group(name="role", invoke_without_command=True)

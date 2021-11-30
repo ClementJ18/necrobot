@@ -122,7 +122,7 @@ class Profile(commands.Cog):
 
         await react_menu(ctx, monies, 10, _embed_generator, page=index)
 
-    @commands.command(name="daily")
+    @commands.command(name="daily", cooldown_after_parsing=True)
     @commands.cooldown(1, 60, BucketType.user)
     async def daily(self, ctx, *, member : MemberConverter = None):
         """Adds your daily 200 :euro: to your NecroBot balance. This can be used at anytime once every GMT day. Can
