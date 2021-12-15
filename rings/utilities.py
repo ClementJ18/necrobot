@@ -1,11 +1,12 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import react_menu, time_converter, BotError, format_dt
+from rings.utils.utils import react_menu, BotError, format_dt, time_string_parser
 from rings.utils.converters import MemberConverter
 from rings.utils.checks import leaderboard_enabled, has_perms
 from rings.utils.astral import Astral
 
+import asyncio
 import random
 import aiohttp
 import datetime
@@ -175,16 +176,7 @@ class Utilities(commands.Cog):
         `{pre}remindme do the dishes in 4day 2h45minutes` - will remind you to do the dishes in 4 days, 2 hours and 45 minutes
         `{pre}remindme in 2 hours` - send you a ping in 2 hours
         """
-        err = "Something went wrong, you need to use the format: **<optional_message> in <time>**"
-
-        if "in" not in message:
-            raise BotError(err)
-
-        text, sep, time = message.rpartition("in ")
-        sleep = time_converter(time)
-
-        if not sep:
-            raise BotError(err)
+        text, sleep, time = time_string_parser(message)
 
         if sleep < 1:
             raise BotError("Can't have a reminder that's less than one second!")
@@ -195,7 +187,7 @@ class Utilities(commands.Cog):
 
 
         stamp = format_dt(datetime.datetime.now() + datetime.timedelta(seconds=sleep), style="f")
-        await ctx.send(f":white_check_mark: | I will remind you of that in **{stamp}**")
+        await ctx.send(f":white_check_mark: | I will remind you of that on **{stamp}**")
 
     @remindme.command(name="delete")
     async def remindme_delete(self, ctx, reminder_id : int):
@@ -455,8 +447,8 @@ class Utilities(commands.Cog):
         {usage}
 
         __Examples__
-        `n!sun London` - get sunrise and sunset for today for London
-        `n!sun London 22/04/2019` - get sunrise and sunset for the 22 of april 2019 in London
+        `{pre}sun London` - get sunrise and sunset for today for London
+        `{pre}sun London 22/04/2019` - get sunrise and sunset for the 22 of april 2019 in London
         """
         def to_string(dt):
             return dt.strftime("%H:%M")
@@ -489,6 +481,137 @@ class Utilities(commands.Cog):
         embed.set_footer(**self.bot.bot_footer)
 
         await ctx.send(embed=embed)
+
+    @commands.group(invoke_without_command=True)
+    @commands.guild_only()
+    async def giveaway(self, ctx, winners : int, *, time_string : str):
+        """Start a giveaway that will last for the specified time, after that time a number of winners specified
+        with the [winners] argument will be selected. The following times can be used: days (d), 
+        hours (h), minutes (m), seconds (s).
+
+        {usage}
+
+        __Examples__
+        `{pre}giveaway 3 A hug in 3d` - start a giveaway that will last three days and have three winners
+        """
+        text, sleep, _ = time_string_parser(time_string)
+        if sleep < 1:
+            raise BotError("Can't have a giveaway that's less than a second!")
+
+        embed = discord.Embed(colour=self.bot.bot_color, title="Giveaway!", description=f"{ctx.author.mention} is doing a giveaway! The reward is: \n\n {text} \n\n **React with :gift: to enter!**")
+        embed.add_field(name="# of Winners", value=winners)
+
+        limit = datetime.datetime.now() + datetime.timedelta(seconds=sleep)
+        embed.add_field(name="Duration", value=format_dt(limit, style="f"))
+
+        embed.set_footer(**self.bot.bot_footer)
+
+        msg = await ctx.send(embed=embed)
+        await msg.add_reaction("\N{WRAPPED PRESENT}")
+        self.bot.ongoing_giveaways[msg.id] = {"limit": limit, "winners": winners, "reward": text, "msg": msg, "entries": []}
+        
+        #The Long Nap
+        await asyncio.sleep(sleep)
+        ga_results = self.bot.ongoing_giveaways.pop(msg.id, None)
+
+        if ga_results is None:
+            return
+
+        await msg.edit(content=":white_check_mark: The giveaway has ended!", embed=embed)
+
+        winner_users = []
+        for entry in ga_results["entries"]:
+            user = ctx.guild.get_member(entry)
+            if user is None or user.bot:
+                continue
+
+            winner_users.append(user.mention)
+
+        if len(winner_users) <= winners:
+            winner_mentions = winner_users
+        else:
+            winner_mentions = random.sample(winner_users, winners)
+    
+        embed = discord.Embed(colour=self.bot.bot_color, title="Giveaway Result", description=f"The giveaway by {ctx.author.mention} has ended! The reward is: \n\n {text}")
+        embed.add_field(name="Giveaway Link", value=f"[Link]({msg.jump_url})")
+        embed.set_footer(**self.bot.bot_footer)
+        await ctx.send(f"Giveaway Ended! Congratulations to {' '.join(winner_mentions)}", embed=embed)
+
+
+    @giveaway.command(name="list")
+    @commands.guild_only()
+    async def giveaway_list(self, ctx):
+        """Get a list of all current giveaways in this server
+
+        {usage}"""
+        ga_entries = [x for x in self.bot.ongoing_giveaways.values() if x["msg"].guild.id == ctx.guild.id]
+        ga_entries.sort(key=lambda x: x["limit"])
+
+        def embed_maker(index, entries):
+            ga = "\n".join([f"- **{entry['msg'].id}**: {format_dt(entry['limit'])} ([Link]({entry['msg'].jump_url}))" for entry in entries])
+            embed = discord.Embed(
+                title=f"Giveaways ({index[0]}/{index[1]})", 
+                colour=self.bot.bot_color, 
+                description=ga
+            )
+            
+            embed.set_footer(**self.bot.bot_footer)
+
+            return embed
+
+        await react_menu(ctx, ga_entries, 10, embed_maker)
+
+    @giveaway.command(name="cancel")
+    @commands.guild_only()
+    async def giveaway_cancel(self, ctx, msg_id : int):
+        """Cancel an ongoing giveaway, see `giveaway list` for a list of giveaways and their ID's
+
+        {usage}
+
+        __Example__
+        `{pre}giveaway cancel 2` - cancel giveaway 2
+        """
+        if msg_id not in self.bot.ongoing_giveaways:
+            raise BotError("No giveaway with that ID found.")
+
+        ga = self.bot.ongoing_giveaways.pop(msg_id)["msg"]
+
+        perms = await ctx.bot.db.get_permission(ctx.message.author.id, ctx.guild.id)
+        level = 3
+        if perms < level and not ga.author.id == ctx.author.id:
+            raise commands.CheckFailure(f"You do not have the required NecroBot permissions. Your permission level must be {level} or you must be the author of the giveaway.")
+
+        await ctx.send(f":white_check_mark: | Giveaway cancelled. {ga.jump_url}")
+
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.message_id not in self.bot.ongoing_giveaways:
+            return
+
+        if datetime.datetime.now() > self.bot.ongoing_giveaways[payload.message_id]["limit"]:
+            return
+
+        if payload.emoji.name == "\N{WRAPPED PRESENT}":
+            self.bot.ongoing_giveaways[payload.message_id]["entries"].append(payload.user_id)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        if payload.message_id not in self.bot.ongoing_giveaways:
+            return
+
+        if datetime.datetime.now() > self.bot.ongoing_giveaways[payload.message_id]["limit"]:
+            return
+
+        if payload.emoji.name == "\N{WRAPPED PRESENT}" and payload.user_id in self.bot.ongoing_giveaways[payload.message_id]["entries"]:
+            self.bot.ongoing_giveaways[payload.message_id]["entries"].remove(payload.user_id)
+
+
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload):
+        if payload.message_id in self.bot.ongoing_giveaways:
+            del self.ongoing_giveaways[payload.message_id]
+
 
 def setup(bot):
     bot.add_cog(Utilities(bot))

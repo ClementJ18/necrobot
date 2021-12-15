@@ -404,7 +404,7 @@ class Events(commands.Cog):
                     pass
                     
             else:
-                embed = discord.Embed(title="Member Joined", description=f"{member.mention} has joined the server but didn't use an invite... somehow...", colour=self.bot.bot_color)
+                embed = discord.Embed(title="Member Joined", description=f"{member.mention} has joined the server through Discovery.", colour=self.bot.bot_color)
                 embed.set_footer(**self.bot.bot_footer)
 
                 try:

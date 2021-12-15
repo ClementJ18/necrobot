@@ -49,7 +49,7 @@ class NecroBot(commands.Bot):
         self.error_channel = 415169176693506048
         self.session = None
         self.pool = None
-        self.maintenance = False
+        self.maintenance = True
         self.check_enabled = True
         self.owner_id = 241942232867799040
         
@@ -65,6 +65,7 @@ class NecroBot(commands.Bot):
         self.pending_posts = {}
         self.denied_posts = []
         self.events = {}
+        self.ongoing_giveaways = {}
         self.queued_posts = asyncio.Queue()
 
         with open("rings/utils/data/settings.json", "rb") as infile:

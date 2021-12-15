@@ -254,9 +254,9 @@ class Meta(commands.Cog):
     def is_scam(self, message : discord.Message) -> bool:
         has_nitro = "nitro" in message.content.lower()
         # has_nitro_link = any(("nitro" in x.lower() or "gift" in x.lower()) for x in re.findall(self.bot.url_pattern, message.content))
-        has_link = bool(re.findall(self.bot.url_pattern, message.content))
+        has_link = bool(re.findall(self.bot.url_pattern, message.content.lower()))
         has_embed = bool(message.embeds)
-        has_everyone_ping = message.mention_everyone
+        has_everyone_ping = "@everyone" in message.content.lower()
 
         return has_nitro and has_link and has_everyone_ping
 
@@ -325,6 +325,7 @@ class Meta(commands.Cog):
                 
                 self.bot.reminders[reminder["id"]] = task
                 
+        self.bot.maintenance = False
         await msg.edit(content="**Bot Online**")
         
     async def guild_checker(self, guild):

@@ -38,6 +38,20 @@ def format_dt(dt: datetime.datetime, /, style: str = None) -> str:
     if style is None:
         return f'<t:{int(dt.timestamp())}>'
     return f'<t:{int(dt.timestamp())}:{style}>'
+
+def time_string_parser(message):
+    err = "Something went wrong, you need to use the format: **<optional_message> in <time>**"
+
+    if "in" not in message:
+        raise BotError(err)
+
+    text, sep, time = message.rpartition("in ")
+    sleep = time_converter(time)
+
+    if not sep:
+        raise BotError(err)
+
+    return text, sleep, time
     
 async def react_menu(ctx, entries, per_page, generator, *, page=0, timeout=300):
     max_pages = max(0, ((len(entries)-1)//per_page))
@@ -53,6 +67,12 @@ async def react_menu(ctx, entries, per_page, generator, *, page=0, timeout=300):
     for reaction in react_list:
         await msg.add_reaction(reaction)
 
+    async def handler():
+        try:
+            await msg.clear_reactions()
+        except discord.errors.NotFound:
+            pass
+
     while True: 
         def check(r, u):
             return u == ctx.message.author and r.emoji in react_list and msg.id == r.message.id
@@ -61,7 +81,7 @@ async def react_menu(ctx, entries, per_page, generator, *, page=0, timeout=300):
             "reaction_add", 
             check=check, 
             timeout=timeout, 
-            handler=msg.clear_reactions, 
+            handler=handler, 
             propagate=False
         )
 
