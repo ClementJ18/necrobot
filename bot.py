@@ -71,47 +71,6 @@ class NecroBot(commands.Bot):
         with open("rings/utils/data/settings.json", "rb") as infile:
             self.settings = {**default_settings(), **json.load(infile)}
         
-        @self.check
-        async def disabled_check(ctx):
-            """This is the backbone of the disable command. If the command name is in disabled then
-            we check to make sure that it's not an admin trying to invoke it"""
-            if ctx.guild is None:
-                return True
-
-            disabled = self.guild_data[ctx.guild.id]["disabled"]
-            if ctx.command.name in disabled and not (await self.db.get_permission(ctx.author.id, ctx.guild.id)) > 0:
-                raise commands.CheckFailure("This command has been disabled")
-
-            return True
-                
-        self.add_check(disabled_check)
-        
-        @self.check
-        async def allowed_summon(ctx):
-            if ctx.guild is None:
-                return True
-                
-            roles = [role.id for role in ctx.author.roles]
-            user_id = ctx.author.id
-            guild_id = ctx.guild.id
-
-            if user_id in self.guild_data[guild_id]["ignore-command"]:
-                raise commands.CheckFailure("You are being ignored by the bot")
-
-            if (await self.db.get_permission(user_id, guild_id)) > 0:
-                return True
-
-            if ctx.channel.id in self.guild_data[guild_id]["ignore-command"]:
-                raise commands.CheckFailure("Commands not allowed in this channel.")
-
-            if any(x in roles for x in self.guild_data[guild_id]["ignore-command"]):
-                roles = [f"**{x.name}**" for x in ctx.author.roles if x.id in self.guild_data[guild_id]["ignore-command"]]
-                raise commands.CheckFailure(f"Roles {', '.join(roles)} aren't allowed to use commands.")
-
-            return True
-
-        self.add_check(allowed_summon)
-        
     def clear(self):
         self._closed = False
         self._ready.clear()
@@ -265,6 +224,43 @@ extensions = [
 ]
 
 bot = NecroBot()
+
+@bot.check
+async def disabled_check(ctx):
+    """This is the backbone of the disable command. If the command name is in disabled then
+    we check to make sure that it's not an admin trying to invoke it"""
+    if ctx.guild is None:
+        return True
+
+    disabled = ctx.bot.guild_data[ctx.guild.id]["disabled"]
+    if ctx.command.name in disabled and not (await ctx.bot.db.get_permission(ctx.author.id, ctx.guild.id)) > 0:
+        raise commands.CheckFailure("This command has been disabled")
+
+    return True      
+        
+@bot.check
+async def allowed_summon(ctx):
+    if ctx.guild is None:
+        return True
+        
+    roles = [role.id for role in ctx.author.roles]
+    user_id = ctx.author.id
+    guild_id = ctx.guild.id
+
+    if user_id in ctx.bot.guild_data[guild_id]["ignore-command"]:
+        raise commands.CheckFailure("You are being ignored by the bot")
+
+    if (await ctx.bot.db.get_permission(user_id, guild_id)) > 0:
+        return True
+
+    if ctx.channel.id in ctx.bot.guild_data[guild_id]["ignore-command"]:
+        raise commands.CheckFailure("Commands not allowed in this channel.")
+
+    if any(x in roles for x in ctx.bot.guild_data[guild_id]["ignore-command"]):
+        roles = [f"**{x.name}**" for x in ctx.author.roles if x.id in ctx.bot.guild_data[guild_id]["ignore-command"]]
+        raise commands.CheckFailure(f"Roles {', '.join(roles)} aren't allowed to use commands.")
+
+    return True
     
 @bot.command(hidden=True)
 @commands.is_owner()

@@ -75,8 +75,8 @@ class Decisions(commands.Cog):
         `{pre}roll` - roll one 6-sided die"""
         try:
             dice_list = dice.roll(dices)
-        except dice.DiceException:
-            raise BotError("Something went frong with the format you gave")
+        except Exception as e:
+            raise BotError(e)
 
         try:
             t = sum(dice_list)

@@ -269,11 +269,8 @@ class Meta(commands.Cog):
         except discord.Forbidden:
             pass
 
-        if not self.guild_data[scam_msg.guild.id]["mute"]:
-            return
-
         role = discord.utils.get(scam_msg.guild.roles, id=self.bot.guild_data[scam_msg.guild.id]["mute"])
-        if role in scam_msg.author.roles:
+        if role in scam_msg.author.roles or role is None:
             return
 
         try:

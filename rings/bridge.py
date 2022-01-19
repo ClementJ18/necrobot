@@ -111,7 +111,9 @@ class Bridge(commands.Cog):
             else:
                 raise ValueError(f"Retried three times, unable to get form for {pending['message'].id}")
 
-        form["message"].value = pending["content"]
+        content = pending["content"]
+        author = pending["message"].author
+        form["message"].value = f'{content} \n[hr]\n {author} ({author.mention})'
 
         # del form.fields["attachment[]"]
         del form.fields["preview"]
@@ -444,7 +446,7 @@ class Bridge(commands.Cog):
         # )
         
         if message.reference:
-            if message.reference.id in self.pending_posts:
+            if message.reference.message_id in self.bot.pending_posts:
                 self.bot.pending_posts[message.id]["replies"].append(message)
                 return
 

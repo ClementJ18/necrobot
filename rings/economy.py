@@ -60,7 +60,10 @@ class Hand(common.Hand):
     def is_bust(self):
         return self.value() > WIN_MAX
 
-    def is_passing(self, other):           
+    def is_passing(self, other):   
+        if self.value() < WIN_MIN:
+            False
+
         if self.value() >= other.value():
             return True
 
@@ -194,11 +197,14 @@ class BlackJack:
             self.player.add_card(card)
             self.actions.append(f"**You** draw {card}")
         elif reaction.emoji == "\N{MONEY BAG}":
-            self.bet = await MoneyConverter().convert(self.ctx, str(self.bet*2))
-            card = self.deck.draw()
-            self.player.add_card(card)
-            self.actions.append(f"**You** double your bet and draw {card}")
-            self.player.passing = True
+            try:
+                self.bet = await MoneyConverter().convert(self.ctx, str(self.bet*2))
+                card = self.deck.draw()
+                self.player.add_card(card)
+                self.actions.append(f"**You** double your bet and draw {card}")
+                self.player.passing = True
+            except commands.BadArgument:
+                self.actions.append("**You** don't have enough money to double your bet and pass")
         elif reaction.emoji == "\N{BLACK SQUARE FOR STOP}":
             self.actions.append("**You** pass your turn")
             self.player.passing = True
@@ -223,8 +229,7 @@ class Economy(commands.Cog):
         {usage}
         
         __Example__
-        `{pre}blackjack 200` - bet 200 :euro: in the game of blackjack
-        `{pre}blackjack` - bet the default 10 :euro:"""
+        `{pre}blackjack 200` - bet 200 :euro: in the game of blackjack"""
         if ctx.channel.id in self.IS_GAME:
             raise BotError("There is already a game ongoing")
 
