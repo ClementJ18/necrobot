@@ -8,6 +8,7 @@ from rings.utils.checks import has_perms
 
 import ast
 import psutil
+import traceback
 from typing import Union, Optional
 from simpleeval import simple_eval
 import datetime
@@ -33,6 +34,12 @@ class Admin(commands.Cog):
 
         if isinstance(body[-1], ast.With):
             self.insert_returns(body[-1].body)
+
+    def cleanup_code(self, content):
+        if content.startswith('```') and content.endswith('```'):
+            return '\n'.join(content.split('\n')[1:-1])
+
+        return content.strip("`")
             
     #######################################################################
     ## Commands
@@ -356,7 +363,7 @@ class Admin(commands.Cog):
             `author`: user invoking the eval
         """
         fn_name = "_eval_expr"
-        cmd = cmd.strip("` ")
+        cmd = self.cleanup_code(cmd)
         cmd = "\n".join(f"    {i}" for i in cmd.splitlines())
         body = f"async def {fn_name}():\n{cmd}"
 
@@ -375,8 +382,14 @@ class Admin(commands.Cog):
         body = parsed.body[0].body
         self.insert_returns(body)
 
-        exec(compile(parsed, filename="<ast>", mode="exec"), env)
-        result = (await eval(f"{fn_name}()", env))
+        try:
+            exec(compile(parsed, filename="<ast>", mode="exec"), env)
+            result = (await eval(f"{fn_name}()", env))
+        except Exception as e:
+            error_traceback = " ".join(traceback.format_exception(type(e), e, e.__traceback__, chain=True))
+            embed = discord.Embed(description=f"```py\n{error_traceback}\n```")
+            return await ctx.send(embed=embed)
+
         if result is not None and result != "":
             await ctx.send(result)
         else:

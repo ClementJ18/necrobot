@@ -154,6 +154,16 @@ CREATE TABLE necrobot.Youtube(
     PRIMARY KEY(guild_id, youtuber_id)
 );
 
+CREATE TABLE necrobot.Twitch(
+    guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
+    channel_id bigint,
+    twitch_id varchar(50),
+    last_update TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    filter varchar(200),
+    twitch_name varchar(200),
+    PRIMARY KEY(guild_id, twitch_id)
+)
+
 CREATE TABLE necrobot.Invites(
     id varchar(10) PRIMARY KEY,
     guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,

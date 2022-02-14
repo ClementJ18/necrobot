@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 
 from rings.utils.converters import time_converter
+from rings.utils.config import twitch_id, twitch_secret
 
 try:
     import sh
@@ -10,6 +11,7 @@ except ImportError:
 
 import io
 import re
+import time
 import aiohttp
 import asyncio
 import datetime
@@ -283,6 +285,17 @@ class Meta(commands.Cog):
             embed = discord.Embed(title="Scam Warning", description=f"{scam_msg.author.mention} triggered the scam filter. User has been muted while awaiting moderation review.", colour=self.bot.bot_color)
             embed.set_footer(**self.bot.bot_footer)
             await automod.send(embed=embed)
+
+    async def refresh_token(self):
+        async with self.bot.session.post("https://id.twitch.tv/oauth2/token", params={
+                'client_id': twitch_id,
+                'client_secret': twitch_secret,
+                'grant_type': 'client_credentials'
+            }) as resp:
+
+            json = await resp.json()
+        
+        self.bot.twitch_token = {"token": json["access_token"], "expires": time.time() + json["expires_in"]}
         
     async def load_cache(self):
         await self.bot.wait_until_ready()
@@ -322,6 +335,9 @@ class Meta(commands.Cog):
                 
                 self.bot.reminders[reminder["id"]] = task
                 
+
+        await self.refresh_token()
+
         self.bot.maintenance = False
         await msg.edit(content="**Bot Online**")
         

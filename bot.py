@@ -39,7 +39,7 @@ class NecroBot(commands.Bot):
         
         self.version = 3.8
         self.prefixes = ["n!", "N!"]
-        self.new_commands = ["flowers", "event", "give"]
+        self.new_commands = ["flowers", "event", "give", "twitch"]
         self.statuses = ["n!help for help", "currently in {guild} guilds", "with {members} members", "n!report for bug/suggestions"]
         self.perms_name = ["User", "Helper", "Moderator", "Admin Trainee", "Admin", "Server Owner", "Bot Admin", "Bot Dev"]
         self.bot_color = discord.Colour(0x277b0)

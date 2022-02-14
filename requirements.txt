@@ -80,3 +80,7 @@ sh == 1.14.1
 # C:\Users\Clement\Documents\GitHub\necrobot\rings\admin.py: 18
 # C:\Users\Clement\Documents\GitHub\necrobot\rings\utilities.py: 10
 simpleeval == 0.9.10
+
+pytz == 2021.03
+Werkzeug == 0.16.1
+python-Levenshtein == 0.12.2

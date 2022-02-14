@@ -70,12 +70,6 @@ class Events(commands.Cog):
 
         if not self.is_starrable(payload.guild_id, payload.channel_id, payload.message_id):
             return
-
-        channel = self.bot.get_channel(payload.channel_id)
-        starboard = self.bot.get_channel(self.bot.guild_data[payload.guild_id]["starboard-channel"])
-        if channel.is_nsfw() and not starboard.is_nsfw():
-            await channel.send(":negative_squared_cross_mark: | Could not send message to starboard because channel is marked as NSFW and starboard id marked as SFW. Either make this channel SFW or make the starboard NSFW")
-            return
         
         if not payload.message_id in self.bot.potential_stars:
             message = self.bot._connection._get_message(payload.message_id)
@@ -88,7 +82,12 @@ class Events(commands.Cog):
         if not message["message"].author.id == payload.user_id:
             message["count"] += 1
             
-        if message["count"] >= self.bot.guild_data[payload.guild_id]["starboard-limit"]:
+        if message["count"] == self.bot.guild_data[payload.guild_id]["starboard-limit"]:
+            channel = self.bot.get_channel(payload.channel_id)
+            starboard = self.bot.get_channel(self.bot.guild_data[payload.guild_id]["starboard-channel"])
+            if channel.is_nsfw() and not starboard.is_nsfw():
+                return await channel.send(":negative_squared_cross_mark: | Could not send message to starboard because channel is marked as NSFW and starboard is marked as SFW. Either make this channel SFW or make the starboard NSFW")
+
             del self.bot.potential_stars[payload.message_id]
             await self.bot.meta.star_message(message["message"])
         
@@ -202,7 +201,8 @@ class Events(commands.Cog):
         
         await self.bot.db.delete_automod_ignore(guild_id, channel.id)
         await self.bot.db.delete_command_ignore(guild_id, channel.id)
-        await self.bot.db.delete_rss_channel(guild_id, channel_id=channel.id)
+        await self.bot.db.delete_yt_rss_channel(guild_id, channel_id=channel.id)
+        await self.bot.db.delete_tw_rss_channel(guild_id, channel_id=channel.id)
 
         await self.bot.db.query(
             "DELETE FROM necrobot.Broadcasts WHERE channel_id = $1",
@@ -395,7 +395,7 @@ class Events(commands.Cog):
             channel = member.guild.get_channel(self.bot.guild_data[member.guild.id]["automod"])
             if invite:
                 embed = discord.Embed(title="Member Joined", description=f"{member.mention} has joined the server using {invite.url}", colour=self.bot.bot_color)
-                embed.add_field(name="Invite", value=invite.inviter)
+                embed.add_field(name="Invite", value=invite.inviter if invite.inviter is not None else 'User Left')
                 embed.set_footer(**self.bot.bot_footer)
                 
                 try:
@@ -426,7 +426,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         await self.bot.db.delete_permission(member.id, member.guild.id)
-        await self.bot.db.delete_automod_ignore(member.guild.id, member.id)
+        # await self.bot.db.delete_automod_ignore(member.guild.id, member.id)
 
         if has_goodbye(self.bot, member):
             channel = self.bot.get_channel(self.bot.guild_data[member.guild.id]["welcome-channel"])

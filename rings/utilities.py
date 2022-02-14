@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import react_menu, BotError, format_dt, time_string_parser
+from rings.utils.utils import react_menu, BotError, format_dt, time_string_parser, time_converter
 from rings.utils.converters import MemberConverter
 from rings.utils.checks import leaderboard_enabled, has_perms
 from rings.utils.astral import Astral

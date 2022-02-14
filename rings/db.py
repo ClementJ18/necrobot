@@ -551,6 +551,15 @@ class Database(commands.Cog):
             )
         
         return await self.query("SELECT * FROM necrobot.Youtube")
+
+    async def get_tw_rss(self, guild_id = None):
+        if guild_id is not None:
+            return await self.query(
+                "SELECT * FROM necrobot.Twitch WHERE guild_id = $1", 
+                guild_id
+            )
+        
+        return await self.query("SELECT * FROM necrobot.Twitch")
             
     async def upsert_yt_rss(self, guild_id, channel_id, youtuber_id, youtuber_name):
         await self.query(
@@ -559,11 +568,26 @@ class Database(commands.Cog):
             DO UPDATE SET channel_id = $2, youtuber_name = $4 WHERE yt.guild_id = $1 AND yt.youtuber_id = $3""",
             guild_id, channel_id, youtuber_id, youtuber_name
         )
+
+    async def upsert_tw_rss(self, guild_id, channel_id, twitch_id, twitch_name):
+        await self.query(
+            """INSERT INTO necrobot.Twitch AS tw VALUES ($1, $2, $3, NOW(), '', $4) 
+            ON CONFLICT (guild_id,twitch_id) 
+            DO UPDATE SET channel_id = $2, twitch_name = $4 WHERE tw.guild_id = $1 AND tw.twitch_id = $3""",
+            guild_id, channel_id, twitch_id, twitch_name
+        )
         
     async def update_yt_filter(self, guild_id, youtuber_name, text):
         return await self.bot.db.query(
             "UPDATE necrobot.Youtube SET filter = $3 WHERE guild_id = $1 and LOWER(youtuber_name) = LOWER($2) RETURNING youtuber_name", 
             guild_id, youtuber_name, text,
+            fetchval=True
+        )
+
+    async def update_tw_filter(self, guild_id, twitch_name, text):
+        return await self.bot.db.query(
+            "UPDATE necrobot.Twitch SET filter = $3 WHERE guild_id = $1 and LOWER(twitch_name) = LOWER($2) RETURNING twitch_name", 
+            guild_id, twitch_name, text,
             fetchval=True
         )
             
@@ -572,8 +596,14 @@ class Database(commands.Cog):
             "UPDATE necrobot.Youtube SET last_update = NOW() RETURNING last_update",
             fetchval=True
         )
+
+    async def update_tw_rss(self, guild_id = None):
+        return await self.query(
+            "UPDATE necrobot.Twitch SET last_update = NOW() RETURNING last_update",
+            fetchval=True
+        )
         
-    async def delete_rss_channel(self, guild_id, *, channel_id = None, youtuber_name = None):            
+    async def delete_yt_rss_channel(self, guild_id, *, channel_id = None, youtuber_name = None):            
         if channel_id is not None:
             return await self.query(
                 "DELETE FROM necrobot.Youtube WHERE guild_id = $1 AND channel_id = $2", 
@@ -588,6 +618,24 @@ class Database(commands.Cog):
             
         return await self.query(
             "DELETE FROM necrobot.Youtube WHERE guild_id = $1", 
+            guild_id
+        )
+
+    async def delete_tw_rss_channel(self, guild_id, *, channel_id = None, twitch_name = None):            
+        if channel_id is not None:
+            return await self.query(
+                "DELETE FROM necrobot.Twitch WHERE guild_id = $1 AND channel_id = $2", 
+                guild_id, channel_id
+            )
+            
+        if youtuber_name is not None:
+            return await self.query(
+                "DELETE from necrobot.Twitch WHERE guild_id = $1 AND LOWER(twitch_name) = LOWER($2)",
+                guild_id, youtuber_name  
+            )
+            
+        return await self.query(
+            "DELETE FROM necrobot.Twitch WHERE guild_id = $1", 
             guild_id
         )
 

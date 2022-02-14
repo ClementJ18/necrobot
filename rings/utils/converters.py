@@ -278,3 +278,34 @@ class Tag(commands.Converter):
             raise commands.BadArgument(f"Tag {argument} not found.")
             
         return tag[0]
+
+class WritableChannelConverter(commands.IDConverter):
+    async def convert(self, ctx, argument):
+        bot = ctx.bot
+
+        match = self._get_id_match(argument) or re.match(r'<#([0-9]+)>$', argument)
+        result = None
+        guild = ctx.guild
+
+        if match is None:
+            # not a mention
+            if guild:
+                result = discord.utils.get(guild.text_channels, name=argument)
+            else:
+                def check(c):
+                    return isinstance(c, discord.TextChannel) and c.name == argument
+                result = discord.utils.find(check, bot.get_all_channels())
+        else:
+            channel_id = int(match.group(1))
+            if guild:
+                result = guild.get_channel(channel_id)
+            else:
+                result = _get_from_guilds(bot, 'get_channel', channel_id)
+
+        if not isinstance(result, discord.TextChannel):
+            raise ChannelNotFound(argument)
+
+        if not result.permissions_for(result.guild.me).send_messages:
+            raise BotError(f"I cannot send messages in {result.mention}")
+
+        return result

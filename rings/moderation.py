@@ -538,6 +538,13 @@ class Moderation(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             
             await member.guild.get_channel(automod).send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_member_ban(self, guild, user):
+        #don't need to track if they were banned
+        if user.id in self.bot.guild_data[guild.id]["mutes"]:
+            self.bot.guild_data[guild.id]["mutes"].remove(user.id)
+
             
     @commands.Cog.listener()
     async def on_member_join(self, member):
