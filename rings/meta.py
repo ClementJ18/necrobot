@@ -182,9 +182,9 @@ class Meta(commands.Cog):
                     await task()
 
             now = datetime.datetime.now()
-            time = 3600 - (now.second + (now.minute * 60))
+            sleep = 3600 - (now.second + (now.minute * 60))
             try:
-                await asyncio.sleep(time) # task runs every hour
+                await asyncio.sleep(sleep) # task runs every hour
             except asyncio.CancelledError:
                 return
             
@@ -386,9 +386,9 @@ class Meta(commands.Cog):
             guild.id, roles
         )
         
-    async def reminder_task(self, reminder_id, time, message, channel_id, user_id):
+    async def reminder_task(self, reminder_id, sleep, message, channel_id, user_id):
         try:
-            await asyncio.sleep(time)
+            await asyncio.sleep(sleep)
         except asyncio.CancelledError:
             return
 

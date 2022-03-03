@@ -47,10 +47,10 @@ class Utilities(commands.Cog):
         try:
             final = simple_eval(equation)
             await ctx.send(f":1234: | **{final}**")
-        except NameError:
-            raise BotError("Mathematical equation not recognized")
+        except NameError as e:
+            raise BotError("Mathematical equation not recognized") from e
         except Exception as e:
-            raise BotError(str(e))
+            raise BotError(str(e)) from e
 
     @commands.command()
     @commands.guild_only()
@@ -148,8 +148,8 @@ class Utilities(commands.Cog):
             for event in entries:
                 try:
                     if choice == "Events":
-                        link_list = "".join(["\n-[{}]({})".format(x["title"], x["link"]) for x in event["links"]])
-                        embed.add_field(name=f"Year {event['year']}", value="{}\n__Links__{}".format(event['text'], link_list), inline=False)
+                        link_list = "".join([f"\n-[{x['title']}]({x['link']})" for x in event["links"]])
+                        embed.add_field(name=f"Year {event['year']}", value=f"{event['text']}\n__Links__{link_list}", inline=False)
                     elif choice == "Deaths":
                         embed.add_field(name=f"Year {event['year']}", value=f"[{event['text'].replace('b.','Birth: ')}]({event['links'][0]['link']})", inline=False)
                     elif choice == "Births":
@@ -462,14 +462,14 @@ class Utilities(commands.Cog):
         a = Astral()
         try:
             location = a[city]
-        except KeyError:
-            raise BotError(f"City **{city}** not found in possible cities")
+        except KeyError as e:
+            raise BotError(f"City **{city}** not found in possible cities") from e
 
         if date is not None:
             try:
                 date = datetime.datetime.strptime(date, "%d/%m/%Y")
-            except ValueError:
-                raise BotError("Date not in DD/MM/YYYY format or not valid")
+            except ValueError as e:
+                raise BotError("Date not in DD/MM/YYYY format or not valid") from e
         else:
             date = datetime.datetime.now()
 

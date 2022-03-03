@@ -5,7 +5,6 @@ from rings.utils.var import tarot_list, lotr_list, dad_joke, dex, riddle_list, g
 from rings.utils.utils import BotError
 
 import random
-import asyncio
 from bs4 import BeautifulSoup
 
 class Social(commands.Cog):
@@ -40,7 +39,7 @@ class Social(commands.Cog):
         async def bad_answer():
             await ctx.send(":negative_squared_cross_mark: | Wrong answer! Now you go to feed the fishies!")
         
-        await self.bot.wait_for("message", check=check, timeout=30, propagate=False)
+        await self.bot.wait_for("message", check=check, timeout=30, propagate=False, handler=bad_answer)
         await ctx.send(":white_check_mark: | Well played, that was the correct answer.")
             
 
@@ -98,11 +97,11 @@ class Social(commands.Cog):
         try:
             dex_1 = dex.index(pokemon1.lower() if pokemon1 else random.choice(dex)) + 1
             dex_2 = dex.index(pokemon2.lower() if pokemon2 else random.choice(dex)) + 1
-        except ValueError:
+        except ValueError as e:
             if dex_1 is None:
-                raise BotError("Second pokemon does not exist.")
+                raise BotError("Second pokemon does not exist.") from e
             
-            raise BotError("First pokemon does not exist.")
+            raise BotError("First pokemon does not exist.") from e
 
         async with self.bot.session.get(f"http://pokemon.alexonsager.net/{dex_1}/{dex_2}") as resp:
             soup = BeautifulSoup(await resp.text(), "html.parser")

@@ -3,7 +3,7 @@ from discord.ext import commands
 
 from rings.utils.utils import react_menu, BotError, check_channel
 from rings.db import DatabaseError
-from rings.utils.converters import TimeConverter, RangeConverter, UserConverter, MemberConverter, RoleConverter
+from rings.utils.converters import TimeConverter, RangeConverter, MemberConverter, RoleConverter
 from rings.utils.checks import has_perms
 
 from typing import Union
@@ -236,8 +236,8 @@ class Server(commands.Cog):
                 "INSERT INTO necrobot.PermissionRoles VALUES($1, $2, $3)",
                 ctx.guild.id, level, role.id, fetchval=True
             )
-        except DatabaseError:
-            raise BotError("A binding already exists for that permission level, remove it before setting a new one")
+        except DatabaseError as e: 
+            raise BotError("A binding already exists for that permission level, remove it before setting a new one") from e
 
         if not role.members:
             return await ctx.send(":white_check_mark: | Permission binding created!")
@@ -520,7 +520,7 @@ class Server(commands.Cog):
                 )
                 await ctx.send(f":white_check_mark: | Your server's welcome message will be: \n{test}")
             except KeyError as e:
-                raise BotError(f"{e.args[0]} is not a valid argument. Check the help guide to see what you can use the command with.")
+                raise BotError(f"{e.args[0]} is not a valid argument. Check the help guide to see what you can use the command with.") from e
 
         await self.bot.db.update_welcome_message(ctx.guild.id, message)
         
@@ -556,7 +556,7 @@ class Server(commands.Cog):
                 )
                 await ctx.send(f":white_check_mark: | Your server's farewell message will be: \n{test}")
             except KeyError as e:
-                raise BotError(f"{e.args[0]} is not a valid argument. Check the help guide to see what you can use the command with.")
+                raise BotError(f"{e.args[0]} is not a valid argument. Check the help guide to see what you can use the command with.") from e
 
         await self.bot.db.update_farewell_message(ctx.guild.id, message)
 
@@ -995,8 +995,8 @@ class Server(commands.Cog):
 
         try:
             message = await ctx.channel.fetch_message(message_id)
-        except:
-            raise BotError("Message not found, make sure you are in the channel with the message.")
+        except Exception as e:
+            raise BotError("Message not found, make sure you are in the channel with the message.") from e
 
         await self.bot.meta.star_message(message)
         automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])

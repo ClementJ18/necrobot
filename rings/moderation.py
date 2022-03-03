@@ -51,7 +51,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @has_perms(3)
     @commands.bot_has_permissions(ban_members=True)
-    async def ban(self, ctx, user : Union[MemberConverter, int], reason = None):
+    async def ban(self, ctx, user : Union[MemberConverter, int], *, reason = None):
         """Ban a user, sending them a message and add the message as a reason
 
         {usage}

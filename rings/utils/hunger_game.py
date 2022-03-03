@@ -397,7 +397,6 @@ events = {
         {"tributes": 4, "killed": ["4"], "string": "{p1}, {p2}, and {p3} track down and kill {p4}."},
         {"tributes": 3, "killed": ["3"], "string": "{p1} and {p2} track down and kill {p3}."},
         {"tributes": 2, "killed": ["2"], "string": "{p1} tracks down and kills {p2}."},
-        {"tributes": 2, "killed": ["2"], "string": "{p1} repeatedly stabs {p2} to death with sais."}]}
-
-
-
+        {"tributes": 2, "killed": ["2"], "string": "{p1} repeatedly stabs {p2} to death with sais."}
+    ]
+}

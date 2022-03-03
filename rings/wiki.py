@@ -133,7 +133,7 @@ class Wiki(commands.Cog):
     async def mediawiki_handler(self, ctx, article, fandom=None):
 
         if fandom is not None:
-            base = "https://{fandom}.wikia.com".format(fandom=fandom)
+            base = f"https://{fandom}.wikia.com"
             name = fandom.title() + " Wiki"
         else:
             name = "Tolkien Gateway"
@@ -158,7 +158,7 @@ class Wiki(commands.Cog):
 
         page = await self.page(page_id, fandom)
         
-        msg = "List of results: {}".format(", ".join([x[0] for x in e]))
+        msg = f"List of results: {', '.join([x[0] for x in e])}"
         url = page["fullurl"]
 
         parsed = await self.parse(page_id, fandom)

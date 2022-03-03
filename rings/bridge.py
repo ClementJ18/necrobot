@@ -4,7 +4,7 @@ from discord.ext import commands
 from rings.utils.utils import BotError, react_menu
 from rings.utils.config import MU_Username, MU_Password
 from rings.utils.converters import MemberConverter, MUConverter
-from rings.utils.checks import mu_moderator, mu_moderator_check, guild_only
+from rings.utils.checks import mu_moderator_check, guild_only
 
 import re
 import asyncio
@@ -447,7 +447,7 @@ class Bridge(commands.Cog):
         
         if message.reference:
             if message.reference.message_id in self.bot.pending_posts:
-                self.bot.pending_posts[message.id]["replies"].append(message)
+                self.bot.pending_posts[message.reference.message_id]["replies"].append(message)
                 return
 
         perms = await self.bot.db.get_permission(message.author.id, message.guild.id)
@@ -456,9 +456,8 @@ class Bridge(commands.Cog):
 
         self.bot.pending_posts[message.id] = {"message": message, "content": message.content, "replies": []}
 
-        for reaction in self.mapping:
-            reaction_id = self.mapping[reaction]["id"]
-            await message.add_reaction(f"{reaction}:{reaction_id}")
+        for reaction, value in self.mapping.items():
+            await message.add_reaction(f"{reaction}:{value['id']}")
         
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):

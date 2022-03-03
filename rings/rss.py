@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import react_menu, BotError, check_channel
+from rings.utils.utils import react_menu, BotError
 from rings.utils.checks import has_perms
 from rings.utils.converters import WritableChannelConverter
 from rings.utils.config import twitch_id
@@ -14,8 +14,8 @@ import random
 from bs4 import BeautifulSoup
 from collections import defaultdict
 
-def convert(time):
-    return datetime.datetime.strptime(time[:-3] + time[-2:], '%Y-%m-%dT%H:%M:%S%z')
+def convert(t):
+    return datetime.datetime.strptime(t[:-3] + t[-2:], '%Y-%m-%dT%H:%M:%S%z')
 
 class RSS(commands.Cog):
     """Cog for keeping up to date with a bunch of different stuff automatically."""
@@ -101,8 +101,6 @@ class RSS(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
 
             for channel, title_filter in feeds[str(stream["user_id"])]:
-                print(title_filter)
-                print(stream["title"])
                 if title_filter in stream["title"].lower():
                     await self.bot.get_channel(channel).send(embed=embed)
 
@@ -124,7 +122,7 @@ class RSS(commands.Cog):
     
     @commands.group(invoke_without_command = True, aliases=["yt"])
     @has_perms(3)
-    async def youtube(self, ctx, youtube : str = None, channel : WritableChannelConverter = None):
+    async def youtube(self, ctx, youtube : str = None, *, channel : WritableChannelConverter = None):
         """Add/edit a youtube stream. As long as you provide a channel, the stream will be set to that
         channelYou can simply pass a channel URL for the ID to be retrieved.
         
@@ -135,10 +133,7 @@ class RSS(commands.Cog):
         new videos to the #streams
         `{pre}youtube` - list all youtube  channels you are subbed to and which discord channel they are being sent to.
         """
-        if channel is None:
-            if youtube is not None:
-                raise BotError("Please provide a channel to set the youtube stream to")
-
+        if youtube is None:
             feeds = await self.bot.db.get_yt_rss(ctx.guild.id)
 
             def embed_generator(page, entries):
@@ -152,22 +147,26 @@ class RSS(commands.Cog):
         
         
         try:        
-            async with self.bot.session.get(youtube, cookies={'CONSENT': 'YES+cb.20210328-17-p0.en-GB+FX+{}'.format(random.randint(100, 999))}) as resp:
+            async with self.bot.session.get(youtube, cookies={'CONSENT': f'YES+cb.20210328-17-p0.en-GB+FX+{random.randint(100, 999)}'}) as resp:
                 if resp.status != 200:
                     raise BotError("This channel does not exist, double check the youtuber id.")
                 
                 try:
                     youtuber_id = re.findall(r'"external(?:Channel)?Id":"([^,.]*)"', await resp.text())[0]
-                except IndexError:
-                    raise BotError("Could not find the user ID")            
+                except IndexError as e:
+                    raise BotError("Could not find the user ID") from e           
         except Exception as e:
-            raise BotError(f"Not a valid youtube URL: {e}")
+            raise BotError(f"Not a valid youtube URL: {e}") from e
             
         soup = BeautifulSoup(await resp.text(), "html.parser")
         name = soup.find("title").string.replace(" - YouTube", "")      
         
-        await self.bot.db.upsert_yt_rss(ctx.guild.id, channel.id, youtuber_id, name)
-        await ctx.send(f":white_check_mark: | New videos from **{name}** will now be posted in {channel.mention}.")
+        if channel is not None:
+            await self.bot.db.upsert_yt_rss(ctx.guild.id, channel.id, youtuber_id, name)
+            await ctx.send(f":white_check_mark: | New videos from **{name}** will now be posted in {channel.mention}.")
+        else:
+            await self.bot.db.delete_yt_rss_channel(ctx.guild.id, youtuber_name=name)
+            await ctx.send(f":white_check_mark: | Upload notifications for **{name}** disabled.")
 
     @youtube.command(name="delete")
     @has_perms(3)
@@ -250,7 +249,7 @@ class RSS(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @has_perms(3)
-    async def twitch(self, ctx, twitch : str = None, channel : WritableChannelConverter = None):
+    async def twitch(self, ctx, twitch : str = None, *, channel : WritableChannelConverter = None):
         """Add/edit twitch streams. Simply provide a channel name or url to get started
 
         {usage}
@@ -259,10 +258,7 @@ class RSS(commands.Cog):
         `{pre}twitch scarra #streams` - subscribe to scarra, you will notified whenever they go live
         `{pre}twitch https://www.twitch.tv/scarra #streams` - subscribe to scarra, you will notified whenever they go live
         """
-        if channel is None:
-            if twitch is not None:
-                raise BotError("Please provide a channel to set the twitch to")
-
+        if twitch is None:
             feeds = await self.bot.db.get_tw_rss(ctx.guild.id)
 
             def embed_generator(page, entries):
@@ -275,11 +271,15 @@ class RSS(commands.Cog):
             return await react_menu(ctx, feeds, 15, embed_generator)
 
         
-        twitch = re.sub(r"https?:\/\/(?:(?:www|go|m)\.)?twitch\.tv\/", "", twitch)
-        user = await self.get_twitch_user(twitch)
+        if channel is not None:
+            twitch = re.sub(r"https?:\/\/(?:(?:www|go|m)\.)?twitch\.tv\/", "", twitch)
+            user = await self.get_twitch_user(twitch)
 
-        await self.bot.db.upsert_tw_rss(ctx.guild.id, channel.id, user["id"], user["login"])
-        await ctx.send(f":white_check_mark: | Live streams from **{user['display_name']}** will now be posted in {channel.mention}.")
+            await self.bot.db.upsert_tw_rss(ctx.guild.id, channel.id, user["id"], user["login"])
+            await ctx.send(f":white_check_mark: | Live streams from **{user['display_name']}** will now be posted in {channel.mention}.")
+        else:
+            await self.bot.db.delete_tw_rss_channel(ctx.guild.id, twitch_name=twitch)
+            await ctx.send(f":white_check_mark: | Live stream notifications for **{twitch}** disabled.")
 
 
     @twitch.command(name="delete")

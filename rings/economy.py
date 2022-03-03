@@ -4,7 +4,6 @@ from discord.ext import commands
 from rings.utils.utils import BotError
 from rings.utils.converters import MoneyConverter
 
-import asyncio
 from collections import deque
 
 from cards import common
@@ -34,12 +33,12 @@ class Deck(standard52.Deck):
 
 class Hand(common.Hand):
     def __init__(self):
-        super(Hand, self).__init__()
+        super().__init__()
         self.busted = False
         self.passing = False
 
     def add_card(self, card):
-        super(Hand, self).add_card(card)
+        super().add_card(card)
         self.busted = self.is_bust()
 
     def value(self):
@@ -62,7 +61,7 @@ class Hand(common.Hand):
 
     def is_passing(self, other):   
         if self.value() < WIN_MIN:
-            False
+            return False
 
         if self.value() >= other.value():
             return True

@@ -7,7 +7,6 @@ from rings.utils.utils import react_menu, BotError
 
 import random
 import aiohttp
-import asyncio
 
 class Literature(commands.Cog):
     """Commands related to words and literature"""

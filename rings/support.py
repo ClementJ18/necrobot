@@ -158,8 +158,8 @@ class Support(commands.Cog):
         {usage}"""
         try:
             await ctx.author.send(embed=self.bot.tutorial_e)
-        except discord.errors.Forbidden:
-            raise BotError("Looks like you have private messages disabled")
+        except discord.errors.Forbidden as e:
+            raise BotError("Looks like you have private messages disabled") from e
 
     @commands.command()
     async def privacy(self, ctx):
@@ -168,8 +168,8 @@ class Support(commands.Cog):
         {usage}"""
         try:
             await ctx.send(embed=self.bot.gdpr_embed)
-        except discord.Forbidden:
-            raise BotError("Looks like you have private messages disabled")
+        except discord.Forbidden as e:
+            raise BotError("Looks like you have private messages disabled") from e
 
         
 def setup(bot):

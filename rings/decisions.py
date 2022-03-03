@@ -89,11 +89,15 @@ class Decisions(commands.Cog):
         await ctx.send(f":game_die: | **{ctx.author.display_name}** rolled **{dice_list}** for a total of: **{t}**")
 
     @commands.command(name="8ball")
-    async def ball8(self, ctx, *, message):
+    async def ball8(self, ctx, *, message = None):
         """Uses an 8ball system to reply to the user's question. 
         
         {usage}"""
-        await ctx.send(f"{message} \n:8ball: | {random.choice(ball8_list)}")
+        msg = f":8ball: | {random.choice(ball8_list)}"
+        if message is not None:
+            msg = f"{message} \n" + msg
+
+        await ctx.send(msg)
 
 def setup(bot):
     bot.add_cog(Decisions(bot))

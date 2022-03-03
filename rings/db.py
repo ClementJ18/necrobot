@@ -628,10 +628,10 @@ class Database(commands.Cog):
                 guild_id, channel_id
             )
             
-        if youtuber_name is not None:
+        if twitch_name is not None:
             return await self.query(
                 "DELETE from necrobot.Twitch WHERE guild_id = $1 AND LOWER(twitch_name) = LOWER($2)",
-                guild_id, youtuber_name  
+                guild_id, twitch_name  
             )
             
         return await self.query(

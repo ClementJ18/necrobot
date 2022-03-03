@@ -40,7 +40,7 @@ class Tags(commands.Cog):
         
         __Example__
         `{pre}tag necro` - prints the content of the tag 'necro' given that it exists on this server"""
-        arg_dict = dict()
+        arg_dict = {}
         index = 0
         for arg in tag_args:
             arg_dict[f"arg{index}"] = arg
@@ -64,7 +64,7 @@ class Tags(commands.Cog):
             )
             
         except KeyError as e:
-            raise BotError(f"Expecting the following argument: {e.args[0]}")
+            raise BotError(f"Expecting the following argument: {e.args[0]}") from e
 
     @tag.command(name="add")
     @commands.guild_only()
@@ -128,8 +128,8 @@ class Tags(commands.Cog):
             )
             
             await ctx.send(f":white_check_mark: | Tag {tag} added")
-        except DatabaseError:
-            raise BotError("A tag with this name already exists")
+        except DatabaseError as e:
+            raise BotError("A tag with this name already exists") from e
 
     @tag.group(name="delete", invoke_without_command=True)
     @commands.guild_only()
@@ -162,8 +162,8 @@ class Tags(commands.Cog):
         """
         try:
             tag = await Tag().convert(ctx, alias)
-        except commands.BadArgument:
-            raise commands.BadArgument(f"Alias {alias} does not exist.")
+        except commands.BadArgument as e:
+            raise commands.BadArgument(f"Alias {alias} does not exist.") from e
 
         await self.is_tag_owner(ctx, tag)
 
@@ -274,8 +274,8 @@ class Tags(commands.Cog):
             )
             
             await ctx.send(":white_check_mark: | Alias successfully created")
-        except DatabaseError:
-            raise BotError("Alias already exists")
+        except DatabaseError as e:
+            raise BotError("Alias already exists") from e
 
     #######################################################################
     ## Events

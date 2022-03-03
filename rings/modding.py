@@ -61,8 +61,8 @@ class Modding(commands.Cog):
             
         try:
             search_return = process.extract(game, [x.string for x in soup.find("div", class_="table").findAll("h4")])[0][0]
-        except IndexError:
-            raise BotError("No game with that name found")
+        except IndexError as e:
+            raise BotError("No game with that name found") from e
             
         url = moddb.utils.join(soup.find("div", class_="table").find("h4", string=search_return).a["href"])
 
@@ -116,8 +116,8 @@ class Modding(commands.Cog):
             
         try:
             search_return = process.extract(mod, [x.string for x in soup.find("div", class_="table").findAll("h4")])[0][0]
-        except IndexError:
-            raise BotError("No mod with that name found")
+        except IndexError as e:
+            raise BotError("No mod with that name found") from e
 
         url = moddb.utils.join(soup.find("div", class_="table").find("h4", string=search_return).a["href"])
 

@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands.converter import _get_from_guilds
 
-from rings.utils.utils import time_converter
+from rings.utils.utils import time_converter, BotError
 
 import re
 
@@ -48,13 +48,15 @@ def get_member(guild, user_id):
     """
     return guild._members.get(user_id)
         
-def _get_from_guilds(bot, func, attr, argument):
+def _get_from_guilds(bot, getter, argument):
     result = None
     for guild in bot.guilds:
-        result = func(getattr(guild, attr, []), argument)
+        result = getattr(guild, getter)(argument)
         if result:
             return result
     return result
+
+_utils_get = discord.utils.get
 
 class MemberConverter(commands.IDConverter):
     """Member converter but case insensitive"""
@@ -71,16 +73,16 @@ class MemberConverter(commands.IDConverter):
             if guild:
                 result = get_member_named(guild.members, argument)
             else:
-                result = _get_from_guilds(bot, get_member_named, "members", argument)
+                result = _get_from_guilds(bot, 'get_member_named', argument)
         else:
             user_id = int(match.group(1))
             if guild:
                 result = guild.get_member(user_id) or _utils_get(ctx.message.mentions, id=user_id)
             else:
-                result = _get_from_guilds(bot, get_member, "members", user_id)
+                result = _get_from_guilds(bot, 'get_member', user_id)
 
         if result is None:
-            raise commands.BadArgument('Member "{}" not found'.format(argument))
+            raise commands.BadArgument(f'Member "{argument}" not found')
 
         return result
         
@@ -118,7 +120,7 @@ class UserConverter(commands.IDConverter):
             result = discord.utils.find(predicate, state._users.values())
 
         if result is None:
-            raise commands.BadArgument('User "{}" not found'.format(argument))
+            raise commands.BadArgument(f'User "{argument}" not found')
 
         return result
         
@@ -137,7 +139,7 @@ class RoleConverter(commands.IDConverter):
             result = discord.utils.find(lambda r: r.name.lower() == argument.lower(), guild._roles.values())
 
         if result is None:
-            raise commands.BadArgument('Role "{}" not found.'.format(argument))
+            raise commands.BadArgument(f'Role "{argument}" not found.')
             
         return result
 
@@ -279,32 +281,9 @@ class Tag(commands.Converter):
             
         return tag[0]
 
-class WritableChannelConverter(commands.IDConverter):
+class WritableChannelConverter(commands.TextChannelConverter):
     async def convert(self, ctx, argument):
-        bot = ctx.bot
-
-        match = self._get_id_match(argument) or re.match(r'<#([0-9]+)>$', argument)
-        result = None
-        guild = ctx.guild
-
-        if match is None:
-            # not a mention
-            if guild:
-                result = discord.utils.get(guild.text_channels, name=argument)
-            else:
-                def check(c):
-                    return isinstance(c, discord.TextChannel) and c.name == argument
-                result = discord.utils.find(check, bot.get_all_channels())
-        else:
-            channel_id = int(match.group(1))
-            if guild:
-                result = guild.get_channel(channel_id)
-            else:
-                result = _get_from_guilds(bot, 'get_channel', channel_id)
-
-        if not isinstance(result, discord.TextChannel):
-            raise ChannelNotFound(argument)
-
+        result = await super().convert(ctx, argument)
         if not result.permissions_for(result.guild.me).send_messages:
             raise BotError(f"I cannot send messages in {result.mention}")
 

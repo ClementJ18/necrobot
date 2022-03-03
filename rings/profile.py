@@ -176,8 +176,8 @@ class Profile(commands.Cog):
             
         try:
             await self.bot.db.transfer_money(payer.id, amount, payee.id)
-        except DatabaseError:
-            raise BotError("You no longer have enough money")
+        except DatabaseError as e:
+            raise BotError("You no longer have enough money") from e
         
         await ctx.send(f":white_check_mark: | **{payer.display_name}** approved the transaction.")
         

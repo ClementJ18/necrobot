@@ -100,8 +100,8 @@ class HungerGames:
             
             try:
                 done_events.append(event["string"].format(**format_dict))
-            except:
-                raise FightError("Error formatting event", event, format_dict)
+            except Exception as e:
+                raise FightError("Error formatting event", event, format_dict) from e
 
         embed.add_field(name=f"{event_name.title()} {self.day}", value="\n".join(done_events), inline=False)
         return embed  
@@ -177,11 +177,11 @@ class Misc(commands.Cog):
                 res = await r.json()
                 await ctx.send(embed=discord.Embed().set_image(url=res['file']))
                 self.bot.cat_cache.append(res["file"])
-            except aiohttp.ClientResponseError:
+            except aiohttp.ClientResponseError as e:
                 if self.bot.cat_cache:
                     await ctx.send("API overloading, have a cached picture instead.", embed=discord.Embed(colour=self.bot.bot_color).set_image(url=random.choice(self.bot.cat_cache)))
                 else:
-                    raise BotError("API overloading and cache empty, looks like you'll have to wait for now.")
+                    raise BotError("API overloading and cache empty, looks like you'll have to wait for now.") from e
 
     @commands.command()
     async def dog(self, ctx):

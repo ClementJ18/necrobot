@@ -124,7 +124,7 @@ class Events(commands.Cog):
         elif isinstance(error, commands.NoPrivateMessage):
             msg = "This command cannot be used in private messages."
         elif isinstance(error, commands.DisabledCommand):
-            msg = f"This command is disabled and cannot be used for now."
+            msg = "This command is disabled and cannot be used for now."
         elif isinstance(error, asyncio.TimeoutError):
             if hasattr(error, "timer"):
                 minutes, seconds = divmod(error.timer, 60)

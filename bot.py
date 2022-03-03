@@ -6,7 +6,6 @@ from rings.utils.config import token
 from rings.utils.utils import get_pre, default_settings
 from rings.utils.help import NecrobotHelp
 
-import re
 import json
 import time
 import asyncio
@@ -19,8 +18,7 @@ logging.basicConfig(filename='discord.log',level=logging.ERROR)
 
 class NecroBot(commands.Bot):
     def __init__(self):
-        intents = discord.Intents.default()
-        intents.members = True
+        intents = discord.Intents.all()
 
         super().__init__(
             max_messages=50000,
@@ -371,9 +369,9 @@ if __name__ == '__main__':
         bot.loop.create_task(bot.meta.load_cache())
         bot.run(token)
     except Exception as error:
-        e = traceback.format_exception(type(error), error, error.__traceback__)
+        tc = traceback.format_exception(type(error), error, error.__traceback__)
         with open("error.log", "w") as f:
-            f.write(str(e))
+            f.write(str(tc))
         
     finally:
         with open("rings/utils/data/settings.json", "w") as outfile:
