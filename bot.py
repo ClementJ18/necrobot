@@ -18,7 +18,8 @@ logging.basicConfig(filename='discord.log',level=logging.ERROR)
 
 class NecroBot(commands.Bot):
     def __init__(self):
-        intents = discord.Intents.all()
+        intents = discord.Intents.default()
+        intents.members = True
 
         super().__init__(
             max_messages=50000,

@@ -130,7 +130,7 @@ class Server(commands.Cog):
 
             return await react_menu(ctx, members, 10, _embed_maker)
 
-        if await self.bot.db.compare_user_permission(ctx.author.id, ctx.guild.id, user.id) > 0:
+        if await self.bot.db.compare_user_permission(ctx.author.id, ctx.guild.id, user.id) > 1:
             current_level = await self.bot.db.get_permission(user.id, ctx.guild.id)
             
             if current_level == level:

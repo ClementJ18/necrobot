@@ -76,7 +76,10 @@ class RSS(commands.Cog):
 
                 for channel_id, title_filter in feed["channels"]:
                     if title_filter in entry["title"].lower():
-                        await self.bot.get_channel(channel_id).send(embed=embed)
+                        try:
+                            await self.bot.get_channel(channel_id).send(embed=embed)
+                        except discord.Forbidden:
+                            pass
 
     async def twitch_sub_task(self):
         entries = await self.bot.db.query("SELECT * FROM necrobot.Twitch")
@@ -102,7 +105,10 @@ class RSS(commands.Cog):
 
             for channel, title_filter in feeds[str(stream["user_id"])]:
                 if title_filter in stream["title"].lower():
-                    await self.bot.get_channel(channel).send(embed=embed)
+                    try:
+                        await self.bot.get_channel(channel).send(embed=embed)
+                    except discord.Forbidden:
+                        pass
 
     async def rss_task(self):
         await self.bot.wait_until_ready()
