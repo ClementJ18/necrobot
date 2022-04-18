@@ -525,6 +525,5 @@ class Misc(commands.Cog):
         await self.bot._connection.http.remove_reaction(payload.channel_id, payload.message_id, payload.emoji._as_reaction(), payload.user_id)
         await self.bot._connection.http.remove_reaction(payload.channel_id, payload.message_id, checkmark.emoji._as_reaction(), payload.user_id)
 
-
 def setup(bot):
     bot.add_cog(Misc(bot))

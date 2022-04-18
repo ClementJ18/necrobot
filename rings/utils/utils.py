@@ -40,18 +40,25 @@ def format_dt(dt: datetime.datetime, /, style: str = None) -> str:
     return f'<t:{int(dt.timestamp())}:{style}>'
 
 def time_string_parser(message):
-    err = "Something went wrong, you need to use the format: **<optional_message> in <time>**"
+    if "in " in message:
+        text, sep, time = message.rpartition("in ")
+        sleep = time_converter(time)
 
-    if "in" not in message:
-        raise BotError(err)
+        if not sep:
+            raise BotError("Something went wrong, you need to use the format: **<optional_message> in <time>**")
 
-    text, sep, time = message.rpartition("in ")
-    sleep = time_converter(time)
+        return text, sleep, time
 
-    if not sep:
-        raise BotError(err)
+    if "on " in message:
+        text, sep, time = message.rpartition("on ")
+        sleep = date_converter(time)
 
-    return text, sleep, time
+        if not sep:
+            raise BotError("Something went wrong, you need to use the format: **<optional_message> on <time>**")
+
+        return text, sleep, time
+
+    raise BotError("Something went wrong, you need to use the format: **<optional_message> in|on <time>**")
     
 async def react_menu(ctx, entries, per_page, generator, *, page=0, timeout=300):
     max_pages = max(0, ((len(entries)-1)//per_page))
@@ -137,6 +144,53 @@ def time_converter(argument):
         time += convert[match[1]] * float(match[0].replace(",", "."))
 
     return time
+
+def date_converter(argument):
+    date_time = argument.split(" ")
+    if len(date_time) > 2:
+        raise BotError("Invalid date time format")
+
+    seconds = 0
+    minutes = 0
+    hours = 0
+    days = 0
+    months = 0
+    years = 0
+    now = datetime.datetime.now()
+    for string in date_time:
+        if ":" in string:
+            hour_minutes = string.split(":")
+            if len(hour_minutes) != 2:
+                raise BotError("Invalid time format")
+
+            try:
+                hours = int(hour_minutes[0])
+                minutes = int(hour_minutes[1])
+            except ValueError as e:
+                raise BotError("Invalid time format") from e
+
+        if "/" in string:
+            year_month_day = string.split("/")
+            if len(year_month_day) != 3:
+                raise BotError("Invalid date format")
+
+            try:
+                years = int(year_month_day[0])
+                months = int(year_month_day[1])
+                days = int(year_month_day[2])
+            except ValueError as e:
+                raise BotError("Invalid date format") from e
+
+    date = datetime.datetime(
+        year = years or now.year,
+        month = months or now.month,
+        day = days or now.day,
+        hour = hours or now.hour,
+        minute = minutes or now.minute,
+        second = seconds or now.second
+    )
+
+    return (date - now).total_seconds()
 
 def midnight():
     """Get the number of seconds until midnight."""

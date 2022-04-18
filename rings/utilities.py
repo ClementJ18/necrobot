@@ -166,7 +166,9 @@ class Utilities(commands.Cog):
     @commands.group(invoke_without_command=True)
     async def remindme(self, ctx, *, message):
         """Creates a reminder in seconds. The following times can be used: days (d), 
-        hours (h), minutes (m), seconds (s).
+        hours (h), minutes (m), seconds (s). You can also pass a timestamp to be reminded 
+        at a certain date in the format "DD/MM/YYYY HH:MM". You can omit either sides if you 
+        want to be reminded only on a specific date or only at a specific hour
 
         {usage}
 
@@ -175,6 +177,9 @@ class Utilities(commands.Cog):
         `{pre}remindme do the dishes in 2m` - will remind you to do the dishes in 2 minutes
         `{pre}remindme do the dishes in 4day 2h45minutes` - will remind you to do the dishes in 4 days, 2 hours and 45 minutes
         `{pre}remindme in 2 hours` - send you a ping in 2 hours
+        `{pre}remindme on 17:22` - get reminded at a specific hour today
+        `{pre}remindme on 22/04/2023` - get reminded at a specific date 
+        `{pre}remindme on 22/04/2023 17:22` - get reminded at a specific date and hour
         """
         text, sleep, time = time_string_parser(message)
 

@@ -25,7 +25,7 @@ class Meta(commands.Cog):
         self.tasks_hourly = [
             self.rotate_status,
             self.check_processes,
-            self.broadcast
+            self.broadcast,
         ]
 
         self.tasks_daily = [
@@ -35,7 +35,7 @@ class Meta(commands.Cog):
         ]
 
         self.processes = {
-            "rss.py": "RSS Feeds"
+            "rss.py": "RSS Feeds",
         }
         
     #######################################################################
