@@ -121,5 +121,5 @@ class Literature(commands.Cog):
         await ctx.send(" ".join(shuffled))
 
 
-def setup(bot):
-    bot.add_cog(Literature(bot))
+async def setup(bot):
+    await bot.add_cog(Literature(bot))

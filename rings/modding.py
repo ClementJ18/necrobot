@@ -127,5 +127,5 @@ class Modding(commands.Cog):
         mod = moddb.pages.Mod(soup)
         await react_menu(ctx, [1, 2, 3], 1, _embed_generator)
 
-def setup(bot):
-    bot.add_cog(Modding(bot))
+async def setup(bot):
+    await bot.add_cog(Modding(bot))

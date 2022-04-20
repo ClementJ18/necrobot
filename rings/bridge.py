@@ -20,7 +20,6 @@ class Bridge(commands.Cog):
         self.mu_channels = [722040731946057789, 722474242762997868]
         self.cookies = False
         self.in_process = []
-        self.task = self.bot.loop.create_task(self.post_task())
         self.mapping = {
             "angmar": {"id": 687748138345169075, "url": "https://modding-union.com/index.php/topic,33016.0.html"},
             "erebor": {"id": 687748357543952417, "url": "https://modding-union.com/index.php/topic,31202.0.html"},
@@ -45,8 +44,10 @@ class Bridge(commands.Cog):
     #######################################################################
     ## Cog Functions
     #######################################################################
+    async def cog_load(self):
+        self.task = self.bot.loop.create_task(self.post_task())
     
-    def cog_unload(self):
+    async def cog_unload(self):
         self.task.cancel()
         
     #######################################################################
@@ -501,5 +502,5 @@ class Bridge(commands.Cog):
         #         self.bot.denied_posts.append(post)
         #         await post["message"].delete() 
  
-def setup(bot):
-    bot.add_cog(Bridge(bot))
+async def setup(bot):
+    await bot.add_cog(Bridge(bot))

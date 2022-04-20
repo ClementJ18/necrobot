@@ -503,5 +503,5 @@ class Events(commands.Cog):
         if payload.message_id in self.bot.potential_stars:
             del self.bot.potential_stars[payload.message_id]
 
-def setup(bot):
-    bot.add_cog(Events(bot))
+async def setup(bot):
+    await bot.add_cog(Events(bot))

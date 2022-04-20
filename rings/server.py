@@ -1099,5 +1099,5 @@ class Server(commands.Cog):
         
         await react_menu(ctx, results, 1, _embed_maker, page=index)
 
-def setup(bot):
-    bot.add_cog(Server(bot))
+async def setup(bot):
+    await bot.add_cog(Server(bot))

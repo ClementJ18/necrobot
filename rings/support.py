@@ -34,7 +34,7 @@ class Support(commands.Cog):
         embed.add_field(name="Version", value=self.bot.version)
         uptime = str(timedelta(seconds=time.time() - self.bot.uptime_start)).partition(".")[0].replace(":", "{}")
         embed.add_field(name="Uptime", value=uptime.format("hours, ", "minutes and ") + "seconds")
-        embed.add_field(name="Links", value=f"[Invite bot to your server]({discord.utils.oauth_url(self.bot.user.id, discord.Permissions(permissions=403172599))}) - [Get help with the bot](https://discord.gg/fPJANsE)", inline=False)
+        embed.add_field(name="Links", value=f"[Invite bot to your server]({discord.utils.oauth_url(self.bot.user.id, permissions=discord.Permissions(permissions=403172599))}) - [Get help with the bot](https://discord.gg/fPJANsE)", inline=False)
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -103,7 +103,7 @@ class Support(commands.Cog):
         base_d = {
             "author": {
                 "name": "Necrobot's Anchorman", "url": "https://discord.gg/Ape8bZt", 
-                "icon_url": self.bot.user.avatar_url_as(format="png", size=128)
+                "icon_url": self.bot.user.avatar.replace(format="png", size=128)
             }, 
             "color": 161712, "type": "rich"
         }
@@ -167,10 +167,10 @@ class Support(commands.Cog):
 
         {usage}"""
         try:
-            await ctx.send(embed=self.bot.gdpr_embed)
+            await ctx.author.send(embed=self.bot.gdpr_embed)
         except discord.Forbidden as e:
             raise BotError("Looks like you have private messages disabled") from e
 
         
-def setup(bot):
-    bot.add_cog(Support(bot))
+async def setup(bot):
+    await bot.add_cog(Support(bot))

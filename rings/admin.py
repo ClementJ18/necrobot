@@ -472,7 +472,7 @@ class Admin(commands.Cog):
         
     @commands.command()
     @has_perms(6)
-    async def gate(self, ctx, channel : Union[discord.TextChannel, UserConverter]):
+    async def gate(self, ctx, channel : Union[discord.TextChannel, discord.Thread, UserConverter]):
         """Connects two channels with a magic gate so that users on both servers can communicate. Magic:tm:
 
         {usage}
@@ -525,10 +525,10 @@ class Admin(commands.Cog):
         
         message.content = message.content.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
         embed = discord.Embed(title="Message", description=message.content)
-        embed.set_author(name=message.author, icon_url=message.author.avatar_url_as(format="png", size=128))
+        embed.set_author(name=message.author, icon_url=message.author.avatar.replace(format="png", size=128))
         embed.set_footer(**self.bot.bot_footer)
         
         await channel.send(embed=embed)
         
-def setup(bot):
-    bot.add_cog(Admin(bot))
+async def setup(bot):
+    await bot.add_cog(Admin(bot))

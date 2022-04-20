@@ -296,5 +296,5 @@ class Tags(commands.Cog):
 
             await ctx.invoke(command, tag=tag)
 
-def setup(bot):
-    bot.add_cog(Tags(bot))
+async def setup(bot):
+    await bot.add_cog(Tags(bot))

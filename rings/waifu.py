@@ -5,6 +5,8 @@ from rings.utils.checks import has_perms
 from rings.utils.utils import check_channel, BotError
 from rings.utils.converters import FlowerConverter, TimeConverter
 
+from typing import Union
+
 class Flowers(commands.Cog):
     """A server specific economy system. Use it to reward/punish users at you heart's content."""
     def __init__(self, bot):
@@ -121,7 +123,7 @@ class Flowers(commands.Cog):
 
     @commands.command()
     @has_perms(3)
-    async def event(self, ctx, channel : discord.TextChannel, amount : int, time : TimeConverter = 86400):
+    async def event(self, ctx, channel : Union[discord.Thread, discord.TextChannel], amount : int, time : TimeConverter = 86400):
         """Create a 24hr message, if reacted to, the use who reacted will be granted flowers. Time arguments uses standard
         necrobot time system. The following times can be used: days (d), hours (h), minutes (m), seconds (s).
 
@@ -176,5 +178,5 @@ class Flowers(commands.Cog):
             self.bot.events[payload.message_id]["users"].append(payload.user_id)
             await self.add_flowers(payload.guild_id, payload.user_id, self.bot.events[payload.message_id]["amount"])
 
-def setup(bot):
-    bot.add_cog(Flowers(bot))
+async def setup(bot):
+    await bot.add_cog(Flowers(bot))

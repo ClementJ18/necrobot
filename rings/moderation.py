@@ -427,7 +427,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @has_perms(3)
-    async def speak(self, ctx, channel : discord.TextChannel, *, message : str):
+    async def speak(self, ctx, channel : Union[discord.Thread, discord.TextChannel], *, message : str):
         """Send the given message to the channel mentioned by mention or name. Cannot send to other servers. 
         
         {usage}
@@ -567,5 +567,5 @@ class Moderation(commands.Cog):
                 
                 await member.guild.get_channel(automod).send(embed=embed)
 
-def setup(bot):
-    bot.add_cog(Moderation(bot))
+async def setup(bot):
+    await bot.add_cog(Moderation(bot))

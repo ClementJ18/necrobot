@@ -23,14 +23,17 @@ class RSS(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.base_youtube = "https://www.youtube.com/feeds/videos.xml?channel_id={}"
-        self.task = self.bot.loop.create_task(self.rss_task())
+        self.task = None
         
     #######################################################################
     ## Cog Functions
     #######################################################################
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self.task.cancel()
+
+    async def cog_load(self):
+        self.task = self.bot.loop.create_task(self.rss_task())
         
     #######################################################################
     ## Functions
@@ -334,5 +337,5 @@ class RSS(commands.Cog):
             await ctx.send(f":white_check_mark: | Only streams with the words **{filters}** will be posted for **{twitch_name}**")    
 
 
-def setup(bot):
-    bot.add_cog(RSS(bot))
+async def setup(bot):
+    await bot.add_cog(RSS(bot))

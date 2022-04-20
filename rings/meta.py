@@ -19,8 +19,8 @@ from PIL import Image
 
 class Meta(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot        
-        self.hourly_loop = self.bot.loop.create_task(self.hourly())
+        self.bot = bot
+        self.hourly_loop = None        
         
         self.tasks_hourly = [
             self.rotate_status,
@@ -42,8 +42,11 @@ class Meta(commands.Cog):
     ## Cog Functions
     #######################################################################
         
-    def cog_unload(self):
+    async def cog_unload(self):
         self.hourly_loop.cancel()
+
+    async def cog_load(self):
+        self.hourly_loop = self.bot.loop.create_task(self.hourly())
         
     #######################################################################
     ## Functions
@@ -150,7 +153,7 @@ class Meta(commands.Cog):
         starboard = self.bot.get_channel(self.bot.guild_data[message.guild.id]["starboard-channel"])
 
         embed = discord.Embed(colour=self.bot.bot_color, description = message.content)
-        embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url_as(format="png", size=128))
+        embed.set_author(name=message.author.display_name, icon_url=message.author.avatar.replace(format="png", size=128))
         embed.set_footer(**self.bot.bot_footer)
         if message.embeds:
             data = message.embeds[0]
@@ -175,18 +178,18 @@ class Meta(commands.Cog):
     async def hourly(self):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            if self.bot.counter >= 24:
-                self.bot.counter = 0
-                self.bot.settings["day"] += 1
-                for task in self.tasks_daily:
-                    await task()
-
             now = datetime.datetime.now()
             sleep = 3600 - (now.second + (now.minute * 60))
             try:
                 await asyncio.sleep(sleep) # task runs every hour
             except asyncio.CancelledError:
                 return
+
+            if self.bot.counter >= 24:
+                self.bot.counter = 0
+                self.bot.settings["day"] += 1
+                for task in self.tasks_daily:
+                    await task()
             
             for task in self.tasks_hourly:
                 await task()
@@ -419,5 +422,5 @@ class Meta(commands.Cog):
             except Exception as e:
                 await self.bot.get_error_channel().send(f"Broadcast error with guild {broadcast[1]}\n{e}")
         
-def setup(bot):
-    bot.add_cog(Meta(bot))
+async def setup(bot):
+    await bot.add_cog(Meta(bot))

@@ -290,5 +290,5 @@ class Wiki(commands.Cog):
         async with ctx.typing():    
             await self.mediawiki_handler(ctx, article_name)       
 
-def setup(bot):
-    bot.add_cog(Wiki(bot))
+async def setup(bot):
+    await bot.add_cog(Wiki(bot))

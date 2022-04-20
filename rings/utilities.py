@@ -91,7 +91,7 @@ class Utilities(commands.Cog):
         if user is None:
             user = ctx.author
 
-        avatar = user.avatar_url_as(format="png")
+        avatar = user.avatar.replace(format="png")
         await ctx.send(embed=discord.Embed().set_image(url=avatar))
 
     @commands.command()
@@ -189,7 +189,6 @@ class Utilities(commands.Cog):
         reminder_id = await self.bot.db.insert_reminder(ctx.author.id, ctx.channel.id, text, time, datetime.datetime.now())
         task = self.bot.loop.create_task(self.bot.meta.reminder_task(reminder_id, sleep, text, ctx.channel.id, ctx.author.id))
         self.bot.reminders[reminder_id] = task
-
 
         stamp = format_dt(datetime.datetime.now() + datetime.timedelta(seconds=sleep), style="f")
         await ctx.send(f":white_check_mark: | I will remind you of that on **{stamp}**")
@@ -618,5 +617,5 @@ class Utilities(commands.Cog):
             del self.ongoing_giveaways[payload.message_id]
 
 
-def setup(bot):
-    bot.add_cog(Utilities(bot))
+async def setup(bot):
+    await bot.add_cog(Utilities(bot))

@@ -207,7 +207,7 @@ class Profile(commands.Cog):
             description=f"**Title**: {await self.bot.db.get_title(user.id)}"
         )
         
-        embed.set_thumbnail(url=user.avatar_url_as(format="png", size=256))
+        embed.set_thumbnail(url=user.avatar.replace(format="png", size=256))
         embed.set_footer(**self.bot.bot_footer)
         
         embed.add_field(name="User Name", value=str(user))
@@ -266,7 +266,7 @@ class Profile(commands.Cog):
             if not user:
                 user = ctx.author
 
-            image_bytes = await user.avatar_url_as(format="png").read()
+            image_bytes = await user.avatar.replace(format="png").read()
             money = await self.bot.db.get_money(user.id)
             level = await self.bot.db.get_permission(user.id, ctx.guild.id) 
             title = await self.bot.db.get_title(user.id)
@@ -554,5 +554,5 @@ class Profile(commands.Cog):
         await react_menu(ctx, results, 15, _embed_maker)
 
 
-def setup(bot):
-    bot.add_cog(Profile(bot))
+async def setup(bot):
+    await bot.add_cog(Profile(bot))

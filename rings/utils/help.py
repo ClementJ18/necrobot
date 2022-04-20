@@ -10,7 +10,7 @@ class NecrobotHelp(cmd.HelpCommand):
         
     def get_command_signature(self, command):
         """Retrieves the signature portion of the help page."""
-        prefix = self.clean_prefix
+        prefix = self.context.clean_prefix
         signature = command.signature.replace("<", "[").replace(">", "]")
         return f"{prefix}{command.qualified_name} {signature}"
         
@@ -18,7 +18,7 @@ class NecrobotHelp(cmd.HelpCommand):
         command_name = self.context.invoked_with
         return "\nCommands in `codeblocks` are commands you can use, __underlined__ means the command has subcommands, commands with ~~strikethrough~~ you cannot use but you can still check the help. Commands in ***italics*** are recent additions.\n" \
                "Type {0}{1} [command] for more info on a command.(Example: `{0}help edain`)\n" \
-               "You can also type {0}{1} [category] for more info on a category. Don't forget the first letter is always uppercase. (Example: `{0}help Animals`) \n".format(self.clean_prefix, command_name)
+               "You can also type {0}{1} [category] for more info on a category. Don't forget the first letter is always uppercase. (Example: `{0}help Animals`) \n".format(self.context.clean_prefix, command_name)
        
     async def format_command_name(self, command):
         async def predicate():
@@ -88,7 +88,7 @@ class NecrobotHelp(cmd.HelpCommand):
             name = self.context.bot.perms_name[perms_check.level]
             signature = f"**Permission level required: {name} ({perms_check.level}+)**\n\n{signature}"
             
-        help_msg = help_msg.format(usage=signature, pre=self.clean_prefix)
+        help_msg = help_msg.format(usage=signature, pre=self.context.clean_prefix)
             
         return help_msg
         

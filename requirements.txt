@@ -47,7 +47,7 @@ dice == 3.1.2
 # C:\Users\Clement\Documents\GitHub\necrobot\rings\utils\utils.py: 1,2
 # C:\Users\Clement\Documents\GitHub\necrobot\rings\wiki.py: 1,2
 # C:\Users\Clement\Documents\GitHub\necrobot\rings\words.py: 1,2,3
-discord.py == 1.7.1
+git+https://github.com/Rapptz/discord.py
 
 # C:\Users\Clement\Documents\GitHub\necrobot\rings\server.py: 9
 emoji == 1.2.0
