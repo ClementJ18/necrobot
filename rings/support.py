@@ -52,7 +52,7 @@ class Support(commands.Cog):
 
         embed = discord.Embed(title=":bulb: A report has just came in :bulb:", description=message, colour=self.bot.bot_color)
         embed.set_footer(**self.bot.bot_footer)
-        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar.replace(format="png", size=128))
         embed.add_field(name="Helpful Info", value=f"User: {ctx.author.mention} \nServer: {ctx.guild.name} \nServer ID: {ctx.guild.id}")
         
         msg = await ctx.send("You are about to send this report, are you sure? Abusing the report command can result in blacklisting", embed=embed)

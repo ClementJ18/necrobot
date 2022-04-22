@@ -279,7 +279,7 @@ class Events(commands.Cog):
                 message.content = "\U0000200b"
 
             embed = discord.Embed(title="Message Deleted", description=message.content, colour=self.bot.bot_color)
-            embed.set_author(name=message.author, icon_url=message.author.avatar_url)
+            embed.set_author(name=message.author, icon_url=message.author.avatar.replace(format="png", size=128))
             embed.set_footer(**self.bot.bot_footer)
             embed.add_field(name="Info", value=f"In {message.channel.mention} by {message.author.mention}")
             embed.add_field(name="Attachment?", value="Yes" if message.attachments else "No", inline=False)
@@ -302,7 +302,7 @@ class Events(commands.Cog):
             if not before.content:
                 before.content = "\U0000200b"
 
-            embed.set_author(name=before.author, icon_url= before.author.avatar_url)
+            embed.set_author(name=before.author, icon_url= before.author.avatar.replace(format="png", size=128))
             embed.set_footer(**self.bot.bot_footer)
             embed.add_field(name="Before", value=before.content if len(before.content) < 1024 else before.content[1020:] + "...", inline=False)
             embed.add_field(name="After", value=after.content if len(after.content) < 1024 else after.content[1020:] + "...", inline=False)
