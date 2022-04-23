@@ -60,7 +60,7 @@ class Utilities(commands.Cog):
         {usage}"""
         guild = ctx.guild
         embed = discord.Embed(title=guild.name, colour=self.bot.bot_color, description="Info on this server")
-        embed.set_thumbnail(url=guild.icon_url)
+        embed.set_thumbnail(url=guild.icon.url)
         embed.set_footer(**self.bot.bot_footer)
 
         embed.add_field(name="**Date Created**", value=guild.created_at.strftime("%d - %B - %Y %H:%M"))
@@ -68,7 +68,6 @@ class Utilities(commands.Cog):
 
         embed.add_field(name="**Members**", value=guild.member_count, inline=True)
 
-        embed.add_field(name="**Region**", value=guild.region)
         embed.add_field(name="**Server ID**", value=guild.id, inline=True)
 
         channel_list = [channel.name for channel in guild.channels]
