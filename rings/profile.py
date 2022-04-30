@@ -6,6 +6,7 @@ from rings.utils.utils import midnight, react_menu, BotError
 from rings.utils.converters import MoneyConverter, BadgeConverter, MemberConverter, RangeConverter
 from rings.db import DatabaseError
 from rings.utils.checks import has_perms
+from rings.utils.ui import Confirm
 
 import random
 import functools
@@ -167,26 +168,25 @@ class Profile(commands.Cog):
         __Example__
         `{pre}pay @NecroBot 200` - pays NecroBot 200 :euro:"""
         payer = ctx.author
+        view = Confirm(
+            confirm_msg = f":white_check_mark: | **{payer.display_name}** approved the transaction.",
+            cancel_msg = f":white_check_mark: | **{payer.display_name}** cancelled the transaction."
+        )
+        await ctx.send(f"Are you sure you want to pay **{amount}** to user **{payee.display_name}**?", view=view)
+        await view.wait()
 
-        msg = await ctx.send(f"Are you sure you want to pay **{amount}** to user **{payee.display_name}**? Press :white_check_mark: to confirm transaction. Press :negative_squared_cross_mark: to cancel the transaction.")
-        result = await self.bot.confirmation_menu(msg, payer)
+        if not view.value:
+            return
 
-        if not result:
-            return await ctx.send(f":white_check_mark: | **{payer.display_name}** cancelled the transaction.")
-            
         try:
             await self.bot.db.transfer_money(payer.id, amount, payee.id)
         except DatabaseError as e:
             raise BotError("You no longer have enough money") from e
-        
-        await ctx.send(f":white_check_mark: | **{payer.display_name}** approved the transaction.")
-        
+                
         try:
             await payee.send(f":m: | **{payer.display_name}** has transferred **{amount}$** to your profile")
-        except (discord.Forbidden, discord.HTTPException):
+        except (discord.Forbidden, discord.HTTPException, AttributeError):
             pass
-        
-        await msg.delete()
 
     @commands.command()
     @commands.guild_only()
