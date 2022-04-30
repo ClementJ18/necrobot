@@ -65,7 +65,7 @@ class NecroBot(commands.Bot):
         self.denied_posts = []
         self.events = {}
         self.ongoing_giveaways = {}
-        self.queued_posts = asyncio.Queue()
+        self.queued_posts = None
 
         with open("rings/utils/data/settings.json", "rb") as infile:
             self.settings = {**default_settings(), **json.load(infile)}
@@ -105,6 +105,7 @@ class NecroBot(commands.Bot):
             await self.load_extension(f"rings.{extension}")
 
         self.loop.create_task(self.meta.load_cache())
+        self.queued_posts = asyncio.Queue()
         
     async def invoke(self, ctx):
         if self.maintenance and ctx.command is not None and ctx.author.id != self.owner_id:

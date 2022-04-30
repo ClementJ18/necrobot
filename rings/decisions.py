@@ -7,7 +7,6 @@ from rings.utils.utils import BotError
 
 import random
 import dice
-import collections
 
 class Decisions(commands.Cog):
     """Helpful commands to help you make decisions"""
@@ -83,11 +82,8 @@ class Decisions(commands.Cog):
         if len(dice_list) == 1:
             await ctx.send(f":game_die: | **{ctx.author.display_name}** rolled **{dice_list[0]}**.")
         else:
-            counter = collections.Counter(dice_list)
             total = sum(dice_list)
-            lenght = len(dice_list)
-            string = "\n".join([f"*{roll}* - {value} times" for roll, value in sorted(counter.items())])
-            await ctx.send(f":game_die: | **{ctx.author.display_name}** rolled **{dices}**. The result is: \n{string}\n\n**Total**: {total} ({lenght} rolls)")
+            await ctx.send(f":game_die: | **{ctx.author.display_name}** rolled **{dices}** for a total of **{total}**. The dice were {', '.join([f'**{x}**' for x in dice_list])}")
 
     @commands.command(name="8ball")
     async def ball8(self, ctx, *, message = None):

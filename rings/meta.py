@@ -341,6 +341,9 @@ class Meta(commands.Cog):
 
         await self.refresh_token()
 
+        for command in self.bot.settings["disabled"]:
+            self.bot.get_command(command).enabled = False
+
         self.bot.maintenance = False
         await msg.edit(content="**Bot Online**")
         
