@@ -1,9 +1,10 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, react_menu, format_dt
+from rings.utils.utils import BotError, format_dt
 from rings.utils.converters import TimeConverter, MemberConverter, RoleConverter, RangeConverter
 from rings.utils.checks import has_perms, requires_mute_role
+from rings.utils.ui import paginate
 
 import asyncio
 import datetime
@@ -322,9 +323,9 @@ class Moderation(commands.Cog):
             ctx.guild.id, user.id    
         )
         
-        def embed_maker(index, entries):            
+        def embed_maker(view, entries):            
             embed = discord.Embed(
-                title=f"Warnings ({index[0]}/{index[1]})", 
+                title=f"Warnings ({view.index}/{view.max_index})", 
                 colour=self.bot.bot_color, 
                 description=f"List of warnings for {user.display_name}"
             )
@@ -336,7 +337,7 @@ class Moderation(commands.Cog):
                 
             return embed
             
-        await react_menu(ctx, warnings, 5, embed_maker)
+        await paginate(ctx, warnings, 5, embed_maker)
                 
     @warn.command(name="get")
     async def warn_get(self, ctx, warn_id : int):

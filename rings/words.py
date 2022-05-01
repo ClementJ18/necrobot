@@ -3,7 +3,8 @@ from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
 from rings.utils.config import dictionnary_key
-from rings.utils.utils import react_menu, BotError
+from rings.utils.utils import BotError
+from rings.utils.ui import paginate
 
 import random
 import aiohttp
@@ -27,11 +28,10 @@ class Literature(commands.Cog):
         if not definitions:
             raise BotError("No definition found for this word.")
 
-        def embed_maker(index, entry):
-            page, max_page = index
+        def embed_maker(view, entry):
             definition = entry["definition"][:2048].replace("[", "").replace("]", "")
             embed = discord.Embed(
-                title=f"{word.title()} ({page}/{max_page})", 
+                title=f"{word.title()} ({view.index}/{view.max_index})", 
                 url="http://www.urbandictionary.com/", 
                 colour=self.bot.bot_color, 
                 description=definition
@@ -46,12 +46,7 @@ class Literature(commands.Cog):
             
             return embed
             
-        await react_menu(
-            ctx=ctx, 
-            entries=definitions, 
-            per_page=1, 
-            generator=embed_maker
-        )
+        await paginate(ctx, definitions, 1, embed_maker)
         
     async def get_def(self, word):
         url = f"https://www.dictionaryapi.com/api/v3/references/collegiate/json/{word}?key={dictionnary_key}"
@@ -84,20 +79,14 @@ class Literature(commands.Cog):
         if isinstance(definitions[0], str):
             raise BotError(f"Could not find the word, similar matches: {', '.join(definitions)}")
 
-        def embed_maker(index, entry):
-            page, max_page = index
+        def embed_maker(view, entry):
             description = "\n -".join(entry["shortdef"])
-            embed = discord.Embed(title=f"{word.title()} ({page}/{max_page})", url="https://www.merriam-webster.com/", colour=self.bot.bot_color, description=f"-{description}")
+            embed = discord.Embed(title=f"{word.title()} ({view.index}/{view.max_index})", url="https://www.merriam-webster.com/", colour=self.bot.bot_color, description=f"-{description}")
             embed.set_footer(**self.bot.bot_footer)
         
             return embed
             
-        await react_menu(
-            ctx=ctx, 
-            entries=definitions,
-            generator=embed_maker,
-            per_page=1
-        )
+        await paginate(ctx, definitions, 1, embed_maker)
 
     @commands.command()
     async def shuffle(self, ctx, *, sentence):

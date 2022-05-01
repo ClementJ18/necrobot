@@ -1,10 +1,10 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import react_menu, BotError
+from rings.utils.utils import BotError
 from rings.utils.var import tutorial_e, gdpr_e
 from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm
+from rings.utils.ui import Confirm, paginate
 
 import ast
 import time
@@ -72,29 +72,24 @@ class Support(commands.Cog):
         
 
     @commands.group(invoke_without_command=True)
-    async def news(self, ctx, index : int = 1):
+    async def news(self, ctx):
         """See the latest necrobot news
 
         {usage}
 
         __Examples__
         `{pre}news` - get the news starting from the latest
-        `{pre}news 4` - get the news starting from the fourth item
-        `{pre}news 1` - get the news starting from the first item"""
+        """
         news = self.bot.settings["news"]
 
         if not news:
             await ctx.send(":negative_squared_cross_mark: | No news available")
             return
-
-        if 0 >= index > len(news):
-            await ctx.send(f":negative_squared_cross_mark: | Not a valid index, pick a number from 1 to {len(news)}")
-            return
         
-        def _embed_generator(page):
-            return discord.Embed.from_data(news[page])
+        def embed_maker(view, entries):
+            return discord.Embed.from_data(news[view.index])
 
-        await react_menu(ctx, len(news) - 1, _embed_generator, index-1)
+        await paginate(ctx, len(news) - 1, embed_maker)
 
     @news.command("add")
     @has_perms(6)

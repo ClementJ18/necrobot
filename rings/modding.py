@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
-from rings.utils.utils import react_menu, BotError
+from rings.utils.utils import BotError
+from rings.utils.ui import paginate
 
 from bs4 import BeautifulSoup
 from fuzzywuzzy import process
@@ -27,8 +28,8 @@ class Modding(commands.Cog):
         
         __Example__
         `{pre}game battle for middle earth` - creates a rich embed of the BFME ModDB page"""
-        def _embed_generator(index, entries):
-            page = index[0]
+        def embed_maker(view, entries):
+            page = view.index
             embed = discord.Embed(
                 title=game.name,
                 colour=self.bot.bot_color, 
@@ -70,7 +71,7 @@ class Modding(commands.Cog):
             soup = BeautifulSoup(await resp.text(), "html.parser")
 
         game = moddb.pages.Game(soup)
-        await react_menu(ctx, [1, 2, 3], 1, _embed_generator)
+        await paginate(ctx, [1, 2, 3], 1, embed_maker)
 
     @commands.command()
     async def mod(self, ctx, *, mod : str):
@@ -82,8 +83,8 @@ class Modding(commands.Cog):
         
         __Example__
         `{pre}mod edain mod` - creates a rich embed of the Edain Mod ModDB page"""
-        def _embed_generator(index, entries):
-            page = index[0]
+        def embed_maker(view, entries):
+            page = view.index
             embed = discord.Embed(
                 title=mod.name, 
                 colour=self.bot.bot_color, 
@@ -125,7 +126,7 @@ class Modding(commands.Cog):
             soup = BeautifulSoup(await resp.text(), "html.parser")
 
         mod = moddb.pages.Mod(soup)
-        await react_menu(ctx, [1, 2, 3], 1, _embed_generator)
+        await paginate(ctx, [1, 2, 3], 1, embed_maker)
 
 async def setup(bot):
     await bot.add_cog(Modding(bot))

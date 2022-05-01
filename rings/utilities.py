@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import react_menu, BotError, format_dt, time_string_parser, time_converter
+from rings.utils.utils import BotError, format_dt, time_string_parser, time_converter
 from rings.utils.converters import MemberConverter
 from rings.utils.checks import leaderboard_enabled, has_perms
 from rings.utils.astral import Astral
@@ -134,7 +134,7 @@ class Utilities(commands.Cog):
             except aiohttp.ClientResponseError:
                 res = await r.json(content_type="application/javascript")
 
-        def embed_generator(view, entries):
+        def embed_maker(view, entries):
             embed = discord.Embed(
                 title=res['date'], 
                 colour=self.bot.bot_color, 
@@ -158,7 +158,7 @@ class Utilities(commands.Cog):
 
             return embed
 
-        await paginate(ctx, res["data"][choice], 5, embed_generator)
+        await paginate(ctx, res["data"][choice], 5, embed_maker)
 
     @commands.group(invoke_without_command=True)
     async def remindme(self, ctx, *, message):
@@ -221,9 +221,9 @@ class Utilities(commands.Cog):
         `{pre}remindme list` - lists all of your reminders
         `{pre}remindme list @NecroBot` - list all of NecroBot's reminder
         """
-        def embed_generator(index, entries):
+        def embed_maker(view, entries):
             embed = discord.Embed(
-                title=f"Reminders ({index[0]}/{index[1]})", 
+                title=f"Reminders ({view.index}/{view.max_index})", 
                 description=f"Here is the list of **{user.display_name}**'s currently active reminders.", 
                 colour=self.bot.bot_color
             )
@@ -245,7 +245,7 @@ class Utilities(commands.Cog):
             user = ctx.author
             
         reminders = await self.bot.db.get_reminders(user.id)
-        await react_menu(ctx, reminders, 10, embed_generator)
+        await paginate(ctx, reminders, 10, embed_maker)
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -254,9 +254,9 @@ class Utilities(commands.Cog):
         hold data for extended periods of time. A queue should atmost only last a couple of days.
 
         {usage}"""
-        def embed_maker(index, entries):
+        def embed_maker(view, entries):
             embed = discord.Embed(
-                title=f"Queue ({index[0]}/{index[1]})", 
+                title=f"Queue ({view.index}/{view.max_index})", 
                 description="Here is the list of members currently queued:\n- {}".format('\n- '.join(entries)), 
                 colour=self.bot.bot_color
             )
@@ -266,7 +266,7 @@ class Utilities(commands.Cog):
             return embed
             
         queue = [f"**{ctx.guild.get_member(x).display_name}**" for x in self.queue[ctx.guild.id]["list"]]
-        await react_menu(ctx, queue, 10, embed_maker)
+        await paginate(ctx, queue, 10, embed_maker)
 
 
     @q.command(name="start")
@@ -344,7 +344,7 @@ class Utilities(commands.Cog):
         
     @commands.group(invoke_without_command=True)
     @leaderboard_enabled()
-    async def leaderboard(self, ctx, page : int = 0):
+    async def leaderboard(self, ctx):
         """Base command for the leaderboard, a fun system built for servers to be able to have their own arbitrary 
         point system.
         
@@ -352,7 +352,6 @@ class Utilities(commands.Cog):
         
         __Examples__
         `{pre}leaderboard` - show the leaderboard starting from page zero
-        `{pre}leaderboard 3` - show the leaderboard starting from page 3
         """   
         message, symbol = await self.bot.db.get_leaderboard(ctx.guild.id)
                 
@@ -361,7 +360,7 @@ class Utilities(commands.Cog):
             ctx.guild.id
         )
         
-        def _embed_maker(index, entries):
+        def embed_maker(view, entries):
             users = []
             for result in entries:
                 user = ctx.guild.get_member(result[0])
@@ -371,7 +370,7 @@ class Utilities(commands.Cog):
             users = "\n\n".join(users)
             msg = f"{message}\n\n{users}"
             embed = discord.Embed(
-                title=f"Leaderboard ({index[0]}/{index[1]})", 
+                title=f"Leaderboard ({view.index}/{view.max_index})", 
                 colour=self.bot.bot_color, 
                 description=msg
             )
@@ -380,7 +379,7 @@ class Utilities(commands.Cog):
 
             return embed
                         
-        await react_menu(ctx, results, 10, _embed_maker, page=page)
+        await paginate(ctx, results, 10, embed_maker)
         
     @leaderboard.command(name="message")
     @has_perms(4)
@@ -548,10 +547,10 @@ class Utilities(commands.Cog):
         ga_entries = [x for x in self.bot.ongoing_giveaways.values() if x["msg"].guild.id == ctx.guild.id]
         ga_entries.sort(key=lambda x: x["limit"])
 
-        def embed_maker(index, entries):
+        def embed_maker(view, entries):
             ga = "\n".join([f"- **{entry['msg'].id}**: {format_dt(entry['limit'])} ([Link]({entry['msg'].jump_url}))" for entry in entries])
             embed = discord.Embed(
-                title=f"Giveaways ({index[0]}/{index[1]})", 
+                title=f"Giveaways ({view.index}/{view.max_index})", 
                 colour=self.bot.bot_color, 
                 description=ga
             )
@@ -560,7 +559,7 @@ class Utilities(commands.Cog):
 
             return embed
 
-        await react_menu(ctx, ga_entries, 10, embed_maker)
+        await paginate(ctx, ga_entries, 10, embed_maker)
 
     @giveaway.command(name="cancel")
     @commands.guild_only()

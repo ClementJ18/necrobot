@@ -2,11 +2,11 @@ import discord
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
-from rings.utils.utils import midnight, react_menu, BotError
+from rings.utils.utils import midnight, BotError
 from rings.utils.converters import MoneyConverter, BadgeConverter, MemberConverter, RangeConverter
 from rings.db import DatabaseError
 from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm
+from rings.utils.ui import Confirm, paginate
 
 import random
 import functools
@@ -50,25 +50,22 @@ class Profile(commands.Cog):
             await ctx.send(f":atm: | **{ctx.author.display_name}** you have **{'{:,}'.format(money)}** :euro:")
 
     @balance.command(name="server")
-    async def balance_server(self, ctx, index : int = 0):
+    async def balance_server(self, ctx):
         """See the ranking of users with the most money within the server
 
         {usage}
 
         __Example__
         `{pre}balance server` - See the ranking starting from the top 10
-        `{pre}balance server 3` - See the ranking starting from ranks 30 to 39"""
-        if index < 0:
-            raise BotError("Please pick an index that is more than or equal to 0")
-
+        """
         monies = await self.bot.db.query(
             "SELECT user_id, necroins FROM necrobot.Users WHERE user_id = any($1) ORDER BY necroins DESC",
             [x.id for x in ctx.guild.members]    
         )
 
-        def _embed_generator(index, entries):
+        def embed_maker(view, entries):
             embed = discord.Embed(
-                title=f"Money Ranking ({index[0]}/{index[1]})", 
+                title=f"Money Ranking ({view.index}/{view.max_index})", 
                 colour=self.bot.bot_color, 
                 description="Ranking of user's money on the server"
             )
@@ -84,28 +81,25 @@ class Profile(commands.Cog):
 
             return embed
 
-        await react_menu(ctx, monies, 10, _embed_generator, page=index)
+        await paginate(ctx, monies, 10, embed_maker)
 
     @balance.command(name="global")
-    async def balance_global(self, ctx, index : int = 0):
+    async def balance_global(self, ctx):
         """See the ranking of users with the most money throughout discord
 
         {usage}
 
         __Example__
         `{pre}balance server` - See the ranking starting from the top 10
-        `{pre}balance server 3` - See the ranking starting from ranks 30 to 39"""
-        if index < 0:
-            raise BotError("Please pick an index that us more than or equal to 0")
-
+        """
         monies = await self.bot.db.query(
             "SELECT user_id, necroins FROM necrobot.Users WHERE user_id = ANY($1) ORDER BY necroins DESC",
             [x.id for x in self.bot.users]    
         )
 
-        def _embed_generator(index, entries):
+        def embed_maker(view, entries):
             embed = discord.Embed(
-                title=f"Money Ranking ({index[0]}/{index[1]})", 
+                title=f"Money Ranking ({view.index}/{view.max_index})", 
                 colour=self.bot.bot_color, 
                 description="Ranking of user's money throughout Discord"
             )
@@ -121,7 +115,7 @@ class Profile(commands.Cog):
 
             return embed
 
-        await react_menu(ctx, monies, 10, _embed_generator, page=index)
+        await paginate(ctx, monies, 10, embed_maker)
 
     @commands.command(name="daily", cooldown_after_parsing=True)
     @commands.cooldown(1, 60, BucketType.user)
@@ -371,9 +365,9 @@ class Profile(commands.Cog):
         {usage}
         """
         
-        def embed_maker(index, entry):
+        def embed_maker(view, entry):
             embed = discord.Embed(
-                title=f"Badge Shop ({index[0]}/{index[1]}", 
+                title=f"Badge Shop ({view.index}/{view.max_index})", 
                 description="Here you can browse available badges at your leisure. To buy a badge use the `badge buy` command and pass the name of the badge"
             )
             
@@ -381,7 +375,7 @@ class Profile(commands.Cog):
             
             return embed
             
-        await react_menu(ctx, self.bot.settings['shop'], 1, embed_maker)
+        await paginate(ctx, self.bot.settings['shop'], 1, embed_maker)
         
     @badge_shop.command(name="generate")
     @has_perms(6)
@@ -477,10 +471,10 @@ class Profile(commands.Cog):
 
         total_stars = sum([x[1] for x in stars])
         
-        def embed_maker(index, entries):
+        def embed_maker(view, entries):
             star_str = "\n".join([f"{x[1]} :star: - [Link]({x[2]}) ({ctx.guild.get_member(x[0]) if ctx.guild.get_member(x[0]) is not None else 'User Left'})" for x in entries])
             embed = discord.Embed(
-                title=f"Stars ({index[0]}/{index[1]})", 
+                title=f"Stars ({view.index}/{view.max_index})", 
                 description=f"Total Stars: {total_stars} \n Total Message: {len(stars)} \n {star_str}", 
                 colour=self.bot.bot_color
             )
@@ -489,7 +483,7 @@ class Profile(commands.Cog):
 
             return embed
 
-        await react_menu(ctx, stars, 15, embed_maker)
+        await paginate(ctx, stars, 15, embed_maker)
 
     @stars.group(invoke_without_command=True, name="ranking")
     async def stars_ranking(self, ctx, order : str = "messages"):
@@ -509,7 +503,7 @@ class Profile(commands.Cog):
             ctx.guild.id
         )
 
-        def _embed_maker(index, entries):
+        def embed_maker(view, entries):
             description = ""
             for row in entries:
                 member = ctx.guild.get_member(row[0])
@@ -517,14 +511,14 @@ class Profile(commands.Cog):
 
 
             embed = discord.Embed(
-                title=f"Starboard Leaderboard ({index[0]}/{index[1]})", 
+                title=f"Starboard Leaderboard ({view.index}/{view.max_index})", 
                 description=f"A leaderboard to rank people by the amount of their messages that were starred. \n {description}", 
                 colour=self.bot.bot_color
             )
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        await react_menu(ctx, results, 15, _embed_maker)
+        await paginate(ctx, results, 15, embed_maker)
 
     @stars_ranking.command(name="old")
     async def stars_ranking_old(self, ctx):
@@ -536,7 +530,7 @@ class Profile(commands.Cog):
             ctx.guild.id
         )
 
-        def _embed_maker(index, entries):
+        def embed_maker(view, entries):
             description = ""
             for row in entries:
                 member = ctx.guild.get_member(row[0])
@@ -544,14 +538,14 @@ class Profile(commands.Cog):
 
 
             embed = discord.Embed(
-                title=f"Starboard Leaderboard ({index[0]}/{index[1]})", 
+                title=f"Starboard Leaderboard ({view.index}/{view.max_index})", 
                 description=f"A leaderboard to rank people by the amount of their messages that were starred. \n {description}", 
                 colour=self.bot.bot_color
             )
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        await react_menu(ctx, results, 15, _embed_maker)
+        await paginate(ctx, results, 15, embed_maker)
 
 
 async def setup(bot):

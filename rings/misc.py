@@ -2,11 +2,11 @@ import discord
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
-from rings.utils.utils import react_menu, BotError
+from rings.utils.utils import BotError
 from rings.utils.hunger_game import events
 from rings.utils.checks import has_perms, guild_only
 from rings.utils.converters import UserConverter
-from rings.utils.ui import Confirm
+from rings.utils.ui import Confirm, paginate
 
 import re
 import random
@@ -252,7 +252,7 @@ class Misc(commands.Cog):
 
 
         """
-        def embed_maker(index, entries):
+        def embed_maker(view, entries):
             entries.sort(**sort.get(sort_key, sort["name"]))
             description = ""
             intro = ""
@@ -318,7 +318,7 @@ class Misc(commands.Cog):
 
             stats.sort(key=lambda x: x['faction'])
             stats = itertools.groupby(stats, lambda x: x['faction'])
-            await react_menu(ctx, [list(y) for x, y in stats], 1, embed_maker)
+            await paginate(ctx, [list(y) for x, y in stats], 1, embed_maker)
 
     @matchups.command(name="reset")
     @guild_only(496617962334060545)
@@ -356,7 +356,7 @@ class Misc(commands.Cog):
         `{pre}matchups user=@Necrobot` - get the logs of all the matches where necrobot won
         """
 
-        def embed_maker(index, entries):
+        def embed_maker(view, entries):
             description = ""
             for entry in entries:
                 submitter = self.bot.get_user(entry['user_id'])
@@ -368,7 +368,7 @@ class Misc(commands.Cog):
                 time = entry[4].strftime("%Y-%m-%d %H:%M")
                 description += f"- {name}: **{entry['faction']}** won against **{entry['enemy']}** at {time} (ID: **{entry['id']}**)\n"
 
-            embed = discord.Embed(title=f"Logs ({index[0]}/{index[1]})", description=description, colour=self.bot.bot_color)
+            embed = discord.Embed(title=f"Logs ({view.index}/{view.max_index})", description=description, colour=self.bot.bot_color)
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
@@ -425,7 +425,7 @@ class Misc(commands.Cog):
 
             logs = [log for log in logs if check_entry(log)]
 
-        await react_menu(ctx, logs, 15, embed_maker)
+        await paginate(ctx, logs, 15, embed_maker)
 
     @matchups.command(name="delete")
     @guild_only(496617962334060545)

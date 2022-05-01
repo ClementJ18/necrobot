@@ -1,9 +1,10 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import react_menu, BotError
+from rings.utils.utils import BotError
 from rings.utils.converters import Tag
 from rings.db import DatabaseError
+from rings.utils.ui import paginate
 
 import re
 
@@ -215,10 +216,10 @@ class Tags(commands.Cog):
             ctx.guild.id    
         )
         
-        def _embed_generator(index, entries):
+        def embed_maker(view, entries):
             tag_str = "- " + "\n- ".join(entries)
             embed = discord.Embed(
-                title=f"Tags on this server ({index[0]}/{index[1]})", 
+                title=f"Tags on this server ({view.index}/{view.max_index})", 
                 description=tag_str, 
                 colour=self.bot.bot_color
             )
@@ -227,7 +228,7 @@ class Tags(commands.Cog):
 
             return embed
 
-        await react_menu(ctx, [t["alias"] for t in tag_list], 10, _embed_generator)
+        await paginate(ctx, [t["alias"] for t in tag_list], 10, embed_maker)
 
     @tag.command(name="info")
     @commands.guild_only()

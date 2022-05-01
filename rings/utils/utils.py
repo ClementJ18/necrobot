@@ -59,59 +59,6 @@ def time_string_parser(message):
         return text, sleep, time
 
     raise BotError("Something went wrong, you need to use the format: **<optional_message> in|on <time>**")
-    
-async def react_menu(ctx, entries, per_page, generator, *, page=0, timeout=300):
-    max_pages = max(0, ((len(entries)-1)//per_page))
-    if not entries:
-        raise BotError("No entries in this list")
-    
-    subset = entries[page*per_page:(page+1)*per_page]
-    msg = await ctx.send(embed=generator((page + 1, max_pages + 1), subset[0] if per_page == 1 else subset))
-    if len(entries) <= per_page:
-        return
-    
-    react_list = ["\N{BLACK LEFT-POINTING TRIANGLE}", "\N{BLACK SQUARE FOR STOP}", "\N{BLACK RIGHT-POINTING TRIANGLE}"]
-    for reaction in react_list:
-        await msg.add_reaction(reaction)
-
-    async def handler():
-        try:
-            await msg.clear_reactions()
-        except discord.errors.NotFound:
-            pass
-
-    while True: 
-        def check(r, u):
-            return u == ctx.message.author and r.emoji in react_list and msg.id == r.message.id
-
-        reaction, user = await ctx.bot.wait_for(
-            "reaction_add", 
-            check=check, 
-            timeout=timeout, 
-            handler=handler, 
-            propagate=False
-        )
-
-        if reaction.emoji == "\N{BLACK SQUARE FOR STOP}":
-            return await msg.clear_reactions()
-            
-        if reaction.emoji == "\N{BLACK LEFT-POINTING TRIANGLE}":
-            page -= 1
-            if page < 0:
-                page = max_pages
-        elif reaction.emoji == "\N{BLACK RIGHT-POINTING TRIANGLE}":
-            page += 1
-            if page > max_pages:
-                page = 0
-
-        try:
-            await reaction.remove(user)
-        except discord.Forbidden:
-            pass
-        
-        subset = entries[page*per_page:(page+1)*per_page]
-        await msg.edit(embed=generator((page + 1, max_pages + 1), subset[0] if per_page == 1 else subset))
-
 
 async def get_pre(bot, message):
     """If the guild has set a custom prefix we return that and the ability to mention alongside regular 

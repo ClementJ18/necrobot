@@ -1,11 +1,11 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import react_menu, BotError
+from rings.utils.utils import BotError
 from rings.utils.config import github_key
 from rings.utils.converters import GuildConverter, BadgeConverter, RangeConverter, UserConverter, Grudge, MemberConverter
 from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm
+from rings.utils.ui import Confirm, paginate
 
 import ast
 import psutil
@@ -81,7 +81,7 @@ class Admin(commands.Cog):
             user    
         )   
         
-        def embed_maker(index, entries):
+        def embed_maker(view, entries):
             if self.bot.get_user(user):
                 name = str(self.bot.get_user(user))
             elif entries:
@@ -90,7 +90,7 @@ class Admin(commands.Cog):
                 name = user
                 
             embed = discord.Embed(
-                title=f"Grudges ({index[0]}/{index[1]})", 
+                title=f"Grudges ({view.index}/{view.max_index})", 
                 colour=self.bot.bot_color, 
                 description=f"List of grudges for {name}"
             )
@@ -103,7 +103,7 @@ class Admin(commands.Cog):
             return embed
             
             
-        await react_menu(ctx, grudges, 10, embed_maker)
+        await paginate(ctx, grudges, 10, embed_maker)
         
     @grudge.command(name="info")
     async def grudge_info(self, ctx, grudge : Grudge):
@@ -398,7 +398,7 @@ class Admin(commands.Cog):
             
     @commands.command()
     @has_perms(6)
-    async def logs(self, ctx, start : Optional[int] = 0, *arguments):
+    async def logs(self, ctx, *arguments):
         """Get a list of commands. SQL arguments can be passed to filter the output.
 
         {usage}"""
@@ -410,10 +410,9 @@ class Admin(commands.Cog):
 
         results = await self.bot.db.query(sql)
 
-        def embed_maker(pages, entries):
-            page, max_page = pages
+        def embed_maker(view, entries):
             
-            embed = discord.Embed(title="Command Log", colour=self.bot.bot_color, description=f"{page}/{max_page}")
+            embed = discord.Embed(title="Command Log", colour=self.bot.bot_color, description=f"{view.index}/{view.max_index}")
             embed.set_footer(**self.bot.bot_footer)
             for row in entries:
                 user = self.bot.get_user(row["user_id"])
@@ -422,7 +421,7 @@ class Admin(commands.Cog):
 
             return embed
 
-        await react_menu(ctx, results, 5, embed_maker, page=start)
+        await paginate(ctx, results, 5, embed_maker)
         
     @commands.command(name="as")
     @commands.is_owner()

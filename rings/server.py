@@ -1,11 +1,11 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import react_menu, BotError, check_channel
+from rings.utils.utils import BotError, check_channel
 from rings.db import DatabaseError
 from rings.utils.converters import TimeConverter, RangeConverter, MemberConverter, RoleConverter
 from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm
+from rings.utils.ui import Confirm, paginate
 
 from typing import Union
 import re
@@ -117,7 +117,7 @@ class Server(commands.Cog):
                 ctx.guild.id    
             )
             
-            def _embed_maker(index, entries):
+            def embed_maker(view, entries):
                 string = ""
                 for member in entries:
                     name = ctx.guild.get_member(member[0]).mention
@@ -129,7 +129,7 @@ class Server(commands.Cog):
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
 
-            return await react_menu(ctx, members, 10, _embed_maker)
+            return await paginate(ctx, members, 10, embed_maker)
 
         if await self.bot.db.compare_user_permission(ctx.author.id, ctx.guild.id, user.id) > 1:
             current_level = await self.bot.db.get_permission(user.id, ctx.guild.id)
@@ -164,7 +164,7 @@ class Server(commands.Cog):
             if perms_check is not None and perms_check.level == level:
                 c.append(f"- {command.name}")
 
-        def embed_maker(index, entries):
+        def embed_maker(view, entries):
             string = '\n'.join(entries)
             embed = discord.Embed(
                 title=f"Commands for {self.bot.perms_name[level]} {level}+ ({index[0]}/{index[1]})", 
@@ -174,7 +174,7 @@ class Server(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        await react_menu(ctx, c, 10, embed_maker)
+        await paginate(ctx, c, 10, embed_maker)
 
     @permissions.command(name="bind")
     @has_perms(4)
@@ -314,10 +314,10 @@ class Server(commands.Cog):
         from it (since we added it above)
         `{pre}automod @ARole` - adds role ARole to the list of roles ignored by automoderation
         """
-        def _embed_maker(index, entries):
+        def embed_maker(view, entries):
             string = '\n- '.join(entries)
             embed = discord.Embed(
-                title=f"Ignored by Automod ({index[0]}/{index[1]})", 
+                title=f"Ignored by Automod ({view.index}/{view.max_index})", 
                 colour=self.bot.bot_color, 
                 description=f"Channels(**C**), Users(**U**) and Roles (**R**) ignored by auto moderation:\n- {string}") 
             
@@ -326,7 +326,7 @@ class Server(commands.Cog):
 
         if not mentions:
             ignored = self.bot.guild_data[ctx.guild.id]["ignore-automod"]     
-            return await react_menu(ctx, self.get_all(ctx, ignored), 10, _embed_maker)                       
+            return await paginate(ctx, self.get_all(ctx, ignored), 10, embed_maker)                       
 
         to_add = []
         to_remove = []
@@ -392,17 +392,17 @@ class Server(commands.Cog):
         if not mentions:
             ignored = self.bot.guild_data[ctx.guild.id]["ignore-command"] 
             
-            def _embed_maker(index, entries):
+            def embed_maker(view, entries):
                 string = '\n- '.join(entries)
                 embed = discord.Embed(
-                    title=f"Ignored by command ({index[0]}/{index[1]})", 
+                    title=f"Ignored by command ({view.index}/{view.max_index})", 
                     colour=self.bot.bot_color, 
                     description=f"Channels(**C**), Users(**U**) and Roles (**R**) ignored by the bot:\n- {string}") 
                 
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
                 
-            return await react_menu(ctx, self.get_all(ctx, ignored), 10, _embed_maker)     
+            return await paginate(ctx, self.get_all(ctx, ignored), 10, embed_maker)     
         
         to_add = []
         to_remove = []
@@ -670,9 +670,9 @@ class Server(commands.Cog):
         `{pre}broadcast edit channel 2 #another-channel` - change the channel that broadcast 2 is broacsting to 
         """
 
-        def embed_maker(index, entry):
+        def embed_maker(view, entry):
             embed = discord.Embed(
-                title=f"Broadcast ({index[0]}/{index[1]})", 
+                title=f"Broadcast ({view.index}/{view.max_index})", 
                 description=entry[5], 
                 colour=self.bot.bot_color
             )
@@ -692,7 +692,7 @@ class Server(commands.Cog):
             ctx.guild.id
         )
 
-        await react_menu(ctx, broadcasts, 1, embed_maker)
+        await paginate(ctx, broadcasts, 1, embed_maker)
 
     @broadcast.command(name="add")
     @has_perms(4)
@@ -891,9 +891,9 @@ class Server(commands.Cog):
         if role is None:
             roles = [f"{x.mention} ({len(x.members)})" for x in reversed(ctx.guild.roles) if x.id in self.bot.guild_data[ctx.guild.id]["self-roles"]]
             
-            def _embed_maker(index, entries):
+            def embed_maker(view, entries):
                 embed = discord.Embed(
-                    title=f"Self Assignable Roles ({index[0]}/{index[1]})", 
+                    title=f"Self Assignable Roles ({view.index}/{view.max_index})", 
                     description='- ' + '\n- '.join(entries), 
                     colour=self.bot.bot_color
                 )
@@ -901,7 +901,7 @@ class Server(commands.Cog):
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
             
-            return await react_menu(ctx, roles, 10, _embed_maker)
+            return await paginate(ctx, roles, 10, embed_maker)
 
         if role.id in self.bot.guild_data[ctx.guild.id]["self-roles"]:
             if role not in ctx.author.roles:
@@ -1056,7 +1056,7 @@ class Server(commands.Cog):
         )
         
     @commands.command()
-    async def results(self, ctx, index = 0):
+    async def results(self, ctx):
         """Get the results of a poll
 
         {usage}
@@ -1081,7 +1081,7 @@ class Server(commands.Cog):
             ctx.guild.id    
         )
 
-        def _embed_maker(index, entry):
+        def embed_maker(view, entry):
             string = ""
             for reaction in entry[1]:
                 count = discord.utils.find(lambda x: x[0] == reaction, entry[2])
@@ -1093,14 +1093,14 @@ class Server(commands.Cog):
                 string += f'{discord.utils.get(ctx.guild.emojis, name=reaction) or reaction} - {count}\n'
                     
             embed = discord.Embed(
-                title=f"Results ({index[0]}/{index[1]})", 
+                title=f"Results ({view.index}/{view.max_index})", 
                 description=f'[**Link**]({entry[0]})\n\n{string}'
             )
             embed.set_footer(**self.bot.bot_footer)
             
             return embed
         
-        await react_menu(ctx, results, 1, _embed_maker, page=index)
+        await paginate(ctx, results, 1, embed_maker)
 
 async def setup(bot):
     await bot.add_cog(Server(bot))

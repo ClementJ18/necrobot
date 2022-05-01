@@ -1,10 +1,12 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import react_menu, BotError
+from rings.utils.utils import BotError
 from rings.utils.checks import has_perms
 from rings.utils.converters import WritableChannelConverter
 from rings.utils.config import twitch_id
+from rings.utils.ui import paginate
+
 import feedparser
 import asyncio
 import datetime
@@ -145,14 +147,14 @@ class RSS(commands.Cog):
         if youtube is None:
             feeds = await self.bot.db.get_yt_rss(ctx.guild.id)
 
-            def embed_generator(page, entries):
+            def embed_maker(view, entries):
                 to_string = [f"[{result[5]}](https://www.youtube.com/channel/{result[2]}): {ctx.guild.get_channel(result[1]).mention} - `{result[4] if result[4] != '' else 'None'}`" for result in entries]
-                embed = discord.Embed(title=f"Subscriptions ({page[0]}/{page[1]})", description = "\n".join(to_string))
+                embed = discord.Embed(title=f"Subscriptions ({view.index}/{view.max_index})", description = "\n".join(to_string))
                 embed.set_footer(**self.bot.bot_footer)
 
                 return embed
 
-            return await react_menu(ctx, feeds, 15, embed_generator)
+            return await paginate(ctx, feeds, 15, embed_maker)
         
         
         try:        
@@ -270,14 +272,14 @@ class RSS(commands.Cog):
         if twitch is None:
             feeds = await self.bot.db.get_tw_rss(ctx.guild.id)
 
-            def embed_generator(page, entries):
+            def embed_maker(view, entries):
                 to_string = [f"[{result[5]}](https://www.twitch.tv/{result['twitch_name']}): {ctx.guild.get_channel(result[1]).mention} - `{result[4] if result[4] != '' else 'None'}`" for result in entries]
-                embed = discord.Embed(title=f"Subscriptions ({page[0]}/{page[1]})", description = "\n".join(to_string))
+                embed = discord.Embed(title=f"Subscriptions ({view.index}/{view.max_index})", description = "\n".join(to_string))
                 embed.set_footer(**self.bot.bot_footer)
 
                 return embed
 
-            return await react_menu(ctx, feeds, 15, embed_generator)
+            return await paginate(ctx, feeds, 15, embed_maker)
 
         
         if channel is not None:
