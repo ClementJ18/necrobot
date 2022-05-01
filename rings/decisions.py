@@ -8,12 +8,13 @@ from rings.utils.utils import BotError
 import random
 import dice
 
+
 class Decisions(commands.Cog):
     """Helpful commands to help you make decisions"""
 
     def __init__(self, bot):
         self.bot = bot
-        
+
     #######################################################################
     ## Commands
     #######################################################################
@@ -22,12 +23,12 @@ class Decisions(commands.Cog):
     async def choose(self, ctx, *, choices):
         """Returns a single choice from the list of choices given. Use `,` to seperate each of the choices. You can
         make multiple choices with a single command by separating them with `|`.
-        
+
         {usage}
-        
+
         __Example__
         `{pre}choose Bob, John Smith, Mary` - choose between the names of Bob, John Smith, and Mary
-        `{pre}choose 1, 2` - choose between 1 and 2 
+        `{pre}choose 1, 2` - choose between 1 and 2
         `{pre}choose I | like, hate | tico, kittycat` - can become 'I like tico' or 'I hate tico' or 'I like kittycat'"""
         choice_sets = choices.split("|")
         final_choices = []
@@ -35,21 +36,23 @@ class Decisions(commands.Cog):
             choice_list = [x.strip() for x in choice_set.strip().split(",")]
             final_choices.append(random.choice(choice_list))
 
-
         await ctx.send(f"I choose **{' '.join(final_choices)}**")
 
     @commands.command(aliases=["flip"])
     @commands.cooldown(3, 5, BucketType.user)
-    async def coin(self, ctx, choice : CoinConverter = None, bet : MoneyConverter = 0):
+    async def coin(self, ctx, choice: CoinConverter = None, bet: MoneyConverter = 0):
         """Flips a coin and returns the result. Can also be used to bet money on the result (`h` for head and `t` for tail).
-        
+
         {usage}
 
         __Example__
         `{pre}coin` - flips a coin
         `{pre}coin h 50` - bet 50 coins on the result being head"""
-        options = {"h": "<:head:351456287453872135> | **Head**", "t": "<:tail:351456234257514496> | **Tail**"}
-        
+        options = {
+            "h": "<:head:351456287453872135> | **Head**",
+            "t": "<:tail:351456234257514496> | **Tail**",
+        }
+
         outcome = random.choice(list(options.keys()))
         msg = options[outcome]
         if bet > 0:
@@ -58,18 +61,18 @@ class Decisions(commands.Cog):
             else:
                 msg += "\nBetter luck next time."
                 bet = -bet
-                
+
             await self.bot.db.update_money(ctx.author.id, add=bet)
 
         await ctx.send(msg)
 
     @commands.command(aliases=["dice"])
-    async def roll(self, ctx, dices : str = "1d6"):
-        """Rolls one or multiple x sided dices and returns the result. 
-        Structure of the argument: `[number of die]d[number of faces]`. 
-        
+    async def roll(self, ctx, dices: str = "1d6"):
+        """Rolls one or multiple x sided dices and returns the result.
+        Structure of the argument: `[number of die]d[number of faces]`.
+
         {usage}
-        
+
         __Example__
         `{pre}roll 3d8` - roll three 8-sided die
         `{pre}roll` - roll one 6-sided die"""
@@ -78,23 +81,27 @@ class Decisions(commands.Cog):
         except Exception as e:
             raise BotError(e) from e
 
-
         if len(dice_list) == 1:
-            await ctx.send(f":game_die: | **{ctx.author.display_name}** rolled **{dice_list[0]}**.")
+            await ctx.send(
+                f":game_die: | **{ctx.author.display_name}** rolled **{dice_list[0]}**."
+            )
         else:
             total = sum(dice_list)
-            await ctx.send(f":game_die: | **{ctx.author.display_name}** rolled **{dices}** for a total of **{total}**. The dice were {', '.join([f'**{x}**' for x in dice_list])}")
+            await ctx.send(
+                f":game_die: | **{ctx.author.display_name}** rolled **{dices}** for a total of **{total}**. The dice were {', '.join([f'**{x}**' for x in dice_list])}"
+            )
 
     @commands.command(name="8ball")
-    async def ball8(self, ctx, *, message = None):
-        """Uses an 8ball system to reply to the user's question. 
-        
+    async def ball8(self, ctx, *, message=None):
+        """Uses an 8ball system to reply to the user's question.
+
         {usage}"""
         msg = f":8ball: | {random.choice(ball8_list)}"
         if message is not None:
             msg = f"{message} \n" + msg
 
         await ctx.send(msg)
+
 
 async def setup(bot):
     await bot.add_cog(Decisions(bot))

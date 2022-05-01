@@ -12,16 +12,17 @@ from datetime import timedelta
 
 
 class Support(commands.Cog):
-    """All the NecroBot support commands are here to help you enjoy your time with NecroBot """
+    """All the NecroBot support commands are here to help you enjoy your time with NecroBot"""
+
     def __init__(self, bot):
         self.bot = bot
         self.bot.tutorial_e = discord.Embed.from_dict(tutorial_e)
         self.bot.gdpr_embed = discord.Embed.from_dict(gdpr_e)
-        
+
     #######################################################################
     ## Commands
     #######################################################################
-    
+
     @commands.command(aliases=["support"])
     async def about(self, ctx):
         """Creates a rich embed of the bot's details Also contains link for inviting and support server.
@@ -29,13 +30,29 @@ class Support(commands.Cog):
         {usage}"""
 
         bot_desc = "Hello! :wave: I'm NecroBot, a moderation bot with many commands for a wide variety of server and a high modularity which means you can enable/disable just about every part of me as you wish."
-        embed = discord.Embed(title="NecroBot", colour=self.bot.bot_color, description=bot_desc)
+        embed = discord.Embed(
+            title="NecroBot", colour=self.bot.bot_color, description=bot_desc
+        )
         embed.set_footer(**self.bot.bot_footer)
-        embed.add_field(name="About", value=f"I'm currently in {len(list(self.bot.guilds))} guilds and I can see {len(list(self.bot.users))} members. I was created using Python and the d.py library. ", inline=False)
+        embed.add_field(
+            name="About",
+            value=f"I'm currently in {len(list(self.bot.guilds))} guilds and I can see {len(list(self.bot.users))} members. I was created using Python and the d.py library. ",
+            inline=False,
+        )
         embed.add_field(name="Version", value=self.bot.version)
-        uptime = str(timedelta(seconds=time.time() - self.bot.uptime_start)).partition(".")[0].replace(":", "{}")
-        embed.add_field(name="Uptime", value=uptime.format("hours, ", "minutes and ") + "seconds")
-        embed.add_field(name="Links", value=f"[Invite bot to your server]({discord.utils.oauth_url(self.bot.user.id, permissions=discord.Permissions(permissions=403172599))}) - [Get help with the bot](https://discord.gg/fPJANsE)", inline=False)
+        uptime = (
+            str(timedelta(seconds=time.time() - self.bot.uptime_start))
+            .partition(".")[0]
+            .replace(":", "{}")
+        )
+        embed.add_field(
+            name="Uptime", value=uptime.format("hours, ", "minutes and ") + "seconds"
+        )
+        embed.add_field(
+            name="Links",
+            value=f"[Invite bot to your server]({discord.utils.oauth_url(self.bot.user.id, permissions=discord.Permissions(permissions=403172599))}) - [Get help with the bot](https://discord.gg/fPJANsE)",
+            inline=False,
+        )
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -46,30 +63,39 @@ class Support(commands.Cog):
         {usage}
 
         __Examples__
-        `{pre}report profile while using profile the picture came out wrong, it was all distorted and stuff and my data on it was wrong.` - report 
+        `{pre}report profile while using profile the picture came out wrong, it was all distorted and stuff and my data on it was wrong.` - report
         a bug for `profile`
-        `{pre}report settings while using the sub-command mute it told me there was no such role when there is indeed` - report a bug for 
+        `{pre}report settings while using the sub-command mute it told me there was no such role when there is indeed` - report a bug for
         `settings`"""
 
-        embed = discord.Embed(title=":bulb: A report has just came in :bulb:", description=message, colour=self.bot.bot_color)
+        embed = discord.Embed(
+            title=":bulb: A report has just came in :bulb:",
+            description=message,
+            colour=self.bot.bot_color,
+        )
         embed.set_footer(**self.bot.bot_footer)
-        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar.replace(format="png", size=128))
-        embed.add_field(name="Helpful Info", value=f"User: {ctx.author.mention} \nServer: {ctx.guild.name} \nServer ID: {ctx.guild.id}")
-        
+        embed.set_author(
+            name=ctx.author.name,
+            icon_url=ctx.author.avatar.replace(format="png", size=128),
+        )
+        embed.add_field(
+            name="Helpful Info",
+            value=f"User: {ctx.author.mention} \nServer: {ctx.guild.name} \nServer ID: {ctx.guild.id}",
+        )
+
         view = Confirm(
-            confirm_msg = ":white_check_mark: | Report sent!",
+            confirm_msg=":white_check_mark: | Report sent!",
         )
 
         view.message = await ctx.send(
-            "You are about to send this bug/suggestion report, are you sure? Abusing the report command can result in blacklisting", 
-            embed=embed, 
-            view=view
+            "You are about to send this bug/suggestion report, are you sure? Abusing the report command can result in blacklisting",
+            embed=embed,
+            view=view,
         )
 
         await view.wait()
         if view.value:
             await self.bot.get_channel(398894681901236236).send(embed=embed)
-        
 
     @commands.group(invoke_without_command=True)
     async def news(self, ctx):
@@ -85,7 +111,7 @@ class Support(commands.Cog):
         if not news:
             await ctx.send(":negative_squared_cross_mark: | No news available")
             return
-        
+
         def embed_maker(view, entries):
             return discord.Embed.from_data(news[view.index])
 
@@ -93,7 +119,7 @@ class Support(commands.Cog):
 
     @news.command("add")
     @has_perms(6)
-    async def news_add(self, ctx, *, news : str):
+    async def news_add(self, ctx, *, news: str):
         """Add a new news item
 
         {usage}"""
@@ -105,13 +131,15 @@ class Support(commands.Cog):
 
         base_d = {
             "author": {
-                "name": "Necrobot's Anchorman", "url": "https://discord.gg/Ape8bZt", 
-                "icon_url": self.bot.user.avatar.replace(format="png", size=128)
-            }, 
-            "color": 161712, "type": "rich"
+                "name": "Necrobot's Anchorman",
+                "url": "https://discord.gg/Ape8bZt",
+                "icon_url": self.bot.user.avatar.replace(format="png", size=128),
+            },
+            "color": 161712,
+            "type": "rich",
         }
-        news_e = {**news , **base_d}
-        embed = discord.Embed.from_data(news_e)        
+        news_e = {**news, **base_d}
+        embed = discord.Embed.from_data(news_e)
         view = Confirm()
         view.message = await ctx.send(embed=embed, view=view)
         await view.wait()
@@ -124,7 +152,7 @@ class Support(commands.Cog):
 
     @news.command("delete")
     @has_perms(6)
-    async def news_delete(self, ctx, index : int):
+    async def news_delete(self, ctx, index: int):
         """Remove a news item
 
         {usage}"""
@@ -133,7 +161,9 @@ class Support(commands.Cog):
             return
 
         if not 0 <= index < len(self.bot.settings["news"]):
-            await ctx.send(f":negative_squared_cross_mark: | Not a valid index, pick a number between 1 and {len(self.bot.settings['news'])}")
+            await ctx.send(
+                f":negative_squared_cross_mark: | Not a valid index, pick a number between 1 and {len(self.bot.settings['news'])}"
+            )
             return
 
         news = self.bot.settings["news"].pop(index)
@@ -141,7 +171,7 @@ class Support(commands.Cog):
 
     @news.command("raw")
     @has_perms(6)
-    async def news_raw(self, ctx, index : int):
+    async def news_raw(self, ctx, index: int):
         """Get the raw dict form of the news
 
         {usage}"""
@@ -153,7 +183,9 @@ class Support(commands.Cog):
         """Prints the template for news
 
         {usage}"""
-        await ctx.send('{ "fields": [{"inline": False, "name": "Why is good 1", "value": "Because"}], "description": "", "title": ""}')
+        await ctx.send(
+            '{ "fields": [{"inline": False, "name": "Why is good 1", "value": "Because"}], "description": "", "title": ""}'
+        )
 
     @commands.command()
     async def tutorial(self, ctx):
@@ -175,6 +207,6 @@ class Support(commands.Cog):
         except discord.Forbidden as e:
             raise BotError("Looks like you have private messages disabled") from e
 
-        
+
 async def setup(bot):
     await bot.add_cog(Support(bot))
