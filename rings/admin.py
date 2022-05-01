@@ -5,6 +5,7 @@ from rings.utils.utils import react_menu, BotError
 from rings.utils.config import github_key
 from rings.utils.converters import GuildConverter, BadgeConverter, RangeConverter, UserConverter, Grudge, MemberConverter
 from rings.utils.checks import has_perms
+from rings.utils.ui import Confirm
 
 import ast
 import psutil
@@ -157,25 +158,25 @@ class Admin(commands.Cog):
         {usage}
         
         __Example__
-        `{pre}add @NecroBot money+400` - adds 400 to NecroBot's balance"""
+        `{pre}add @NecroBot m+400` - adds 400 to NecroBot's balance"""
         money = await self.bot.db.get_money(user.id)
-        s = equation.replace("money", str(money))
+        s = equation.replace("m", str(money))
         try:
             operation = simple_eval(s)
-        except (NameError, SyntaxError):
-            raise BotError("Operation not recognized.")
+        except (NameError, SyntaxError) as e:
+            raise BotError("Operation not recognized.") from e
 
-        msg = await ctx.send(f":white_check_mark: | Operation successful. Change {user} balance to **{operation}**?")
-        result = await self.bot.confirmation_menu(msg, ctx.author)
+        view = Confirm(
+            confirm_msg = ":atm: | **{}'s** balance is now **{:,}** :euro:".format(user.display_name, operation),
+            cancel_msg = ":white_check_mark: | Cancelled.",
+        )
 
-        if result:
-            await self.bot.db.update_money(user.id, update=operation)
-            await ctx.send(":atm: | **{}'s** balance is now **{:,}** :euro:".format(user.display_name, operation))
-        else:
-            await ctx.send(":white_check_mark: | Cancelled.")
-            
-        await msg.delete()
-        
+        view.message = await ctx.send(f":white_check_mark: | Operation successful. Change {user} balance to **{operation}**?", view=view)
+        await view.wait()
+        if not view.value:
+            return
+
+        await self.bot.db.update_money(user.id, update=operation)        
         
     @commands.group()
     async def admin(self, ctx):

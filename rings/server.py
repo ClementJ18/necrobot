@@ -5,6 +5,7 @@ from rings.utils.utils import react_menu, BotError, check_channel
 from rings.db import DatabaseError
 from rings.utils.converters import TimeConverter, RangeConverter, MemberConverter, RoleConverter
 from rings.utils.checks import has_perms
+from rings.utils.ui import Confirm
 
 from typing import Union
 import re
@@ -220,13 +221,14 @@ class Server(commands.Cog):
                 if not role.members:
                     return await ctx.send(":white_check_mark: | Removed permission link!")
 
-                msg = await ctx.send(":white_check_mark: | Removed permission link! Re-calculate permissions of members with the role? (This can take a while based on the number of members with the role)")
-                result = await self.bot.confirmation_menu(msg, ctx.author)
-                if not result:
+                view = Confirm()
+                view.message = await ctx.send(":white_check_mark: | Removed permission link! Re-calculate permissions of members with the role? (This can take a while based on the number of members with the role)", view=view)
+                await view.wait()
+                if not view.value:
                     return
 
                 counter = await self.update_bindings(role)
-                return await msg.edit(content=f":white_check_mark: | Permissions of **{counter}** member(s) updated")
+                return await view.message.edit(content=f":white_check_mark: | Permissions of **{counter}** member(s) updated")
                 
             raise BotError("No role set for that permission level")
 
@@ -242,9 +244,10 @@ class Server(commands.Cog):
         if not role.members:
             return await ctx.send(":white_check_mark: | Permission binding created!")
 
-        msg = await ctx.send(":white_check_mark: | Permission binding created! Re-calculate permissions of members with the role?")
-        result = await self.bot.confirmation_menu(msg, ctx.author)
-        if not result:
+        view = Confirm()
+        view.message = await ctx.send(":white_check_mark: | Permission binding created! Re-calculate permissions of members with the role?", view=view)
+        await view.wait()
+        if not view.value:
             return
 
         updated = await self.bot.db.query(
@@ -263,7 +266,7 @@ class Server(commands.Cog):
         else:
             updated = len(updated)
 
-        await msg.edit(content=f":white_check_mark: | Permissions of **{updated}** member(s) updated")
+        await view.message.edit(content=f":white_check_mark: | Permissions of **{updated}** member(s) updated")
 
     @commands.command()
     @has_perms(4)

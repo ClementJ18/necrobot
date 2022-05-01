@@ -6,6 +6,7 @@ from rings.utils.utils import react_menu, BotError
 from rings.utils.hunger_game import events
 from rings.utils.checks import has_perms, guild_only
 from rings.utils.converters import UserConverter
+from rings.utils.ui import Confirm
 
 import re
 import random
@@ -327,13 +328,16 @@ class Misc(commands.Cog):
 
         {usage}
         """
-        msg = await ctx.send("Do you want to delete all the ranked logs and reset the counters for the factions?")
-        result = await self.bot.confirmation_menu(msg, ctx.author)
+        view = Confirm(
+            confirm_msg = ":white_check_mark: | All counters reset",
+        )
 
-        if result:
+        view.message = await ctx.send("Do you want to delete all the ranked logs and reset the counters for the factions?", view=view)
+        await view.wait()
+
+        if view.value:
             await self.bot.db.query("UPDATE necrobot.InternalRanked SET defeats = 0, victories = 0")
             await self.bot.db.query("DELETE FROM necrobot.InternalRankedLogs")
-            await ctx.send(":white_check_mark: | All counters reset")
 
     @matchups.command(name="logs")
     @guild_only(496617962334060545)

@@ -5,6 +5,7 @@ from rings.utils.utils import react_menu, BotError, format_dt, time_string_parse
 from rings.utils.converters import MemberConverter
 from rings.utils.checks import leaderboard_enabled, has_perms
 from rings.utils.astral import Astral
+from rings.utils.ui import paginate
 
 import asyncio
 import random
@@ -133,13 +134,12 @@ class Utilities(commands.Cog):
             except aiohttp.ClientResponseError:
                 res = await r.json(content_type="application/javascript")
 
-        def _embed_generator(index, entries):
-            page, max_page = index
+        def embed_generator(view, entries):
             embed = discord.Embed(
                 title=res['date'], 
                 colour=self.bot.bot_color, 
                 url=res["url"], 
-                description=f"Necrobot is proud to present: **{choice} today in History**\n Page {page}/{max_page}"
+                description=f"Necrobot is proud to present: **{choice} today in History**\n Page {view.index}/{view.max_index}"
             )
             
             embed.set_footer(**self.bot.bot_footer)
@@ -158,9 +158,7 @@ class Utilities(commands.Cog):
 
             return embed
 
-        random.shuffle(res["data"][choice])
-
-        await react_menu(ctx, res["data"][choice], 5, _embed_generator)
+        await paginate(ctx, res["data"][choice], 5, embed_generator)
 
     @commands.group(invoke_without_command=True)
     async def remindme(self, ctx, *, message):

@@ -170,11 +170,11 @@ class Profile(commands.Cog):
         payer = ctx.author
         view = Confirm(
             confirm_msg = f":white_check_mark: | **{payer.display_name}** approved the transaction.",
-            cancel_msg = f":white_check_mark: | **{payer.display_name}** cancelled the transaction."
+            cancel_msg = f":white_check_mark: | **{payer.display_name}** cancelled the transaction.",
         )
-        await ctx.send(f"Are you sure you want to pay **{amount}** to user **{payee.display_name}**?", view=view)
-        await view.wait()
 
+        view.message = await ctx.send(f"Are you sure you want to pay **{amount}** to user **{payee.display_name}**?", view=view)
+        await view.wait()
         if not view.value:
             return
 

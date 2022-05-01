@@ -4,6 +4,7 @@ from discord.ext import commands
 from rings.utils.utils import react_menu, BotError
 from rings.utils.var import tutorial_e, gdpr_e
 from rings.utils.checks import has_perms
+from rings.utils.ui import Confirm
 
 import ast
 import time
@@ -55,11 +56,18 @@ class Support(commands.Cog):
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar.replace(format="png", size=128))
         embed.add_field(name="Helpful Info", value=f"User: {ctx.author.mention} \nServer: {ctx.guild.name} \nServer ID: {ctx.guild.id}")
         
-        msg = await ctx.send("You are about to send this report, are you sure? Abusing the report command can result in blacklisting", embed=embed)
-        result = await self.bot.confirmation_menu(msg, ctx.author)
+        view = Confirm(
+            confirm_msg = ":white_check_mark: | Report sent!",
+        )
 
-        if result:
-            await ctx.send(":white_check_mark: | Report sent!")
+        view.message = await ctx.send(
+            "You are about to send this bug/suggestion report, are you sure? Abusing the report command can result in blacklisting", 
+            embed=embed, 
+            view=view
+        )
+
+        await view.wait()
+        if view.value:
             await self.bot.get_channel(398894681901236236).send(embed=embed)
         
 
@@ -108,11 +116,12 @@ class Support(commands.Cog):
             "color": 161712, "type": "rich"
         }
         news_e = {**news , **base_d}
-        embed = discord.Embed.from_data(news_e)
-        msg = await ctx.send(embed=embed)
-        result = await self.bot.confirmation_menu(msg, ctx.author)
+        embed = discord.Embed.from_data(news_e)        
+        view = Confirm()
+        view.message = await ctx.send(embed=embed, view=view)
+        await view.wait()
 
-        if result:
+        if view.value:
             self.bot.settings["news"] = [news, *self.bot.settings["news"]]
             await ctx.send(f":white_check_mark: | Added **{news['title']}** news")
             channel = self.bot.get_channel(436595183010709514)

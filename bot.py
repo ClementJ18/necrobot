@@ -5,6 +5,7 @@ from rings.db import SyncDatabase
 from rings.utils.config import token
 from rings.utils.utils import get_pre, default_settings
 from rings.utils.help import NecrobotHelp
+from rings.utils.ui import Confirm
 
 import json
 import time
@@ -134,32 +135,6 @@ class NecroBot(commands.Bot):
                     e.timer = timeout
                 
                 raise e
-
-    async def confirmation_menu(self, msg, user, cleanup=None):
-        emoji_list = ["\N{WHITE HEAVY CHECK MARK}", "\N{NEGATIVE SQUARED CROSS MARK}"]
-
-        def check(reaction, u):
-            if user != u or msg.id != reaction.message.id:
-                return False
-
-            return str(reaction.emoji) in emoji_list
-
-        if cleanup is None:
-            cleanup = msg.clear_reactions
-
-        for emoji in emoji_list:
-            await msg.add_reaction(emoji)
-
-        reaction, _ = await self.wait_for(
-            "reaction_add", 
-            check=check, 
-            timeout=300, 
-            handler=cleanup, 
-            propagate=False
-        )
-
-        await msg.clear_reactions()
-        return str(reaction.emoji) == "\N{WHITE HEAVY CHECK MARK}"
    
     async def on_error(self, event, *args, **kwargs): 
         """Something has gone wrong so we just try to send a helpful traceback to the channel. If
@@ -327,9 +302,10 @@ async def off(ctx):
      
     {usage}"""
     if not bot.maintenance:
-        msg = await ctx.send("Shut down in 5 minutes?")
-        result = await bot.confirmation_menu(msg, ctx.author)
-        if not result:
+        view = Confirm()
+        view.message = await ctx.send("Shut down in 5 minutes?", view=view)
+        await view.wait()
+        if not view.value:
             return
 
         bot.maintenance = True                
