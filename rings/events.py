@@ -4,7 +4,7 @@ from discord.ext import commands
 
 from rings.utils.utils import has_goodbye, has_welcome, has_automod, BotError
 from rings.db import DatabaseError
-from rings.misc import FightError
+from rings.utils.ui import FightError
 
 import asyncio
 import traceback

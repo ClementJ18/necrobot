@@ -113,7 +113,7 @@ events = {
         {"tributes": 1, "killed": [], "string": "{p1} snatches a pair of sais."},
         {
             "tributes": 1,
-            "killed": [],
+            "killed": ["1"],
             "string": "{p1} steps off their podium too soon and blows up.",
         },
         {
