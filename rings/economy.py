@@ -1,10 +1,9 @@
 #!/usr/bin/python3.6
+import discord
 from discord.ext import commands
 
 from rings.utils.utils import BotError
 from rings.utils.converters import MoneyConverter
-
-from collections import deque
 
 from cards import common
 from cards.decks import standard52
@@ -85,8 +84,10 @@ class Hand(common.Hand):
         return self.value() > other.value()
 
 
-class BlackJack:
-    def __init__(self, ctx, bet):
+class BlackJack(discord.ui.View):
+    def __init__(self, ctx, bet, *, timeout = 180):
+        super().__init__(timeout=timeout)
+
         self.deck = Deck()
         self.deck.shuffle()
 
@@ -102,32 +103,96 @@ class BlackJack:
         self.dealer.add_card(self.deck.draw())
 
         self.ctx = ctx
-        self.is_over = True
-        self.msg = None
-        self.reaction_list = [
-            "\N{PLAYING CARD BLACK JOKER}",
-            "\N{BLACK SQUARE FOR STOP}",
-            "\N{MONEY BAG}",
-        ]
-
-        self.initial = ":white_check_mark: | Starting a game of Blackjack with **{ctx.author.display_name}** for {bet} :euro: \n :warning: **Wait till all three reactions have been added before choosing** :warning: "
-        self.status = "**You** have {player_hand}. Total: {player_total}\n**The Dealer** has {dealer_hand}. Total: {dealer_total}"
-        self.info = "**Current bet** - {bet} \nWhat would you like to do? \n :black_joker: - Draw a card \n :stop_button: - Pass your turn \n :moneybag: - Double your bet and draw a card"
-        self.actions = deque([], maxlen=5)
+        self.status = "Ongoing"
+        self.actions = ["Game started"]
+        self.index = 0
 
     @property
-    def complete(self):
-        actions = "__Status__\n" + "\n".join(self.actions)
-        return f"{self.initial}\n{self.status}\n\n{actions}\n\n{self.info}"
+    def max_index(self):
+        return max(1, (len(self.actions) // 5))
 
     def format_message(self):
-        return self.complete.format(
-            ctx=self.ctx,
-            bet=self.bet,
-            player_hand=self.player,
-            dealer_hand=self.dealer,
-            player_total=self.player.value(),
-            dealer_total=self.dealer.value(),
+        embed = discord.Embed(
+            title="Blackjack",
+            description=f"Player: {self.ctx.author.mention}\nBet: **{self.bet}**\nStatus: {self.status}\n\nYour hand: {self.player} (**{self.player.value()}**)\nDealer's Hand: {self.dealer} (**{self.dealer.value()}**)",
+            colour=self.ctx.bot.bot_color,
+        )
+        embed.set_footer(**self.ctx.bot.bot_footer)
+        embed.add_field(name=f"Actions ({self.index + 1} / {self.max_index})", value="\n".join(self.actions[self.index*5:(self.index+1)*5]), inline=False)
+
+        return embed
+
+    @discord.ui.button(label="Pass", style=discord.ButtonStyle.primary)
+    async def pass_turn(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        self.actions.append("**You** pass your turn")
+        self.player.passing = True
+
+        await self.process_turn()
+
+        await interaction.response.edit_message(
+            embed=self.format_message(), view=self
+        )
+
+    @discord.ui.button(label="Draw", style=discord.ButtonStyle.primary)
+    async def draw_card(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        card = self.deck.draw()
+        self.player.add_card(card)
+        self.actions.append(f"**You** draw {card}")
+
+        await self.process_turn()
+        
+        await interaction.response.edit_message(
+            embed=self.format_message(), view=self
+        )
+
+    @discord.ui.button(label="Double Down and Draw", style=discord.ButtonStyle.secondary)
+    async def double_down(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+
+        try:
+            self.bet = await MoneyConverter().convert(self.ctx, str(self.bet * 2))
+            card = self.deck.draw()
+            self.player.add_card(card)
+            self.actions.append(f"**You** double your bet and draw {card}")
+            self.player.passing = True
+        except commands.BadArgument:
+            return await interaction.response.send_message(":negative_squared_cross_mark: | Not enough money to double down", ephemeral=True)
+
+        await self.process_turn()
+
+        await interaction.response.edit_message(
+            embed=self.format_message(), view=self
+        )
+
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
+    async def previous_page(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        if self.index - 1 < 0:
+            self.index = self.max_index
+        else:
+            self.index -= 1
+
+        await interaction.response.edit_message(
+            embed=self.format_message(), view=self
+        )
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.primary)
+    async def next_page(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        if self.index + 1 >= self.max_index:
+            self.index = 0
+        else:
+            self.index += 1
+
+        await interaction.response.edit_message(
+            embed=self.format_message(), view=self
         )
 
     async def lose(self):
@@ -136,28 +201,15 @@ class BlackJack:
     async def win(self):
         await self.ctx.bot.db.update_money(self.ctx.author.id, add=self.bet)
 
-    async def loop(self):
-        self.msg = await self.ctx.send(self.format_message())
-        for reaction in self.reaction_list:
-            await self.msg.add_reaction(reaction)
-        while True:
-            await self.player_turn()
+    def stop_game(self):
+        return self.player.blackjack() or self.player.is_bust() or self.dealer.is_bust() or (self.player.passing and self.dealer.is_passing(self.player))
 
-            if self.player.blackjack():
-                break
-
-            if self.player.is_bust():
-                break
-
-            if self.player.passing and self.dealer.is_passing(self.player):
-                break
-
+    async def process_turn(self):
+        if not self.stop_game():
             await self.dealer_turn()
 
-            if self.dealer.is_bust():
-                break
-
-            await self.msg.edit(content=self.format_message())
+        if not self.stop_game():
+            return
 
         if self.player.blackjack() and not self.dealer.blackjack():
             self.actions.append("**BLACKJACK!**")
@@ -175,9 +227,23 @@ class BlackJack:
         else:
             self.actions.append("Tie, everything is reset")
 
-        self.info = "**GAME FINISHED**"
-        await self.msg.edit(content=self.format_message())
-        await self.msg.clear_reactions()
+        self.status = "**GAME FINISHED**"
+        self.remove_item(self.pass_turn)
+        self.remove_item(self.draw_card)
+        self.remove_item(self.double_down)
+
+    async def on_timeout(self):
+        self.status = "**GAME ABANDONNED**"
+        self.remove_item(self.pass_turn)
+        self.remove_item(self.draw_card)
+        self.remove_item(self.double_down)
+        self.actions.append("**You** timed out")
+        await self.lose()
+
+        await self.message.edit(
+            embed=self.format_message(), view=self
+        )
+
 
     async def dealer_turn(self):
         if self.dealer.is_passing(self.player):
@@ -186,43 +252,6 @@ class BlackJack:
             card = self.deck.draw()
             self.dealer.add_card(card)
             self.actions.append(f"**The Dealer** draws {card}")
-
-    async def player_turn(self):
-        def check(reaction, user):
-            return (
-                user == self.ctx.author
-                and str(reaction.emoji) in self.reaction_list
-                and self.msg.id == reaction.message.id
-            )
-
-        async def clean_up():
-            await self.lose()
-            await self.msg.clear_reactions()
-
-        reaction, _ = await self.ctx.bot.wait_for(
-            "reaction_add", check=check, timeout=120, handler=clean_up, propagate=True
-        )
-
-        if reaction.emoji == "\N{PLAYING CARD BLACK JOKER}":
-            card = self.deck.draw()
-            self.player.add_card(card)
-            self.actions.append(f"**You** draw {card}")
-        elif reaction.emoji == "\N{MONEY BAG}":
-            try:
-                self.bet = await MoneyConverter().convert(self.ctx, str(self.bet * 2))
-                card = self.deck.draw()
-                self.player.add_card(card)
-                self.actions.append(f"**You** double your bet and draw {card}")
-                self.player.passing = True
-            except commands.BadArgument:
-                self.actions.append(
-                    "**You** don't have enough money to double your bet and pass"
-                )
-        elif reaction.emoji == "\N{BLACK SQUARE FOR STOP}":
-            self.actions.append("**You** pass your turn")
-            self.player.passing = True
-
-        await self.msg.remove_reaction(reaction.emoji, self.ctx.author)
 
 
 class Economy(commands.Cog):
@@ -244,21 +273,12 @@ class Economy(commands.Cog):
 
         __Example__
         `{pre}blackjack 200` - bet 200 :euro: in the game of blackjack"""
-        if ctx.channel.id in self.IS_GAME:
-            raise BotError("There is already a game ongoing")
-
         if bet < 10:
             raise BotError("Please bet at least 10 necroins.")
 
-        try:
-            self.IS_GAME.append(ctx.channel.id)
-            bj = BlackJack(ctx, bet)
-            await bj.loop()
-        except Exception as e:
-            raise e
-        finally:
-            self.IS_GAME.remove(ctx.channel.id)
-
+        bj = BlackJack(ctx, bet)
+        bj.message = await ctx.send(embed=bj.format_message(), view=bj)
+        await bj.wait()
 
 async def setup(bot):
     await bot.add_cog(Economy(bot))

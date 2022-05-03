@@ -161,6 +161,8 @@ class Events(commands.Cog):
             await self.bot.get_error_channel().send(embed=error.embed(self.bot))
         elif isinstance(error, commands.CommandNotFound):
             return
+        elif isinstance(error, commands.MaxConcurrencyReached):
+            msg = f"Cannot have more than {error.number} of this command running per {error.per}"
         elif isinstance(error, discord.Forbidden):
             msg = "Looks like I don't have permission to do this."
         elif (
