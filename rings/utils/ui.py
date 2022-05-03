@@ -1,6 +1,7 @@
 import discord
 
 from rings.utils.hunger_game import events
+from rings.utils.utils import BotError
 
 import random
 import traceback
@@ -41,6 +42,9 @@ class Confirm(discord.ui.View):
 
 
 async def paginate(ctx, entries, page_size, embed_maker, *, timeout=300):
+    if not entries:
+        raise BotError("No entries in this list")
+
     paginator = Paginator(embed_maker, page_size, entries, timeout=timeout)
     paginator.message = await ctx.send(
         embed=paginator.embed_maker(paginator, paginator.get_entry_subset()),
