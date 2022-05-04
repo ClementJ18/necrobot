@@ -122,7 +122,7 @@ class BlackJack(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="Pass", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Pass", style=discord.ButtonStyle.primary, row=1)
     async def pass_turn(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -135,7 +135,7 @@ class BlackJack(discord.ui.View):
             embed=self.format_message(), view=self
         )
 
-    @discord.ui.button(label="Draw", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Draw", style=discord.ButtonStyle.primary, row=1)
     async def draw_card(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -149,7 +149,7 @@ class BlackJack(discord.ui.View):
             embed=self.format_message(), view=self
         )
 
-    @discord.ui.button(label="Double Down and Draw", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Double Down and Draw", style=discord.ButtonStyle.secondary, row=2)
     async def double_down(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -169,7 +169,7 @@ class BlackJack(discord.ui.View):
             embed=self.format_message(), view=self
         )
 
-    @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary, row=3)
     async def previous_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -182,7 +182,7 @@ class BlackJack(discord.ui.View):
             embed=self.format_message(), view=self
         )
 
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.primary, row=3)
     async def next_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
