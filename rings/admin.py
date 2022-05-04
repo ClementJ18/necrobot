@@ -103,7 +103,7 @@ class Admin(commands.Cog):
                 name = user
 
             embed = discord.Embed(
-                title=f"Grudges ({view.index}/{view.max_index})",
+                title=f"Grudges ({view.page_number}/{view.page_count})",
                 colour=self.bot.bot_color,
                 description=f"List of grudges for {name}",
             )
@@ -471,7 +471,7 @@ class Admin(commands.Cog):
             embed = discord.Embed(
                 title="Command Log",
                 colour=self.bot.bot_color,
-                description=f"{view.index}/{view.max_index}",
+                description=f"{view.page_number}/{view.page_count}",
             )
             embed.set_footer(**self.bot.bot_footer)
             for row in entries:

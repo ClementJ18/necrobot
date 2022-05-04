@@ -275,7 +275,7 @@ class Misc(commands.Cog):
                 description += f"- {name}: **{entry['faction']}** won against **{entry['enemy']}** at {time} (ID: **{entry['id']}**)\n"
 
             embed = discord.Embed(
-                title=f"Logs ({view.index}/{view.max_index})",
+                title=f"Logs ({view.page_number}/{view.page_count})",
                 description=description,
                 colour=self.bot.bot_color,
             )

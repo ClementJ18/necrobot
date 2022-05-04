@@ -156,7 +156,7 @@ class Utilities(commands.Cog):
                 title=res["date"],
                 colour=self.bot.bot_color,
                 url=res["url"],
-                description=f"Necrobot is proud to present: **{choice} today in History**\n Page {view.index}/{view.max_index}",
+                description=f"Necrobot is proud to present: **{choice} today in History**\n Page {view.page_number}/{view.page_count}",
             )
 
             embed.set_footer(**self.bot.bot_footer)
@@ -263,7 +263,7 @@ class Utilities(commands.Cog):
 
         def embed_maker(view, entries):
             embed = discord.Embed(
-                title=f"Reminders ({view.index}/{view.max_index})",
+                title=f"Reminders ({view.page_number}/{view.page_count})",
                 description=f"Here is the list of **{user.display_name}**'s currently active reminders.",
                 colour=self.bot.bot_color,
             )
@@ -303,7 +303,7 @@ class Utilities(commands.Cog):
 
         def embed_maker(view, entries):
             embed = discord.Embed(
-                title=f"Queue ({view.index}/{view.max_index})",
+                title=f"Queue ({view.page_number}/{view.page_count})",
                 description="Here is the list of members currently queued:\n- {}".format(
                     "\n- ".join(entries)
                 ),
@@ -425,7 +425,7 @@ class Utilities(commands.Cog):
             users = "\n\n".join(users)
             msg = f"{message}\n\n{users}"
             embed = discord.Embed(
-                title=f"Leaderboard ({view.index}/{view.max_index})",
+                title=f"Leaderboard ({view.page_number}/{view.page_count})",
                 colour=self.bot.bot_color,
                 description=msg,
             )
@@ -636,7 +636,7 @@ class Utilities(commands.Cog):
                 ]
             )
             embed = discord.Embed(
-                title=f"Giveaways ({view.index}/{view.max_index})",
+                title=f"Giveaways ({view.page_number}/{view.page_count})",
                 colour=self.bot.bot_color,
                 description=ga,
             )

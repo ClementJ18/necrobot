@@ -411,7 +411,7 @@ class Moderation(commands.Cog):
 
         def embed_maker(view, entries):
             embed = discord.Embed(
-                title=f"Warnings ({view.index}/{view.max_index})",
+                title=f"Warnings ({view.page_number}/{view.page_count})",
                 colour=self.bot.bot_color,
                 description=f"List of warnings for {user.display_name}",
             )

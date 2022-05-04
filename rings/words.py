@@ -35,7 +35,7 @@ class Literature(commands.Cog):
         def embed_maker(view, entry):
             definition = entry["definition"][:2048].replace("[", "").replace("]", "")
             embed = discord.Embed(
-                title=f"{word.title()} ({view.index}/{view.max_index})",
+                title=f"{word.title()} ({view.page_number}/{view.page_count})",
                 url="http://www.urbandictionary.com/",
                 colour=self.bot.bot_color,
                 description=definition,
@@ -88,7 +88,7 @@ class Literature(commands.Cog):
         def embed_maker(view, entry):
             description = "\n -".join(entry["shortdef"])
             embed = discord.Embed(
-                title=f"{word.title()} ({view.index}/{view.max_index})",
+                title=f"{word.title()} ({view.page_number}/{view.page_count})",
                 url="https://www.merriam-webster.com/",
                 colour=self.bot.bot_color,
                 description=f"-{description}",

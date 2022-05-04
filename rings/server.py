@@ -401,7 +401,7 @@ class Server(commands.Cog):
         def embed_maker(view, entries):
             string = "\n- ".join(entries)
             embed = discord.Embed(
-                title=f"Ignored by Automod ({view.index}/{view.max_index})",
+                title=f"Ignored by Automod ({view.page_number}/{view.page_count})",
                 colour=self.bot.bot_color,
                 description=f"Channels(**C**), Users(**U**) and Roles (**R**) ignored by auto moderation:\n- {string}",
             )
@@ -494,7 +494,7 @@ class Server(commands.Cog):
             def embed_maker(view, entries):
                 string = "\n- ".join(entries)
                 embed = discord.Embed(
-                    title=f"Ignored by command ({view.index}/{view.max_index})",
+                    title=f"Ignored by command ({view.page_number}/{view.page_count})",
                     colour=self.bot.bot_color,
                     description=f"Channels(**C**), Users(**U**) and Roles (**R**) ignored by the bot:\n- {string}",
                 )
@@ -808,7 +808,7 @@ class Server(commands.Cog):
 
         def embed_maker(view, entry):
             embed = discord.Embed(
-                title=f"Broadcast ({view.index}/{view.max_index})",
+                title=f"Broadcast ({view.page_number}/{view.page_count})",
                 description=entry[5],
                 colour=self.bot.bot_color,
             )
@@ -1059,7 +1059,7 @@ class Server(commands.Cog):
 
             def embed_maker(view, entries):
                 embed = discord.Embed(
-                    title=f"Self Assignable Roles ({view.index}/{view.max_index})",
+                    title=f"Self Assignable Roles ({view.page_number}/{view.page_count})",
                     description="- " + "\n- ".join(entries),
                     colour=self.bot.bot_color,
                 )
@@ -1279,7 +1279,7 @@ class Server(commands.Cog):
                 string += f"{discord.utils.get(ctx.guild.emojis, name=reaction) or reaction} - {count}\n"
 
             embed = discord.Embed(
-                title=f"Results ({view.index}/{view.max_index})",
+                title=f"Results ({view.page_number}/{view.page_count})",
                 description=f"[**Link**]({entry[0]})\n\n{string}",
             )
             embed.set_footer(**self.bot.bot_footer)

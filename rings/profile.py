@@ -89,7 +89,7 @@ class Profile(commands.Cog):
 
         def embed_maker(view, entries):
             embed = discord.Embed(
-                title=f"Money Ranking ({view.index}/{view.max_index})",
+                title=f"Money Ranking ({view.page_number}/{view.page_count})",
                 colour=self.bot.bot_color,
                 description="Ranking of user's money on the server",
             )
@@ -123,7 +123,7 @@ class Profile(commands.Cog):
 
         def embed_maker(view, entries):
             embed = discord.Embed(
-                title=f"Money Ranking ({view.index}/{view.max_index})",
+                title=f"Money Ranking ({view.page_number}/{view.page_count})",
                 colour=self.bot.bot_color,
                 description="Ranking of user's money throughout Discord",
             )
@@ -430,7 +430,7 @@ class Profile(commands.Cog):
 
         def embed_maker(view, entry):
             embed = discord.Embed(
-                title=f"Badge Shop ({view.index}/{view.max_index})",
+                title=f"Badge Shop ({view.page_number}/{view.page_count})",
                 description="Here you can browse available badges at your leisure. To buy a badge use the `badge buy` command and pass the name of the badge",
             )
 
@@ -546,7 +546,7 @@ class Profile(commands.Cog):
                 ]
             )
             embed = discord.Embed(
-                title=f"Stars ({view.index}/{view.max_index})",
+                title=f"Stars ({view.page_number}/{view.page_count})",
                 description=f"Total Stars: {total_stars} \n Total Message: {len(stars)} \n {star_str}",
                 colour=self.bot.bot_color,
             )
@@ -582,7 +582,7 @@ class Profile(commands.Cog):
                 description += f"- {member.mention if member else 'User Left'}: {row[1]} starred messages ({row[2]} :star:) \n"
 
             embed = discord.Embed(
-                title=f"Starboard Leaderboard ({view.index}/{view.max_index})",
+                title=f"Starboard Leaderboard ({view.page_number}/{view.page_count})",
                 description=f"A leaderboard to rank people by the amount of their messages that were starred. \n {description}",
                 colour=self.bot.bot_color,
             )
@@ -608,7 +608,7 @@ class Profile(commands.Cog):
                 description += f"- {member.mention if member else 'User Left'}: {row[1]} starred messages \n"
 
             embed = discord.Embed(
-                title=f"Starboard Leaderboard ({view.index}/{view.max_index})",
+                title=f"Starboard Leaderboard ({view.page_number}/{view.page_count})",
                 description=f"A leaderboard to rank people by the amount of their messages that were starred. \n {description}",
                 colour=self.bot.bot_color,
             )

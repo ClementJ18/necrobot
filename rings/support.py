@@ -113,7 +113,7 @@ class Support(commands.Cog):
             return
 
         def embed_maker(view, entries):
-            return discord.Embed.from_data(news[view.index])
+            return discord.Embed.from_data(news[view.page_number])
 
         await paginate(ctx, len(news) - 1, embed_maker)
 

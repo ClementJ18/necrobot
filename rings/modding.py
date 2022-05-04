@@ -32,7 +32,7 @@ class Modding(commands.Cog):
         `{pre}game battle for middle earth` - creates a rich embed of the BFME ModDB page"""
 
         def embed_maker(view, entries):
-            page = view.index
+            page = view.page_number
             embed = discord.Embed(
                 title=game.name,
                 colour=self.bot.bot_color,
@@ -123,7 +123,7 @@ class Modding(commands.Cog):
         `{pre}mod edain mod` - creates a rich embed of the Edain Mod ModDB page"""
 
         def embed_maker(view, entries):
-            page = view.index
+            page = view.page_number
             embed = discord.Embed(
                 title=mod.name,
                 colour=self.bot.bot_color,

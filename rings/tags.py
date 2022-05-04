@@ -230,7 +230,7 @@ class Tags(commands.Cog):
         def embed_maker(view, entries):
             tag_str = "- " + "\n- ".join(entries)
             embed = discord.Embed(
-                title=f"Tags on this server ({view.index}/{view.max_index})",
+                title=f"Tags on this server ({view.page_number}/{view.page_count})",
                 description=tag_str,
                 colour=self.bot.bot_color,
             )

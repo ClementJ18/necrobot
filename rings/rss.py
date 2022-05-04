@@ -182,7 +182,7 @@ class RSS(commands.Cog):
                     for result in entries
                 ]
                 embed = discord.Embed(
-                    title=f"Subscriptions ({view.index}/{view.max_index})",
+                    title=f"Subscriptions ({view.page_number}/{view.page_count})",
                     description="\n".join(to_string),
                 )
                 embed.set_footer(**self.bot.bot_footer)
@@ -335,7 +335,7 @@ class RSS(commands.Cog):
                     for result in entries
                 ]
                 embed = discord.Embed(
-                    title=f"Subscriptions ({view.index}/{view.max_index})",
+                    title=f"Subscriptions ({view.page_number}/{view.page_count})",
                     description="\n".join(to_string),
                 )
                 embed.set_footer(**self.bot.bot_footer)

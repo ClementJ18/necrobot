@@ -6,7 +6,6 @@ from rings.utils.utils import BotError
 import random
 import traceback
 
-
 class Confirm(discord.ui.View):
     def __init__(self, confirm_msg="Confirmed", cancel_msg="Cancelled", *, timeout=180):
         super().__init__(timeout=timeout)
@@ -20,7 +19,7 @@ class Confirm(discord.ui.View):
         self.stop()
         self.clear_items()
         await self.message.edit(
-            content=f":negative_squared_cross_mark: | Interaction has expireded, please answer within **{self.timeout}** seconds.",
+            content=f":negative_squared_cross_mark: | Interaction has expired, please answer within **{self.timeout}** seconds.",
             view=self,
         )
 
@@ -62,6 +61,14 @@ class Paginator(discord.ui.View):
         self.index = 0
         self.max_index = max(0, ((len(entries) - 1) // page_size))
         self.page_size = page_size
+
+    @property
+    def page_number(self):
+        return self.index + 1
+
+    @property
+    def page_count(self):
+        return self.max_index + 1
 
     async def on_timeout(self):
         self.stop()
@@ -219,7 +226,7 @@ class HungerGames(discord.ui.View):
         idle_events = events[event_name].copy() + deathless.copy()
 
         embed = discord.Embed(
-            title=f"Hunger Games Simulator ({self.index})",
+            title=f"Hunger Games Simulator ({self.index + 1})",
             colour=self.bot.bot_color,
             description=f"{' - '.join(self.tributes)}\nPress :arrow_forward: to proceed",
         )
