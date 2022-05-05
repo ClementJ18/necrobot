@@ -19,7 +19,20 @@ class Decisions(commands.Cog):
     ## Commands
     #######################################################################
 
-    @commands.command(aliases=["choice", "chose"])
+    async def _choose(self, ctx, choices, count):
+        choice_sets = choices.split("|")
+        final_choices = []
+        for choice_set in choice_sets:
+            choice_list = [x.strip() for x in choice_set.strip().split(",")]
+            if len(choice_list) < count:
+                raise BotError(f"Less than {count} in choice {' '.join(choices)}")
+
+            final_choices.append(random.sample(choice_list, count))
+
+        await ctx.send(f"I choose **{' '.join(final_choices)}**")
+
+
+    @commands.group(aliases=["choice"])
     async def choose(self, ctx, *, choices):
         """Returns a single choice from the list of choices given. Use `,` to seperate each of the choices. You can
         make multiple choices with a single command by separating them with `|`.
@@ -28,20 +41,27 @@ class Decisions(commands.Cog):
 
         __Example__
         `{pre}choose Bob, John Smith, Mary` - choose between the names of Bob, John Smith, and Mary
-        `{pre}choose 1, 2` - choose between 1 and 2
+        `{pre}choice 1, 2` - choose between 1 and 2
         `{pre}choose I | like, hate | tico, kittycat` - can become 'I like tico' or 'I hate tico' or 'I like kittycat'"""
-        choice_sets = choices.split("|")
-        final_choices = []
-        for choice_set in choice_sets:
-            choice_list = [x.strip() for x in choice_set.strip().split(",")]
-            final_choices.append(random.choice(choice_list))
+        await self._choose(ctx, choices, 1)
 
-        await ctx.send(f"I choose **{' '.join(final_choices)}**")
+    @choose.command(name="multiple", aliases=["mult"])
+    async def choose_mult(self, ctx, count : int, *, choices):
+        """Similar to the choose command but allows you to specify a number of unique results to return by group.
+
+        {usage}
+
+        __Example__
+        `{pre}choose multiple 2 Bob, John, Smith, Mary` -  choose two names of the list of names provided
+        `{pre}choose mult 2 Elves, Men, Dwarves | Legolas, Gimli, Aragorn - return two results from each group
+        """
+        await self._choose(ctx, choices, count)
 
     @commands.command(aliases=["flip"])
     @commands.cooldown(3, 5, BucketType.user)
     async def coin(self, ctx, choice: CoinConverter = None, bet: MoneyConverter = 0):
-        """Flips a coin and returns the result. Can also be used to bet money on the result (`h` for head and `t` for tail).
+        """Flips a coin and returns the result. Can also be used to bet money on the result (`h` for head and 
+        `t` for tail). The bet return is 50% of your initial bet.
 
         {usage}
 
@@ -62,7 +82,7 @@ class Decisions(commands.Cog):
                 msg += "\nBetter luck next time."
                 bet = -bet
 
-            await self.bot.db.update_money(ctx.author.id, add=bet)
+            await self.bot.db.update_money(ctx.author.id, add=bet//2)
 
         await ctx.send(msg)
 
