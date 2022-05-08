@@ -15,37 +15,6 @@ def check_channel(channel):
         raise BotError("I need permissions to send messages in this channel")
 
 
-def has_welcome(bot, member):
-    return (
-        bot.guild_data[member.guild.id]["welcome-channel"]
-        and bot.guild_data[member.guild.id]["welcome"]
-    )
-
-
-def has_goodbye(bot, member):
-    return (
-        bot.guild_data[member.guild.id]["welcome-channel"]
-        and bot.guild_data[member.guild.id]["goodbye"]
-    )
-
-
-def has_automod(bot, message):
-    if not bot.guild_data[message.guild.id]["automod"]:
-        return False
-
-    if message.author.id in bot.guild_data[message.guild.id]["ignore-automod"]:
-        return False
-
-    if message.channel.id in bot.guild_data[message.guild.id]["ignore-automod"]:
-        return False
-
-    role_ids = [role.id for role in message.author.roles]
-    if any(x in role_ids for x in bot.guild_data[message.guild.id]["ignore-automod"]):
-        return False
-
-    return True
-
-
 def format_dt(dt: datetime.datetime, /, style: str = None) -> str:
     if style is None:
         return f"<t:{int(dt.timestamp())}>"

@@ -17,7 +17,7 @@ from rings.utils.ui import Confirm, paginate
 import ast
 import psutil
 import traceback
-from typing import Union, Optional
+from typing import Union, Literal
 from simpleeval import simple_eval
 import datetime
 
@@ -260,7 +260,7 @@ class Admin(commands.Cog):
     async def admin_badges(
         self,
         ctx,
-        subcommand: str,
+        subcommand: Literal["add", "delete"],
         user: UserConverter,
         badge: BadgeConverter,
         spot: RangeConverter(1, 8) = None,
@@ -269,9 +269,6 @@ class Admin(commands.Cog):
 
         {usage}
         """
-        if subcommand not in ("add", "delete"):
-            raise BotError("Not a valid subcommand")
-
         has_badge = await self.bot.db.get_badges(user.id, badge=badge["name"])
         if subcommand == "add" and not has_badge:
             await self.bot.db.insert_badge(user.id, badge["name"])

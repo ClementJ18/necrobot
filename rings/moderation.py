@@ -13,7 +13,7 @@ from rings.utils.ui import paginate
 
 import asyncio
 import datetime
-from typing import Union
+from typing import Literal, Union
 
 
 class Moderation(commands.Cog):
@@ -474,7 +474,7 @@ class Moderation(commands.Cog):
     @has_perms(4)
     async def warn_pm(self, ctx, pm: bool):
         """Defines the setting on whether or not the user that is warned will be DM'd the warning. They
-        will be PM'd if the setting is True. Disabled by default.
+        will be DM'd if the setting is True. Disabled by default.
 
         {usage}
 
@@ -495,7 +495,7 @@ class Moderation(commands.Cog):
         self,
         ctx,
         number: int = RangeConverter(0, 400),
-        check="",
+        check: Literal["link", "mention", "bot"] = "",
         extra: MemberConverter = "",
     ):
         """Removes number of messages from the channel it is called in. That's all it does at the moment
@@ -570,8 +570,8 @@ class Moderation(commands.Cog):
     @commands.command()
     @has_perms(4)
     async def disable(self, ctx, name: str = None):
-        """Disables a command or cog. Once a command or cog is disabled only admins can use it with the special n@ or N@
-        prefix. To re-enable a command or cog call the `enable` command on it. Disabling cogs works as a sort of "select all"
+        """Disables a command or cog. Once a command or cog is disabled only admins can use it. To re-enable a 
+        command or cog call the `enable` command on it. Disabling cogs works as a sort of "select all"
         button which means that all commands will be disabled and individual commands can then be enabled separatly for
         fine tuning.
 
@@ -580,7 +580,7 @@ class Moderation(commands.Cog):
 
         __Examples__
         `{pre}disable` - print the list of disabled cogs and commands
-        `{pre}disable cat` - disables the cat command, after that the cat command only be used by admins using `n@cat`
+        `{pre}disable cat` - disables the cat command, after that the cat command only be used by admins
         `{pre}disable Animals` - disables every command in the the Animals cog"""
         if name is None:
             string = ", ".join(

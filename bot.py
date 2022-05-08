@@ -117,6 +117,35 @@ class NecroBot(commands.Bot):
             "icon_url": self.user.avatar.replace(format="png", size=128),
         }
 
+    def has_welcome(self, member):
+        return (
+            self.guild_data[member.guild.id]["welcome-channel"]
+            and self.guild_data[member.guild.id]["welcome"]
+        )
+
+    def has_goodbye(self, member):
+        return (
+            self.guild_data[member.guild.id]["welcome-channel"]
+            and self.guild_data[member.guild.id]["goodbye"]
+        )
+
+    def has_automod(self, message):
+        if not self.guild_data[message.guild.id]["automod"]:
+            return False
+
+        ignored = self.guild_data[message.guild.id]["ignore-automod"]
+        if message.author.id in ignored:
+            return False
+
+        if message.channel.id in ignored:
+            return False
+
+        role_ids = [role.id for role in message.author.roles]
+        if any(x in role_ids for x in ignored):
+            return False
+
+        return True
+
     async def setup_hook(self):
         for extension in self.extension_names:
             await self.load_extension(f"rings.{extension}")
