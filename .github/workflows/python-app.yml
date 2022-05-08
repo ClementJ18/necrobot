@@ -4,8 +4,6 @@
 name: Python application
 
 on:
-  push:
-    branches: [ rewrite ]
   pull_request:
     branches: [ rewrite ]
 
@@ -29,4 +27,9 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Duplicate code detection tool
       uses: platisd/duplicate-code-detection-tool@1.1.0
+      with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          file_extensions: "py"
+          only_code: true
+
 
