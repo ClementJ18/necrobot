@@ -122,7 +122,7 @@ def date_converter(argument):
     days = 0
     months = 0
     years = 0
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(datetime.timezone.utc)
     for string in date_time:
         if ":" in string:
             hour_minutes = string.split(":")
@@ -161,7 +161,7 @@ def date_converter(argument):
 
 def midnight():
     """Get the number of seconds until midnight."""
-    tomorrow = datetime.datetime.now() + datetime.timedelta(1)
+    tomorrow = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(1)
     time = datetime.datetime(
         year=tomorrow.year,
         month=tomorrow.month,
@@ -170,7 +170,7 @@ def midnight():
         minute=0,
         second=0,
     )
-    return time - datetime.datetime.now()
+    return time - datetime.datetime.now(datetime.timezone.utc)
 
 
 def default_settings():
@@ -180,5 +180,5 @@ def default_settings():
         "disabled": [],
         "shop": [],
         "messages": {},
-        "days": 0,
+        "day": 0,
     }

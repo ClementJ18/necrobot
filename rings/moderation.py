@@ -197,7 +197,7 @@ class Moderation(commands.Cog):
             embed.add_field(
                 name="Unmute Time",
                 value=format_dt(
-                    datetime.datetime.now() + datetime.timedelta(seconds=time)
+                    datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=time)
                 )
                 if time
                 else "Permanently",

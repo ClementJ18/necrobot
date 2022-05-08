@@ -63,7 +63,7 @@ class Wiki(commands.Cog):
         if (
             self.RATE_LIMIT
             and self.RATE_LIMIT_LAST_CALL
-            and self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT > datetime.now()
+            and self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT > datetime.now(datetime.timezone.utc)
         ):
 
             # it hasn't been long enough since the last API call
@@ -71,7 +71,7 @@ class Wiki(commands.Cog):
 
             wait_time = (
                 self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT
-            ) - datetime.now()
+            ) - datetime.now(datetime.timezone.utc)
             await asyncio.sleep(int(wait_time.total_seconds()))
 
         async with self.bot.session.get(
@@ -80,7 +80,7 @@ class Wiki(commands.Cog):
             r = await resp.json()
 
         if self.RATE_LIMIT:
-            self.RATE_LIMIT_LAST_CALL = datetime.now()
+            self.RATE_LIMIT_LAST_CALL = datetime.now(datetime.timezone.utc)
 
         return r
 

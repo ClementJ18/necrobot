@@ -35,7 +35,7 @@ class NecroBot(commands.Bot):
         )
 
         self.uptime_start = time.time()
-        self.counter = datetime.datetime.now().hour
+        self.counter = datetime.datetime.now(datetime.timezone.utc).hour
 
         self.version = 3.8
         self.prefixes = ["n!", "N!"]
@@ -60,13 +60,14 @@ class NecroBot(commands.Bot):
         self.url_pattern = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
         self.extension_names = exts
 
-        self.bot_channel = 318465643420712962
-        self.error_channel = 415169176693506048
         self.session = None
         self.pool = None
         self.maintenance = True
         self.check_enabled = True
-        self.owner_id = 241942232867799040
+        self.BOT_CHANNEL = 318465643420712962
+        self.ERROR_CHANNEL = 415169176693506048
+        self.OWNER_ID = 241942232867799040
+        self.TEST_BOT_ID = 339330190742126595
 
         sync_db = SyncDatabase()
         self.guild_data = sync_db.load_guilds()
@@ -93,10 +94,10 @@ class NecroBot(commands.Bot):
         self.http.recreate()
 
     def get_bot_channel(self):
-        return self.get_channel(self.bot_channel)
+        return self.get_channel(self.BOT_CHANNEL)
 
     def get_error_channel(self):
-        return self.get_channel(self.error_channel)
+        return self.get_channel(self.ERROR_CHANNEL)
 
     def blacklist_check(self, object_id):
         return object_id in self.settings["blacklist"]
@@ -127,7 +128,7 @@ class NecroBot(commands.Bot):
         if (
             self.maintenance
             and ctx.command is not None
-            and ctx.author.id != self.owner_id
+            and ctx.author.id != self.OWNER_ID
         ):
             return await ctx.channel.send(
                 ":negative_squared_cross_mark: | Maintenance mode engaged, the bot is not currently accepting commands",
