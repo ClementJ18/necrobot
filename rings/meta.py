@@ -195,10 +195,10 @@ class Meta(commands.Cog):
     async def hourly(self):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            now = datetime.datetime.now()
+            now = datetime.datetime.now(datetime.timezone.utc)
             sleep = 3600 - (now.second + (now.minute * 60))
             try:
-                await asyncio.sleep(sleep)  # task runs every hour
+                await asyncio.sleep(20)  # task runs every hour
             except asyncio.CancelledError:
                 return
 
@@ -206,15 +206,21 @@ class Meta(commands.Cog):
                 self.bot.counter = 0
                 self.bot.settings["day"] += 1
                 for task in self.tasks_daily:
-                    await task()
+                    try:
+                        await task()
+                    except Exception as e:
+                        self.bot.dispatch("error", e)
 
             for task in self.tasks_hourly:
-                await task()
+                try:
+                    await task()
+                except Exception as e:
+                    self.bot.dispatch("error", e)
 
             self.bot.counter += 1
 
     async def check_processes(self):
-        if not self.bot.check_enabled:
+        if not self.bot.check_enabled or self.bot.user.id == self.bot.TEST_BOT_ID:
             return
 
         ps = sh.grep(sh.ps("-ef"), "python3.8")
@@ -234,7 +240,7 @@ class Meta(commands.Cog):
         ids.sort()
 
         for message_id in ids:
-            limit = datetime.datetime.utcnow() - datetime.timedelta(days=3)
+            limit = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=3)
             timestamp = discord.utils.snowflake_time(message_id)
 
             if timestamp < limit:
@@ -260,7 +266,7 @@ class Meta(commands.Cog):
         posts.sort()
 
         for post in posts:
-            limit = datetime.datetime.utcnow() - datetime.timedelta(seconds=30)
+            limit = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=30)
             timestamp = discord.utils.snowflake_time(post["message"].id)
 
             if timestamp < limit:
@@ -279,7 +285,7 @@ class Meta(commands.Cog):
         has_nitro = "nitro" in message.content.lower()
         # has_nitro_link = any(("nitro" in x.lower() or "gift" in x.lower()) for x in re.findall(self.bot.url_pattern, message.content))
         has_link = bool(re.findall(self.bot.url_pattern, message.content.lower()))
-        has_embed = bool(message.embeds)
+        # has_embed = bool(message.embeds)
         has_everyone_ping = "@everyone" in message.content.lower()
 
         return has_nitro and has_link and has_everyone_ping
@@ -357,7 +363,7 @@ class Meta(commands.Cog):
             timer = time_converter(reminder["timer"])
             sleep = timer - (
                 (
-                    datetime.datetime.now()
+                    datetime.datetime.now(datetime.timezone.utc)
                     - reminder["start_date"].replace(tzinfo=None)
                 ).total_seconds()
             )

@@ -215,7 +215,7 @@ class Utilities(commands.Cog):
             raise BotError("Can't have a reminder that's less than one second!")
 
         reminder_id = await self.bot.db.insert_reminder(
-            ctx.author.id, ctx.channel.id, text, time, datetime.datetime.now()
+            ctx.author.id, ctx.channel.id, text, time, datetime.datetime.now(datetime.timezone.utc)
         )
         task = self.bot.loop.create_task(
             self.bot.meta.reminder_task(
@@ -225,7 +225,7 @@ class Utilities(commands.Cog):
         self.bot.reminders[reminder_id] = task
 
         stamp = format_dt(
-            datetime.datetime.now() + datetime.timedelta(seconds=sleep), style="f"
+            datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=sleep), style="f"
         )
         await ctx.send(f":white_check_mark: | I will remind you of that on **{stamp}**")
 
@@ -528,7 +528,7 @@ class Utilities(commands.Cog):
             except ValueError as e:
                 raise BotError("Date not in DD/MM/YYYY format or not valid") from e
         else:
-            date = datetime.datetime.now()
+            date = datetime.datetime.now(datetime.timezone.utc)
 
         sun = location.sun(date)
 
@@ -564,7 +564,7 @@ class Utilities(commands.Cog):
         )
         embed.add_field(name="# of Winners", value=winners)
 
-        limit = datetime.datetime.now() + datetime.timedelta(seconds=sleep)
+        limit = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=sleep)
         embed.add_field(name="Duration", value=format_dt(limit, style="f"))
 
         embed.set_footer(**self.bot.bot_footer)
@@ -677,7 +677,7 @@ class Utilities(commands.Cog):
             return
 
         if (
-            datetime.datetime.now()
+            datetime.datetime.now(datetime.timezone.utc)
             > self.bot.ongoing_giveaways[payload.message_id]["limit"]
         ):
             return
@@ -693,7 +693,7 @@ class Utilities(commands.Cog):
             return
 
         if (
-            datetime.datetime.now()
+            datetime.datetime.now(datetime.timezone.utc)
             > self.bot.ongoing_giveaways[payload.message_id]["limit"]
         ):
             return

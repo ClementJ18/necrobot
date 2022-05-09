@@ -1,3 +1,5 @@
+CREATE SCHEMA necrobot;
+
 CREATE TABLE necrobot.Users (
     user_id bigint PRIMARY KEY,
     necroins bigint CHECK (necroins >= 0) DEFAULT 200,
@@ -209,16 +211,6 @@ CREATE TABLE necrobot.Grudges(
     avenged varchar(1000) DEFAULT 'False'
 );
 
-CREATE TYPE channel_filter_hybrid as (
-    channel_id bigint,
-    filter varchar(50)
-);
-
-CREATE TYPE emote_count_hybrid as (
-    reaction varchar(200),
-    count int
-);
-
 CREATE TABLE necrobot.InternalRanked(
     faction varchar(25),
     enemy varchar(25),
@@ -264,4 +256,14 @@ CREATE TABLE necrobot.FlowersGuild(
     guild_id bigint PRIMARY KEY REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
     symbol varchar(50) DEFAULT ':cherry_blossom:'
 
+);
+
+CREATE TYPE channel_filter_hybrid as (
+    channel_id bigint,
+    filter varchar(50)
+);
+
+CREATE TYPE emote_count_hybrid as (
+    reaction varchar(200),
+    count int
 );

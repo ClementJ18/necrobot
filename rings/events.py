@@ -163,6 +163,8 @@ class Events(commands.Cog):
             return
         elif isinstance(error, commands.MaxConcurrencyReached):
             msg = f"Cannot have more than {error.number} of this command running per {error.per}"
+        elif isinstance(error, commands.BadLiteralArgument):
+            msg = f"`{error.param}` must be any of **{', '.join(error.literals)}"
         elif isinstance(error, discord.Forbidden):
             msg = "Looks like I don't have permission to do this."
         elif (
@@ -323,15 +325,11 @@ class Events(commands.Cog):
         await self.bot.db.delete_invite(invite)
 
     @commands.Cog.listener()
-    async def on_bulk_message_delete(self, messages):
-        pass
-
-    @commands.Cog.listener()
     async def on_message_delete(self, message):
         if message.guild is None or message.author.bot:
             return
 
-        if has_automod(self.bot, message):
+        if self.bot.has_automod(message):
             if not message.content:
                 message.content = "\U0000200b"
 
@@ -367,7 +365,7 @@ class Events(commands.Cog):
         if before.guild is None or before.author.bot or before.content == after.content:
             return
 
-        if has_automod(self.bot, after):
+        if self.bot.has_automod(after):
             embed = discord.Embed(
                 title="Message Edited",
                 description=f"In {before.channel.mention} by {before.author.mention}",
@@ -475,7 +473,7 @@ class Events(commands.Cog):
         if member.bot:
             return
 
-        if has_welcome(self.bot, member):
+        if self.bot.has_welcome(member):
             channel = self.bot.get_channel(
                 self.bot.guild_data[member.guild.id]["welcome-channel"]
             )
@@ -555,7 +553,7 @@ class Events(commands.Cog):
         await self.bot.db.delete_permission(member.id, member.guild.id)
         # await self.bot.db.delete_automod_ignore(member.guild.id, member.id)
 
-        if has_goodbye(self.bot, member):
+        if self.bot.has_goodbye(member):
             channel = self.bot.get_channel(
                 self.bot.guild_data[member.guild.id]["welcome-channel"]
             )
