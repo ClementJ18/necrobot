@@ -27,12 +27,12 @@ class Decisions(commands.Cog):
             if len(choice_list) < count:
                 raise BotError(f"Less than {count} in choice {' '.join(choices)}")
 
-            final_choices.append(random.sample(choice_list, count))
+            final_choices.append(', '.join(random.sample(choice_list, count)))
 
         await ctx.send(f"I choose **{' '.join(final_choices)}**")
 
 
-    @commands.group(aliases=["choice"])
+    @commands.group(aliases=["choice"], invoke_without_command=True)
     async def choose(self, ctx, *, choices):
         """Returns a single choice from the list of choices given. Use `,` to seperate each of the choices. You can
         make multiple choices with a single command by separating them with `|`.

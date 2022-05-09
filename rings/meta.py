@@ -21,6 +21,7 @@ from PIL import Image
 class Meta(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.bot.counter = datetime.datetime.now().hour
         self.hourly_loop = None
 
         self.tasks_hourly = [
