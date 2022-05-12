@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import has_goodbye, has_welcome, has_automod, BotError
+from rings.utils.utils import BotError
 from rings.db import DatabaseError
 from rings.utils.ui import FightError
 

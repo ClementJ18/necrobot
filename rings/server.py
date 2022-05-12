@@ -8,9 +8,10 @@ from rings.utils.converters import (
     RangeConverter,
     MemberConverter,
     RoleConverter,
+    WritableChannelConverter
 )
 from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm, paginate
+from rings.utils.ui import Confirm, paginate, SelectView
 
 from typing import Union
 import re
@@ -80,7 +81,7 @@ class Server(commands.Cog):
             try:
                 await message.add_reaction(reaction)
                 final_list.append(str(reaction))
-            except (discord.NotFound, discord.InvalidArgument, discord.HTTPException):
+            except (discord.NotFound, TypeError, discord.HTTPException):
                 pass
 
         return final_list
@@ -213,7 +214,7 @@ class Server(commands.Cog):
         def embed_maker(view, entries):
             string = "\n".join(entries)
             embed = discord.Embed(
-                title=f"Commands for {self.bot.perms_name[level]} {level}+ ({index[0]}/{index[1]})",
+                title=f"Commands for {self.bot.perms_name[level]} {level}+ ({view[0]}/{view[1]})",
                 colour=self.bot.bot_color,
                 description=string,
             )
@@ -1190,7 +1191,7 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(3)
-    async def poll(self, ctx, channel: discord.TextChannel, *, message):
+    async def poll(self, ctx, channel: WritableChannelConverter, *, message):
         """Create a reaction poll for your server in the specified channel. This will also ask you to specify a
         maximum number of reactions. This number will limit how many options users can vote for.
 
@@ -1200,34 +1201,16 @@ class Server(commands.Cog):
         `{pre}poll #general Which character do you prefer: **Aragorn** :crossed_swords: or **Gimli** :axe:` - post a reaction poll
         two possible answers: :axe: and :crossed_swords:
         """
-        check_channel(channel)
         await self.add_reactions(ctx.message, content=message)
 
-        msg = await ctx.send(
-            "How many options can the users react with? Reply with a number between 1 and 20. Reply with 0 to cancel"
-        )
+        view = SelectView(options=list(range(1, 21)))
+        view.message = await ctx.send("How many options can the users react with?", view=view)
+        await view.wait()
 
-        def check(message):
-            if not message.content.isdigit():
-                return False
-
-            value = int(message.content)
-            return (
-                message.author.id == ctx.author.id
-                and message.channel.id == ctx.channel.id
-                and 20 >= value >= 0
-            )
-
-        reply = await self.bot.wait_for(
-            "message", timeout=300, check=check, propagate=True
-        )
-
-        votes = int(reply.content)
-        if not votes:
-            await msg.delete()
-            await ctx.message.clear_reactions()
+        if not view.value:
             return
 
+        votes = int(view.select.values[0])
         poll = await channel.send(f"{message}\n\n**Maximum votes: {votes}**")
         emoji_list = await self.add_reactions(poll, content=message)
 

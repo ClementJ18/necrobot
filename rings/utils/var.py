@@ -346,35 +346,35 @@ dad_joke = [
 ]
 
 riddle_list = [
-    [
+    (
         "What has roots as nobody sees,\nIs taller than trees,\nUp, up it goes,\nAnd yet never grows?",
         "mountain",
-    ],
-    [
+    ),
+    (
         "Thirty white horses on a red hill,\nFirst they champ,\nThen they stamp,\nThen they stand still.",
         "teeth",
-    ],
-    [
+    ),
+    (
         "Voiceless it cries,\nWingless flutters,\nToothless bites,\nMouthless mutters.",
         "wind",
-    ],
-    [
+    ),
+    (
         "An eye in a blue face\nSaw an eye in a green face.\n'That eye is like to this eye'\nSaid the first eye,\n'But in low place,\nNot in high place.'",
         "sun",
-    ],
-    [
+    ),
+    (
         "It cannot be seen, cannot be felt,\nCannot be heard, cannot be smelt.\nIt lies behind stars and under hills,\nAnd empty holes it fills.\nIt comes first and follows after,\nEnds life, kills laughter.",
         "dark",
-    ],
-    ["A box without hinges, key, or lid,\nYet golden treasure inside is hid.", "egg"],
-    [
+    ),
+    ("A box without hinges, key, or lid,\nYet golden treasure inside is hid.", "egg"),
+    (
         "Alive without breath,\nAs cold as death;\nNever thirsty, ever drinking,\nAll in mail never clinking.",
         "fish",
-    ],
-    [
+    ),
+    (
         "This thing all things devours:\nBirds, beasts, trees, flowers;\nGnaws iron, bites steel;\nGrinds hard stones to meal;\nSlays king, ruins town,\nAnd beats high mountain down.",
         "time",
-    ],
+    ),
 ]
 
 got_quotes = [

@@ -6,8 +6,59 @@ from rings.utils.utils import BotError
 import random
 import traceback
 
+class TextInput(discord.ui.TextInput):
+    async def callback(self, interaction):
+        self.view.stop()
+        self.view.clear_items()
+
+        if self.value.lower() == self.view.answer:
+            self.view.value = True
+            await interaction.response.edit_message(content=":white_check_mark: | Correct! Guess you get to live.", view=self.view)
+        else:
+            self.view.value = True
+            await interaction.response.edit_message(content=":negative_squared_cross_mark: | Wrong answer! Now you go to feed the fishies!", view=self.view)
+
+class RiddleView(discord.ui.View):
+    def __init__(self, answer, *, timeout=180):
+        self.answer = answer.lower()
+        super().__init__(timeout=timeout)
+        self.add_item(TextInput(style=discord.TextStyle.short, required=True, label="Answer:"))
+
+    async def on_timeout(self):
+        self.stop()
+        self.clear_items()
+        await self.message.edit(content=":negative_squared_cross_mark: | Too slow! Now you go to feed the fishies!", view=self)
+
+class Select(discord.ui.Select):
+    async def callback(self, interaction):
+        self.view.value = True
+        self.view.stop()
+        self.view.clear_items()
+        await interaction.response.edit_message(content=f":white_check_mark: | Choice was **{self.values[0]}**", view=self.view)
+
+class SelectView(discord.ui.View):
+    def __init__(self, options, *, min_values=1, max_values=1, placeholder="Select...", timeout=180):
+        self.options = [discord.SelectOption(label=x) for x in options]
+        self.value = False
+        self.select = Select(min_values=min_values, max_values=max_values, placeholder=placeholder, options=self.options, row=0)
+        super().__init__(timeout=timeout)
+
+        self.add_item(self.select)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, row=1)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = False
+        self.stop()
+        self.clear_items()
+        await interaction.response.edit_message(content=":negative_squared_cross_mark: | Cancelled", view=self)
+
+    async def on_timeout(self):
+        self.stop()
+        self.clear_items()
+        await self.message.edit(view=self)
+
 class Confirm(discord.ui.View):
-    def __init__(self, confirm_msg="Confirmed", cancel_msg="Cancelled", *, timeout=180):
+    def __init__(self, confirm_msg=":white_check_mark: | Confirmed", cancel_msg=":negative_squared_cross_mark: | Cancelled", *, timeout=180):
         super().__init__(timeout=timeout)
         self.value = None
         self.confirm_msg = confirm_msg
@@ -32,7 +83,7 @@ class Confirm(discord.ui.View):
         self.clear_items()
         await interaction.response.edit_message(content=self.confirm_msg, view=self)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.value = False
         self.stop()
@@ -81,7 +132,7 @@ class Paginator(discord.ui.View):
         ]
         return subset[0] if self.page_size == 1 else subset
 
-    @discord.ui.button(label="First", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="First", style=discord.ButtonStyle.grey)
     async def first_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -90,7 +141,7 @@ class Paginator(discord.ui.View):
             embed=self.embed_maker(self, self.get_entry_subset()), view=self
         )
 
-    @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.blurple)
     async def previous_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -103,7 +154,7 @@ class Paginator(discord.ui.View):
             embed=self.embed_maker(self, self.get_entry_subset()), view=self
         )
 
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
     async def next_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -116,7 +167,7 @@ class Paginator(discord.ui.View):
             embed=self.embed_maker(self, self.get_entry_subset()), view=self
         )
 
-    @discord.ui.button(label="Last", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Last", style=discord.ButtonStyle.grey)
     async def last_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -169,7 +220,7 @@ class HungerGames(discord.ui.View):
     def max_index(self):
         return len(self.phases)
 
-    @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.blurple)
     async def previous_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -182,7 +233,7 @@ class HungerGames(discord.ui.View):
             embed=self.phases[self.index], view=self
         )
 
-    @discord.ui.button(label="Stop", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Stop", style=discord.ButtonStyle.grey)
     async def stop_fight(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -190,7 +241,7 @@ class HungerGames(discord.ui.View):
         self.remove_item(self.stop_fight)
         await interaction.response.edit_message(view=self)
 
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
     async def next_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):

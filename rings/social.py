@@ -10,6 +10,7 @@ from rings.utils.var import (
     got_quotes,
 )
 from rings.utils.utils import BotError
+from rings.utils.ui import RiddleView
 
 import random
 from bs4 import BeautifulSoup
@@ -40,24 +41,10 @@ class Social(commands.Cog):
 
         {usage}"""
         riddle = random.choice(riddle_list)
-        await ctx.send(f"Riddle me this {ctx.author.name}: \n{riddle[0]}")
 
-        def check(m):
-            return (
-                m.author == ctx.author
-                and m.channel == ctx.channel
-                and riddle[1] in m.content.lower()
-            )
-
-        async def bad_answer():
-            await ctx.send(
-                ":negative_squared_cross_mark: | Wrong answer! Now you go to feed the fishies!"
-            )
-
-        await self.bot.wait_for(
-            "message", check=check, timeout=30, propagate=False, handler=bad_answer
-        )
-        await ctx.send(":white_check_mark: | Well played, that was the correct answer.")
+        view = RiddleView(answer=riddle[1])
+        view.message = await ctx.send(f"Riddle me this **{ctx.author.display_name}**: \n{riddle[0]}")
+        await view.wait()
 
     @commands.command()
     async def tarot(self, ctx):

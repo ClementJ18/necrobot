@@ -198,7 +198,7 @@ class Meta(commands.Cog):
             now = datetime.datetime.now(datetime.timezone.utc)
             sleep = 3600 - (now.second + (now.minute * 60))
             try:
-                await asyncio.sleep(20)  # task runs every hour
+                await asyncio.sleep(sleep)  # task runs every hour
             except asyncio.CancelledError:
                 return
 
@@ -364,7 +364,7 @@ class Meta(commands.Cog):
             sleep = timer - (
                 (
                     datetime.datetime.now(datetime.timezone.utc)
-                    - reminder["start_date"].replace(tzinfo=None)
+                    - reminder["start_date"].replace(tzinfo=datetime.timezone.utc)
                 ).total_seconds()
             )
             if sleep <= 0:
