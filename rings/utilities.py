@@ -2,11 +2,13 @@ import discord
 from discord.ext import commands
 
 from rings.utils.utils import BotError, format_dt, time_string_parser, time_converter
+from rings.utils.BIG import pack_file
 from rings.utils.converters import MemberConverter
 from rings.utils.checks import leaderboard_enabled, has_perms
 from rings.utils.astral import Astral
 from rings.utils.ui import paginate
 
+import io
 import asyncio
 import random
 import aiohttp
@@ -20,6 +22,7 @@ class Utilities(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.shortcut_mapping = ["Y", "X", "C", "V", "B"]
 
         def factory():
             return {"end": True, "list": []}
@@ -140,7 +143,7 @@ class Utilities(commands.Cog):
         else:
             choice = random.choice(["Deaths", "Births", "Events"])
 
-        if not choice in ["Deaths", "Births", "Events"]:
+        if choice not in ["Deaths", "Births", "Events"]:
             raise BotError(
                 "Not a correct choice. Correct choices are `Deaths`, `Births` or `Events`."
             )
@@ -670,6 +673,38 @@ class Utilities(commands.Cog):
             )
 
         await ctx.send(f":white_check_mark: | Giveaway cancelled. {ga.jump_url}")
+
+    def customise_shortcut(mapping):
+        with open("rings/utils/shortcuts/original.str", "r") as f:
+            content = f.read()
+
+        for old, new in mapping.items():
+            content = content.replace(old, new)
+
+        with open("ring/utils/shortcuts/data/lotr.str", "w") as f:
+            f.write(content)
+
+        file = pack_file("ring/utils/shortcuts/data", io.BytesIO())
+        return discord.File(file, filename="language201.big")
+
+    @commands.commands()
+    async def shortcuts(self, ctx, *, new_shortcuts):
+        new_shortcuts_mapping = {}
+        for sh in new_shortcuts.split():
+            split = sh.upper().split("=")
+            if split[0] not in self.shortcut_mapping:
+                raise BotError(f"{split[0]} in not a valid start shortcut")
+
+            if not split[1].isalpha():
+                raise BotError(f"{split[1]} is not a valid letter")
+
+            if len(split[1]) > 1:
+                raise BotError(f"{split[1]} is more than one letter")
+
+            new_shortcuts_mapping[f"&{split[0]}"] = f"&{split[1]}"
+
+        file = self.customise_shortcut(new_shortcuts_mapping)
+        await ctx.send(":white_check_mark: | Place this file in the `lang` folder of your game installation", file=file)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
