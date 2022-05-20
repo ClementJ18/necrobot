@@ -9,8 +9,8 @@ def dir_to_binary(directory):
 
     for dir_name, _, file_list in os.walk(directory):
         for filename in file_list:
-            complete_name = f'{dir_name}\\{filename}'
-            sage_name = complete_name.replace(f"{directory}\\", "", 1)
+            complete_name = f'{dir_name}/{filename}'
+            sage_name = complete_name.replace(f"{directory}/", "", 1)
 
             size = os.path.getsize(complete_name)
             binary_files.append({
@@ -82,9 +82,8 @@ def pack_file(directory, file_object):
 
     #   raw file data at the positions specified in the index
     f.write(raw_data)
-    f.close()
-
     f.seek(0)
+
     return f
 
 def unpack_file(file):

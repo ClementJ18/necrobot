@@ -674,21 +674,42 @@ class Utilities(commands.Cog):
 
         await ctx.send(f":white_check_mark: | Giveaway cancelled. {ga.jump_url}")
 
-    def customise_shortcut(mapping):
-        with open("rings/utils/shortcuts/original.str", "r") as f:
-            content = f.read()
+    def customise_shortcut(self, mapping):
+        with open("rings/utils/shortcuts/original.str", "r", encoding="Latin-1") as f:
+            content = f.read().splitlines()
 
-        for old, new in mapping.items():
-            content = content.replace(old, new)
+        new_content = []
+        for line in content:
+            if not any(x in line for x in mapping):
+                new_content.append(line)
+                continue
+            
+            for key, value in mapping.items():
+                if key in line:
+                    new_content.append(line.replace(key, value))
+                    break
 
-        with open("ring/utils/shortcuts/data/lotr.str", "w") as f:
-            f.write(content)
+        new_string = "\n".join(new_content)
+        with open("rings/utils/shortcuts/data/data/lotr.str", "w", encoding="Latin-") as f:
+            f.write(new_string)
 
-        file = pack_file("ring/utils/shortcuts/data", io.BytesIO())
-        return discord.File(file, filename="language201.big")
+        file = pack_file("rings/utils/shortcuts/data", io.BytesIO())
+        return discord.File(file, filename="englishpatch201_en.big")
 
-    @commands.commands()
+    @commands.command()
+    @commands.max_concurrency(1)
     async def shortcuts(self, ctx, *, new_shortcuts):
+        """Customise your edain shortcuts. Pass a mapping of shortcuts to replace.
+
+        Possible key values: y, x, c, v, b
+        
+        {usage}
+        
+        __Examples__
+        `{pre}shortcuts y=d c=r v=p`
+        `{pre}shortcuts y=c c=v v=b`
+        """
+
         new_shortcuts_mapping = {}
         for sh in new_shortcuts.split():
             split = sh.upper().split("=")
@@ -703,7 +724,9 @@ class Utilities(commands.Cog):
 
             new_shortcuts_mapping[f"&{split[0]}"] = f"&{split[1]}"
 
-        file = self.customise_shortcut(new_shortcuts_mapping)
+        async with ctx.typing():
+            file = self.customise_shortcut(new_shortcuts_mapping)
+        
         await ctx.send(":white_check_mark: | Place this file in the `lang` folder of your game installation", file=file)
 
     @commands.Cog.listener()
