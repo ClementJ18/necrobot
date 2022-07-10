@@ -138,6 +138,7 @@ def midnight():
         hour=0,
         minute=0,
         second=0,
+        tzinfo=datetime.timezone.utc
     )
     return time - datetime.datetime.now(datetime.timezone.utc)
 
