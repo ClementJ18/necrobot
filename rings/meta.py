@@ -161,7 +161,7 @@ class Meta(commands.Cog):
         embed = discord.Embed(colour=self.bot.bot_color, description=message.content)
         embed.set_author(
             name=message.author.display_name,
-            icon_url=message.author.avatar.replace(format="png", size=128),
+            icon_url=message.author.display_avatar.replace(format="png", size=128),
         )
         embed.set_footer(**self.bot.bot_footer)
         if message.embeds:

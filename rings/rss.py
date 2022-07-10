@@ -9,6 +9,7 @@ from rings.utils.ui import paginate
 
 import feedparser
 import asyncio
+from time import mktime
 import datetime
 import re
 import time
@@ -52,34 +53,29 @@ class RSS(commands.Cog):
         """
         )
 
-        time_limit = await self.bot.db.update_yt_rss()
-
         to_send = []
-
         for feed in feeds:
             async with self.bot.session.get(self.base_youtube.format(feed[0])) as resp:
                 parsed_feed = feedparser.parse(await resp.text())["entries"]
-                parsed_feed.reverse()
 
-                d = {"channels": feed[2], "entries": []}
-                for x in parsed_feed:
-                    try:
-                        if time_limit > convert(x["published"]):
-                            d["entries"].append(x)
-                    except KeyError:
-                        await self.bot.get_bot_channel().send(x["link"])
-                        return
+            if not parsed_feed:
+                continue
 
-                to_send.append(
-                    {
-                        "channels": feed[2],
-                        "entries": [
-                            x
-                            for x in parsed_feed
-                            if time_limit > convert(x["published"]) > feed[1]
-                        ],
-                    }
-                )
+            date = convert(parsed_feed[0]["published"])
+            if date <= feed[1]:
+                continue
+
+            parsed_feed.reverse()
+
+            d = {"channels": feed[2], "entries": []}
+            for entry in parsed_feed:
+                published = convert(entry["published"])
+                if published > feed[1]:
+                    d["entries"].append(entry)
+
+            to_send.append(d)
+
+            await self.bot.db.query("UPDATE necrobot.Youtube SET last_update=$1 WHERE youtuber_id=$2", date, feed[0])
 
         for feed in to_send:
             for entry in feed["entries"]:
@@ -144,15 +140,18 @@ class RSS(commands.Cog):
 
     async def rss_task(self):
         await self.bot.wait_until_ready()
+        await asyncio.sleep(10)
+
         while not self.bot.is_closed():
             try:
-                await asyncio.sleep(600)
                 await self.youtube_sub_task()
                 await self.twitch_sub_task()
             except asyncio.CancelledError:
                 return
             except Exception as e:
                 self.bot.dispatch("error", e)
+            finally:
+                await asyncio.sleep(600)
 
     #######################################################################
     ## Commands

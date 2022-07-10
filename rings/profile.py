@@ -232,7 +232,7 @@ class Profile(commands.Cog):
             description=f"**Title**: {await self.bot.db.get_title(user.id)}",
         )
 
-        embed.set_thumbnail(url=user.avatar.replace(format="png", size=256))
+        embed.set_thumbnail(url=user.display_avatar.replace(format="png", size=256))
         embed.set_footer(**self.bot.bot_footer)
 
         embed.add_field(name="User Name", value=str(user))
@@ -314,7 +314,7 @@ class Profile(commands.Cog):
             if not user:
                 user = ctx.author
 
-            image_bytes = await user.avatar.replace(format="png").read()
+            image_bytes = await user.display_avatar.replace(format="png").read()
             money = await self.bot.db.get_money(user.id)
             level = await self.bot.db.get_permission(user.id, ctx.guild.id)
             title = await self.bot.db.get_title(user.id)

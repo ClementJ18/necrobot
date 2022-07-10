@@ -76,7 +76,7 @@ class Support(commands.Cog):
         embed.set_footer(**self.bot.bot_footer)
         embed.set_author(
             name=ctx.author.name,
-            icon_url=ctx.author.avatar.replace(format="png", size=128),
+            icon_url=ctx.author.display_avatar.replace(format="png", size=128),
         )
         embed.add_field(
             name="Helpful Info",
@@ -133,7 +133,7 @@ class Support(commands.Cog):
             "author": {
                 "name": "Necrobot's Anchorman",
                 "url": "https://discord.gg/Ape8bZt",
-                "icon_url": self.bot.user.avatar.replace(format="png", size=128),
+                "icon_url": self.bot.user.display_avatar.replace(format="png", size=128),
             },
             "color": 161712,
             "type": "rich",

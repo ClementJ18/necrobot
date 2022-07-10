@@ -109,7 +109,7 @@ class Utilities(commands.Cog):
         if user is None:
             user = ctx.author
 
-        avatar = user.avatar.replace(format="png")
+        avatar = user.display_avatar.replace(format="png")
         await ctx.send(embed=discord.Embed().set_image(url=avatar))
 
     @commands.command()
@@ -699,15 +699,17 @@ class Utilities(commands.Cog):
     @commands.command()
     @commands.max_concurrency(1)
     async def shortcuts(self, ctx, *, new_shortcuts):
-        """Customise your edain shortcuts. Pass a mapping of shortcuts to replace.
+        """Customise your edain shortcuts. Pass a mapping of shortcuts to replace. At
+        the moment this is only available for the english version of Edain and only for 
+        a single version. Current version: 4.5.5
 
         Possible key values: y, x, c, v, b
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}shortcuts y=d c=r v=p`
-        `{pre}shortcuts y=c c=v v=b`
+        `{pre}shortcuts y=c c=v`
         """
 
         new_shortcuts_mapping = {}
@@ -726,7 +728,7 @@ class Utilities(commands.Cog):
 
         async with ctx.typing():
             file = self.customise_shortcut(new_shortcuts_mapping)
-        
+
         await ctx.send(":white_check_mark: | Place this file in the `lang` folder of your game installation", file=file)
 
     @commands.Cog.listener()

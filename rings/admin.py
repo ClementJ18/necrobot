@@ -616,7 +616,7 @@ class Admin(commands.Cog):
         embed = discord.Embed(title="Message", description=message.content)
         embed.set_author(
             name=message.author,
-            icon_url=message.author.avatar.replace(format="png", size=128),
+            icon_url=message.author.display_avatar.replace(format="png", size=128),
         )
         embed.set_footer(**self.bot.bot_footer)
 

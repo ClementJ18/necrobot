@@ -340,7 +340,7 @@ class Events(commands.Cog):
             )
             embed.set_author(
                 name=message.author,
-                icon_url=message.author.avatar.replace(format="png", size=128),
+                icon_url=message.author.display_avatar.replace(format="png", size=128),
             )
             embed.set_footer(**self.bot.bot_footer)
             embed.add_field(
@@ -379,7 +379,7 @@ class Events(commands.Cog):
 
             embed.set_author(
                 name=before.author,
-                icon_url=before.author.avatar.replace(format="png", size=128),
+                icon_url=before.author.display_avatar.replace(format="png", size=128),
             )
             embed.set_footer(**self.bot.bot_footer)
             embed.add_field(

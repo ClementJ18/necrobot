@@ -1115,7 +1115,7 @@ class Server(commands.Cog):
             f":white_check_mark: | Role **{role.name}** removed from self assignable roles"
         )
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @has_perms(4)
     async def starboard(self, ctx, channel: discord.TextChannel = None):
