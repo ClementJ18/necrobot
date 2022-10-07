@@ -44,7 +44,10 @@ class Bridge(commands.Cog):
                 "id": 687748760054661152,
                 "url": "https://modding-union.com/index.php/topic,32089.0.html",
             },
-            "mm": {"id": 688040356184588423, "url": ""},
+            "mm": {
+                "id": 688040356184588423,
+                "url": "https://modding-union.com/index.php/topic,36986.0.html"
+            },
             "mordor": {
                 "id": 687749364692549651,
                 "url": "https://modding-union.com/index.php/topic,30433.0.html",
