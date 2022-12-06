@@ -124,7 +124,7 @@ class RSS(commands.Cog):
 
             embed = discord.Embed(
                 title="Streamer Live",
-                description=f"**{stream['user_name']}** has started streaming **[{stream['title']}](https://www.twitch.tv/{stream['user_login']})**",
+                description=f"**{stream['user_name']}** has started streaming** Join here: [{stream['title']}](https://www.twitch.tv/{stream['user_name']}).",
             )
             embed.set_thumbnail(
                 url=stream["thumbnail_url"].format(width=1280, height=720)
