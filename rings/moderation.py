@@ -13,7 +13,7 @@ from rings.utils.ui import paginate
 
 import asyncio
 import datetime
-from typing import Literal, Union
+from typing import Literal, Union, Optional
 
 
 class Moderation(commands.Cog):
@@ -63,7 +63,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @has_perms(3)
     @commands.bot_has_permissions(ban_members=True)
-    async def ban(self, ctx, user: Union[MemberConverter, int], *, reason=None):
+    async def ban(self, ctx, soft : Optional[Literal["soft"]], user: Union[MemberConverter, int], *, reason=None):
         """Ban a user, sending them a message and add the message as a reason
 
         {usage}
@@ -76,7 +76,7 @@ class Moderation(commands.Cog):
             try:
                 await user.send(f"__Banned from {ctx.guild.name}__\nReason: {reason}")
                 await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
-            except discord.Forbidden:
+            except (discord.Forbidden, discord.HTTPException):
                 await ctx.message.add_reaction("\N{NEGATIVE SQUARED CROSS MARK}")
 
         if isinstance(user, int):
@@ -88,10 +88,14 @@ class Moderation(commands.Cog):
         else:
             await ctx.guild.ban(user)
 
+        if soft:
+            await ctx.guild.unban(user)
+            await ctx.message.add_reaction("\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}")
+
         automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
         if automod is not None:
             embed = discord.Embed(
-                title="User Banned",
+                title="User Banned" if not soft else "User Soft Banned",
                 description=f"{user.name} ({user.id}) banned by {ctx.author.mention}",
                 colour=self.bot.bot_color,
             )
