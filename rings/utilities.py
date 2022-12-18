@@ -212,7 +212,10 @@ class Utilities(commands.Cog):
         `{pre}remindme on 22/04/2023` - get reminded at a specific date
         `{pre}remindme on 22/04/2023 17:22` - get reminded at a specific date and hour
         """
-        text, sleep, time = time_string_parser(message)
+        try:
+            text, sleep, time = time_string_parser(message)
+        except Exception as e:
+            raise BotError(str(e))
 
         if sleep < 1:
             raise BotError("Can't have a reminder that's less than one second!")
