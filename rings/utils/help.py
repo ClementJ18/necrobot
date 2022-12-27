@@ -7,7 +7,7 @@ class NecrobotHelp(cmd.HelpCommand):
         return f":negative_squared_cross_mark: | Command **{string}** not found."
 
     def subcommand_not_found(self, command, string):
-        return f":negative_squared_cross_mark: | Command **{command.qualified_name}** has no sucommand **{string}**"
+        return f":negative_squared_cross_mark: | Command **{command.qualified_name}** has no subcommand **{string}**"
 
     def get_command_signature(self, command):
         """Retrieves the signature portion of the help page."""

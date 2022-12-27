@@ -161,6 +161,9 @@ class RoleConverter(commands.IDConverter):
         if result is None:
             raise commands.BadArgument(f'Role "{argument}" not found.')
 
+        if result.managed:
+            raise commands.BadArgument(f'Cannot use a managed role.')
+
         return result
 
 

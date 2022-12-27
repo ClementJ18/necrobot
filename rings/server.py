@@ -208,13 +208,13 @@ class Server(commands.Cog):
             perms_check = discord.utils.find(
                 lambda x: x.__qualname__.startswith("has_perms"), command.checks
             )
-            if perms_check is not None and perms_check.level == level:
-                c.append(f"- {command.name}")
+            if perms_check is not None and perms_check.level <= level:
+                c.append(f"- {command.name} ({perms_check.level}+)")
 
         def embed_maker(view, entries):
             string = "\n".join(entries)
             embed = discord.Embed(
-                title=f"Commands for {self.bot.perms_name[level]} {level}+ ({view[0]}/{view[1]})",
+                title=f"Commands for {self.bot.perms_name[level]} {level}+ ({view.page_number}/{view.page_count})",
                 colour=self.bot.bot_color,
                 description=string,
             )
@@ -630,8 +630,7 @@ class Server(commands.Cog):
         `{pre}welcome Hello {{member}} :wave:` - sets the welcome message to be 'Hello Necrobot#1231 :wave:'.
         `{pre}welcome hey there {{mention}}, welcome to {{server}}` - set the welcome message to 'hey there @NecroBot, welcome
         to NecroBot Support Server'
-        `{pre}welcome` - see your server's welcome message
-        `{pre}welcome disable` - disable server welcome messages
+        `{pre}welcome` - disable server welcome message
         """
         if message == "":
             await ctx.send(":white_check_mark: | Welcome message reset and disabled")
@@ -787,9 +786,9 @@ class Server(commands.Cog):
             if not isinstance(time, int):
                 raise BotError("Please specify a valid time format")
 
-            time = f"for **{time}** seconds" if time else "permanently"
+            time_string = f"for **{time}** seconds" if time else "permanently"
             await ctx.send(
-                f":white_check_mark: | Joining members will now automatically be assigned the role **{role.name}** {time}"
+                f":white_check_mark: | Joining members will now automatically be assigned the role **{role.name}** {time_string}"
             )
             await self.bot.db.update_auto_role(ctx.guild.id, role.id, time)
 

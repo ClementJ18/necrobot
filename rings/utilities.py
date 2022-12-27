@@ -693,7 +693,7 @@ class Utilities(commands.Cog):
                     break
 
         new_string = "\n".join(new_content)
-        with open("rings/utils/shortcuts/data/data/lotr.str", "w", encoding="Latin-") as f:
+        with open("rings/utils/shortcuts/data/data/lotr.str", "w", encoding="Latin-1") as f:
             f.write(new_string)
 
         file = pack_file("rings/utils/shortcuts/data", io.BytesIO())
