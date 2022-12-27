@@ -75,7 +75,7 @@ class Support(commands.Cog):
         )
         embed.set_footer(**self.bot.bot_footer)
         embed.set_author(
-            name=ctx.author.name,
+            name=str(ctx.author),
             icon_url=ctx.author.display_avatar.replace(format="png", size=128),
         )
         embed.add_field(

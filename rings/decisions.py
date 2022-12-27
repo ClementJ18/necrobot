@@ -31,7 +31,6 @@ class Decisions(commands.Cog):
 
         await ctx.send(f"I choose **{' '.join(final_choices)}**")
 
-
     @commands.group(aliases=["choice"], invoke_without_command=True)
     async def choose(self, ctx, *, choices):
         """Returns a single choice from the list of choices given. Use `,` to seperate each of the choices. You can
@@ -46,7 +45,7 @@ class Decisions(commands.Cog):
         await self._choose(ctx, choices, 1)
 
     @choose.command(name="multiple", aliases=["mult"])
-    async def choose_mult(self, ctx, count : int, *, choices):
+    async def choose_mult(self, ctx, count: int, *, choices):
         """Similar to the choose command but allows you to specify a number of unique results to return by group.
 
         {usage}
@@ -101,9 +100,9 @@ class Decisions(commands.Cog):
         except Exception as e:
             raise BotError(e) from e
 
-        if len(dice_list) == 1:
+        if isinstance(dice_list, int):
             await ctx.send(
-                f":game_die: | **{ctx.author.display_name}** rolled **{dice_list[0]}**."
+                f":game_die: | **{ctx.author.display_name}** rolled **{dice_list}**."
             )
         else:
             total = sum(dice_list)
