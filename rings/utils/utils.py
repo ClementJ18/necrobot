@@ -37,7 +37,7 @@ def time_string_parser(message):
         text, sep, time = message.rpartition("on ")
         sleep = date_converter(time)
 
-        if not sep:
+        if sep:
             raise BotError(
                 "Something went wrong, you need to use the format: **<optional_message> on <time>**"
             )
@@ -123,6 +123,7 @@ def date_converter(argument):
         hour=hours or now.hour,
         minute=minutes or now.minute,
         second=seconds or now.second,
+        tzinfo=datetime.timezone.utc,
     )
 
     return (date - now).total_seconds()
