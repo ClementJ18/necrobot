@@ -61,6 +61,9 @@ class Tags(commands.Cog):
                 ctx.message.content = ctx.prefix + tag_content[4:].strip()
                 new_ctx = await self.bot.get_context(ctx.message)
 
+                if new_ctx.command is not None and new_ctx.command.name == "tag":
+                    raise BotError("Invoked command cannot be a tag.")
+
                 await self.bot.invoke(new_ctx)
             else:
                 await ctx.send(tag_content)
