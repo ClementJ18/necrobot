@@ -48,17 +48,22 @@ class Tags(commands.Cog):
             arg_dict[f"arg{index}"] = arg
             index += 1
 
-        tag_content = tag["content"]
         try:
-            await ctx.send(
-                tag_content.format(
-                    server=ctx.guild,
-                    member=ctx.author,
-                    channel=ctx.channel,
-                    content=ctx.message.content,
-                    **arg_dict,
-                )
-            )
+            tag_content = tag["content"].format(
+                server=ctx.guild,
+                member=ctx.author,
+                channel=ctx.channel,
+                content=ctx.message.content,
+                **arg_dict,
+            ).strip()
+
+            if tag_content.startswith("cmd:"):
+                ctx.message.content = ctx.prefix + tag_content[4:].strip()
+                new_ctx = await self.bot.get_context(ctx.message)
+
+                await self.bot.invoke(new_ctx)
+            else:
+                await ctx.send(tag_content)
 
             await self.bot.db.query(
                 "UPDATE necrobot.Tags SET uses = uses + 1 WHERE guild_id = $1 AND name = $2",
@@ -73,7 +78,7 @@ class Tags(commands.Cog):
     @commands.guild_only()
     async def tag_add(self, ctx, tag, *, content):
         """Assigns the [text] passed through to the tag named [name]. A few reserved keywords can be used to render the
-        tag dynamic.
+        tag dynamic. If a tag starts with `cmd:` it will be interpreted as a command.
 
         `{{server.keyword}}`
         Represents the server
