@@ -266,6 +266,7 @@ extensions = [
     "economy",
     "bridge",
     "waifu",
+    "rp",
 ]
 
 bot = NecroBot(exts=extensions)
