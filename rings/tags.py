@@ -88,7 +88,7 @@ class Tags(commands.Cog):
                 if new_ctx.command is not None and new_ctx.command.name == "tag":
                     raise BotError("Invoked command cannot be a tag.")
 
-                await new_ctx.invoke(new_ctx.command, *new_ctx.args, **new_ctx.kwargs)
+                await self.bot.invoke(new_ctx)
             else:
                 await ctx.send(tag_content)
 
