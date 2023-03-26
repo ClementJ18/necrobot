@@ -71,7 +71,7 @@ class Tags(commands.Cog):
         }
         content = tag["content"]
         for match in re.findall(r'{(\w*)(?:=(.*))?}', content):
-            if len(match) > 1:
+            if match[1]:
                 arg_dict[match[0]] = match[1]
                 content = content.replace(f"{match[0]}={match[1]}", match[0])
 
@@ -339,13 +339,14 @@ class Tags(commands.Cog):
         ):
             content = content[1]
             ctx = await self.bot.get_context(message)
+            command = self.bot.get_command("tag")
 
             try:
                 tag = await Tag().convert(ctx, content)
             except commands.BadArgument:
                 return
 
-            await self._tag(ctx, tag)
+            await ctx.invoke(command, tag=tag)
 
 
 async def setup(bot):
