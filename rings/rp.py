@@ -5,6 +5,7 @@ from rings.utils.utils import time_converter
 from rings.utils.ui import paginate
 
 import datetime
+from typing import Union
 
 
 class RP(commands.Cog):
@@ -20,28 +21,21 @@ class RP(commands.Cog):
 
         raise commands.CheckFailure("This command cannot be used in private messages.")
 
-    @commands.command()
-    async def activity(self, ctx, *, duration : str = None):
-        """Get a list of channels that have had a message in the last amount of time specified.
-        The following times can be used: days (d), hours (h), minutes (m), seconds (s).
-
-        {usage}
-
-        __Examples__
-        {pre}activity 2d - Get channels that have had a message in the last 2 days
-        """
-        now = discord.utils.utcnow()
-        time = 300
-
-        if duration is not None:
-            time = time_converter(duration)
-
+    async def _activity(self, ctx, duration, channels):
         def is_active(ch):
             if getattr(ch, "last_message_id", None) is None:
                 return False
 
             ch_time = discord.utils.snowflake_time(ch.last_message_id)
             return ch_time > (now - datetime.timedelta(seconds=time))
+    
+        now = discord.utils.utcnow()
+        time = 300
+        if duration is not None:
+            time = time_converter(duration)
+
+        filtered_channels = [channel for channel in channels if is_active(channel[0]) and channel[0].id != ctx.channel.id]
+        filtered_channels.sort(key=lambda x: (now - discord.utils.snowflake_time(x[1])).seconds)
 
         def embed_maker(view, entries):
             formatted_channels = '\n'.join([f"{channel.mention} - {(now - discord.utils.snowflake_time(last_message_id)).seconds // 60} minute(s) ago" for channel, last_message_id in entries])
@@ -56,11 +50,34 @@ class RP(commands.Cog):
 
             return embed
 
-        channels = [(channel, channel.last_message_id) for channel in [*ctx.guild.channels, *ctx.guild.threads] if is_active(channel) and channel.id != ctx.channel.id]
-        channels.sort(key=lambda x: (now - discord.utils.snowflake_time(x[1])).seconds)
+        await paginate(ctx, filtered_channels, 10, embed_maker)
 
-        await paginate(ctx, channels, 10, embed_maker)
+    @commands.group(invoke_without_command=True)
+    async def activity(self, ctx, *, duration : str = None):
+        """Get a list of channels that have had a message in the last amount of time specified.
+        The following times can be used: days (d), hours (h), minutes (m), seconds (s).
 
+        {usage}
+
+        __Examples__
+        {pre}activity 2d - Get channels that have had a message in the last 2 days
+        """
+        channels = [(channel, channel.last_message_id) for channel in [*ctx.guild.text_channels, *ctx.guild.threads]]
+        await self._activity(ctx, duration, channels)
+
+
+    @activity.command(name="ignore")
+    async def activity_ignore(self, ctx, ignored : commands.Greedy[Union[discord.TextChannel, discord.CategoryChannel, discord.Thread]], *, duration : str = None):
+        to_ignore = [ctx.channel.id]
+
+        for channel in ignored:
+            if isinstance(channel, (discord.TextChannel, discord.Thread)):
+                to_ignore.append(channel.id)
+            else:
+                to_ignore.extend([ch.id for ch in channel.channels])
+
+        channels = [(channel, channel.last_message_id) for channel in [*ctx.guild.text_channels, *ctx.guild.threads] if channel.id not in to_ignore]
+        await self._activity(ctx, duration, channels)
 
 
 async def setup(bot):

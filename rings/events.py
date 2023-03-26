@@ -102,7 +102,8 @@ class Events(commands.Cog):
             )
             if channel.is_nsfw() and not starboard.is_nsfw():
                 return await channel.send(
-                    ":negative_squared_cross_mark: | Could not send message to starboard because channel is marked as NSFW and starboard is marked as SFW. Either make this channel SFW or make the starboard NSFW"
+                    ":negative_squared_cross_mark: | Could not send message to starboard because channel is marked as NSFW and starboard is marked as SFW. Either make this channel SFW or make the starboard NSFW",
+                    delete_after=30
                 )
 
             del self.bot.potential_stars[payload.message_id]

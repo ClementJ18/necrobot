@@ -7,7 +7,7 @@ from rings.db import DatabaseError
 from rings.utils.ui import paginate
 
 import re
-
+import copy
 
 class Tags(commands.Cog):
     def __init__(self, bot):
@@ -42,29 +42,53 @@ class Tags(commands.Cog):
 
         __Example__
         `{pre}tag necro` - prints the content of the tag 'necro' given that it exists on this server"""
-        arg_dict = {}
-        index = 0
-        for arg in tag_args:
+        await self._tag(ctx, tag, *tag_args)
+
+    async def _tag(self, ctx, tag: Tag, *tag_args):
+        arg_dict = {
+            "server": str(ctx.guild),
+            "server.name": str(ctx.guild.name),
+            "server.id": str(ctx.guild.id),
+            "server.created_at": str(ctx.guild.created_at),
+            "server.member_count": str(ctx.guild.member_count),
+
+            "member": str(ctx.author),
+            "member.display_name": str(ctx.author.display_name),
+            "member.name": str(ctx.author.name),
+            "member.discriminator": str(ctx.author.discriminator),
+            "member.joined_at": str(ctx.author.joined_at),
+            "member.id": str(ctx.author.id),
+            "member.mention": str(ctx.author.mention),
+            "member.created_at": str(ctx.author.created_at),
+
+            "channel": str(ctx.channel),
+            "channel.name": str(ctx.channel.name),
+            "channel.id": str(ctx.channel.id),
+            "channel.topic": str(ctx.channel.topic),
+            "channel.mention": str(ctx.channel.mention),
+
+            "content": str(ctx.message.content),
+        }
+        content = tag["content"]
+        for match in re.findall(r'{(\w*)(?:=(.*))?}', content):
+            if len(match) > 1:
+                arg_dict[match[0]] = match[1]
+                content = content.replace(f"{match[0]}={match[1]}", match[0])
+
+        for index, arg in enumerate(tag_args):
             arg_dict[f"arg{index}"] = arg
-            index += 1
 
         try:
-            tag_content = tag["content"].format(
-                server=ctx.guild,
-                member=ctx.author,
-                channel=ctx.channel,
-                content=ctx.message.content,
-                **arg_dict,
-            ).strip()
-
+            tag_content = content.format(**arg_dict).strip()
             if tag_content.startswith("cmd:"):
-                ctx.message.content = ctx.prefix + tag_content[4:].strip()
-                new_ctx = await self.bot.get_context(ctx.message)
+                message = copy.copy(ctx.message)
+                message.content = ctx.prefix + tag_content[4:].strip()
+                new_ctx = await self.bot.get_context(message)
 
                 if new_ctx.command is not None and new_ctx.command.name == "tag":
                     raise BotError("Invoked command cannot be a tag.")
 
-                await self.bot.invoke(new_ctx)
+                await new_ctx.invoke(new_ctx.command, *new_ctx.args, **new_ctx.kwargs)
             else:
                 await ctx.send(tag_content)
 
@@ -116,6 +140,7 @@ class Tags(commands.Cog):
         `{{argx}}`
         Represents an argument you pass into the tag, replace x by the argument number starting from 0.
         E.g: `{pre}tag test [arg0] [arg1] [arg2]`
+        You can add defaults like this {{argx=test}}
 
         {usage}
 
@@ -195,7 +220,7 @@ class Tags(commands.Cog):
     @commands.guild_only()
     async def tag_edit(self, ctx, tag: Tag, *, content):
         """Replaces the content of [tag] with the [text] given. Basically works as a delete + create function
-        but without the risk of losing the tag name ownership.
+        but without the risk of losing the tag name ownership and counts.
 
         {usage}
 
@@ -314,14 +339,13 @@ class Tags(commands.Cog):
         ):
             content = content[1]
             ctx = await self.bot.get_context(message)
-            command = self.bot.get_command("tag")
 
             try:
                 tag = await Tag().convert(ctx, content)
             except commands.BadArgument:
                 return
 
-            await ctx.invoke(command, tag=tag)
+            await self._tag(ctx, tag)
 
 
 async def setup(bot):
