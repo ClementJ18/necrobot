@@ -138,7 +138,7 @@ class Wiki(commands.Cog):
         _check_error_response(request, page_id)
         return request
 
-    async def mediawiki_handler(self, ctx, article, fandom=None):
+    async def mediawiki_handler(self, ctx : commands.Context, article, fandom=None):
 
         if fandom is not None:
             base = f"https://{fandom}.wikia.com"
@@ -206,7 +206,7 @@ class Wiki(commands.Cog):
     #######################################################################
 
     @commands.command()
-    async def edain(self, ctx, *, article: str = None):
+    async def edain(self, ctx : commands.Context, *, article: str = None):
         """Performs a search on the Edain Mod Wiki for the give article name. If an article is found then it will
         return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
@@ -219,7 +219,7 @@ class Wiki(commands.Cog):
             await self.mediawiki_handler(ctx, article, "edain")
 
     @commands.command()
-    async def faq(self, ctx, *, question: str = None):
+    async def faq(self, ctx : commands.Context, *, question: str = None):
         """Replies with up to 5 links from the Edain FAQ that have matched close to the initial question.
         {usage}
         __Example__
@@ -268,7 +268,7 @@ class Wiki(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def aotr(self, ctx, *, article: str = None):
+    async def aotr(self, ctx : commands.Context, *, article: str = None):
         """Performs a search on the Age of the Ring Wiki for the give article name. If an article is found then it will
         return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
@@ -281,7 +281,7 @@ class Wiki(commands.Cog):
             await self.mediawiki_handler(ctx, article, "aotr")
 
     @commands.command()
-    async def wiki(self, ctx, sub_wiki, *, article: str = None):
+    async def wiki(self, ctx : commands.Context, sub_wiki, *, article: str = None):
         """Performs a search on the given wiki (if valid) for the given article name. If an article is found then it
         will return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
@@ -295,7 +295,7 @@ class Wiki(commands.Cog):
             await self.mediawiki_handler(ctx, article, sub_wiki)
 
     @commands.command()
-    async def lotr(self, ctx, *, article_name: str = None):
+    async def lotr(self, ctx : commands.Context, *, article_name: str = None):
         """Performs a search on the Tolkien Gateway for the give article name. If an article is found then it
         will return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
         {usage}

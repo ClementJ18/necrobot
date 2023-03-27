@@ -72,7 +72,7 @@ class MemberConverter(commands.IDConverter):
 
     ctx_attr = "author"
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         bot = ctx.bot
         match = self._get_id_match(argument) or re.match(r"<@!?([0-9]+)>$", argument)
         guild = ctx.guild
@@ -103,7 +103,7 @@ class UserConverter(commands.IDConverter):
 
     ctx_attr = "author"
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         match = self._get_id_match(argument) or re.match(r"<@!?([0-9]+)>$", argument)
         result = None
         state = ctx._state
@@ -145,7 +145,7 @@ class UserConverter(commands.IDConverter):
 class RoleConverter(commands.IDConverter):
     """Converts to a role but case insensitive"""
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         guild = ctx.guild
         if not guild:
             raise commands.NoPrivateMessage()
@@ -168,7 +168,7 @@ class RoleConverter(commands.IDConverter):
 
 
 class GuildConverter(commands.IDConverter):
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         result = None
         bot = ctx.bot
         guilds = bot.guilds
@@ -188,7 +188,7 @@ class GuildConverter(commands.IDConverter):
 
 
 class BadgeConverter(commands.Converter):
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         badge = await ctx.bot.db.get_badge_from_shop(name=argument)
 
         if not badge:
@@ -198,12 +198,12 @@ class BadgeConverter(commands.Converter):
 
 
 class TimeConverter(commands.Converter):
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         return time_converter(argument)
 
 
 class MoneyConverter(commands.Converter):
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         if not argument.isdigit():
             raise commands.BadArgument("Not a valid integer")
 
@@ -220,7 +220,7 @@ class MoneyConverter(commands.Converter):
 
 
 class FlowerConverter(commands.Converter):
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         if not argument.isdigit():
             raise commands.BadArgument("Not a valid integer")
 
@@ -255,7 +255,7 @@ def RangeConverter(min_v, max_v):
 
 
 class Grudge(commands.Converter):
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         if not argument.isdigit():
             raise commands.BadArgument("Please supply a valid id")
 
@@ -270,7 +270,7 @@ class Grudge(commands.Converter):
 
 
 class MUConverter(commands.Converter):
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         try:
             return await MemberConverter().convert(ctx, argument)
         except commands.BadArgument:
@@ -295,7 +295,7 @@ class MUConverter(commands.Converter):
 
 
 class CoinConverter(commands.Converter):
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         if argument.lower() in ["h", "head"]:
             return "h"
         if argument.lower() in ["t", "tail"]:
@@ -305,7 +305,7 @@ class CoinConverter(commands.Converter):
 
 
 class Tag(commands.Converter):
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         argument = argument.lower()
         tag = await ctx.bot.db.query(
             """
@@ -323,7 +323,7 @@ class Tag(commands.Converter):
 
 
 class WritableChannelConverter(commands.TextChannelConverter):
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx : commands.Context, argument):
         result = await super().convert(ctx, argument)
         if not result.permissions_for(result.guild.me).send_messages:
             raise BotError(f"I cannot send messages in {result.mention}")

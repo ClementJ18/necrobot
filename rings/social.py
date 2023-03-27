@@ -27,14 +27,14 @@ class Social(commands.Cog):
     #######################################################################
 
     @commands.command(aliases=["sean", "joke", "dad"])
-    async def dadjoke(self, ctx):
+    async def dadjoke(self, ctx : commands.Context):
         """Send a random dadjoke from a long list.
 
         {usage}"""
         await ctx.send(f":speaking_head: | {random.choice(dad_joke)}")
 
     @commands.command()
-    async def riddle(self, ctx):
+    async def riddle(self, ctx : commands.Context):
         """Ask a riddle to the user from a long list and waits 30 seconds for the answer. If the
         user fails to answer they go feed Gollum's fishies. To answer the riddle simply type out
         the answer, no need to prefix it with anything.
@@ -47,7 +47,7 @@ class Social(commands.Cog):
         await view.wait()
 
     @commands.command()
-    async def tarot(self, ctx):
+    async def tarot(self, ctx : commands.Context):
         """Using the mystical art of tarology, NecroBot reads the user's fate in the card and
         returns the explanation for each card. Not to be taken seriously.
 
@@ -58,7 +58,7 @@ class Social(commands.Cog):
         )
 
     @commands.command()
-    async def rr(self, ctx, bullets: int = 1):
+    async def rr(self, ctx : commands.Context, bullets: int = 1):
         """Plays a game of russian roulette with the user. If no number of bullets is entered it will default to one.
 
         {usage}
@@ -78,7 +78,7 @@ class Social(commands.Cog):
         await ctx.send(msg)
 
     @commands.command()
-    async def lotrfact(self, ctx):
+    async def lotrfact(self, ctx : commands.Context):
         """Prints a random Lord of the Rings fact.
 
         {usage}"""
@@ -88,7 +88,7 @@ class Social(commands.Cog):
         )
 
     @commands.command()
-    async def pokefusion(self, ctx, pokemon1=None, pokemon2=None):
+    async def pokefusion(self, ctx : commands.Context, pokemon1=None, pokemon2=None):
         """Generates a rich embed containing a pokefusion from Gen 1, this can either be a two random pokemons,
         one random pokemon and one chosen pokemon or two chosen pokemons.
 
@@ -133,7 +133,7 @@ class Social(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def got(self, ctx, character=None):
+    async def got(self, ctx : commands.Context, character=None):
         """Posts a random Game of Thrones quote.
 
         {usage}

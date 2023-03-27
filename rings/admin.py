@@ -56,7 +56,7 @@ class Admin(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @commands.is_owner()
-    async def grudge(self, ctx, user: UserConverter, *, grudge: str):
+    async def grudge(self, ctx : commands.Context, user: UserConverter, *, grudge: str):
         """Add a grudge
 
         {usage}"""
@@ -82,7 +82,7 @@ class Admin(commands.Cog):
         )
 
     @grudge.command(name="list")
-    async def grudge_list(self, ctx, user: Union[UserConverter, int]):
+    async def grudge_list(self, ctx : commands.Context, user: Union[UserConverter, int]):
         """See all the grudges for a user
 
         {usage}
@@ -118,7 +118,7 @@ class Admin(commands.Cog):
         await paginate(ctx, grudges, 10, embed_maker)
 
     @grudge.command(name="info")
-    async def grudge_info(self, ctx, grudge: Grudge):
+    async def grudge_info(self, ctx : commands.Context, grudge: Grudge):
         """Get the full info about a specific grudge
 
         {usage}"""
@@ -141,7 +141,7 @@ class Admin(commands.Cog):
 
     @grudge.command(name="settle")
     @commands.is_owner()
-    async def grudge_settle(self, ctx, grudge: Grudge, settlement: str = True):
+    async def grudge_settle(self, ctx : commands.Context, grudge: Grudge, settlement: str = True):
         """Mark a grudge as settled
 
         {usage}"""
@@ -156,7 +156,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(7)
-    async def leave(self, ctx, guild: GuildConverter):
+    async def leave(self, ctx : commands.Context, guild: GuildConverter):
         """Leaves the specified server.
 
         {usage}"""
@@ -165,7 +165,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(6)
-    async def add(self, ctx, user: UserConverter, *, equation: str):
+    async def add(self, ctx : commands.Context, user: UserConverter, *, equation: str):
         """Does the given pythonic equations on the given user's NecroBot balance.
         `*` - for multiplication
         `+` - for additions
@@ -203,14 +203,14 @@ class Admin(commands.Cog):
         await self.bot.db.update_money(user.id, update=operation)
 
     @commands.group()
-    async def admin(self, ctx):
+    async def admin(self, ctx : commands.Context):
         """{usage}"""
         pass
 
     @admin.command(name="permissions", aliases=["perms"])
     @commands.check_any(commands.is_owner(), has_perms(6))
     async def admin_perms(
-        self, ctx, guild: GuildConverter, user: UserConverter, level: int
+        self, ctx : commands.Context, guild: GuildConverter, user: UserConverter, level: int
     ):
         """For when regular perms isn't enough.
 
@@ -227,7 +227,7 @@ class Admin(commands.Cog):
 
     @admin.command(name="disable")
     @commands.check_any(commands.is_owner(), has_perms(6))
-    async def admin_disable(self, ctx, *, command: str):
+    async def admin_disable(self, ctx : commands.Context, *, command: str):
         """For when regular disable isn't enough. Disables command discord-wide.
 
         {usage}
@@ -242,7 +242,7 @@ class Admin(commands.Cog):
 
     @admin.command(name="enable")
     @commands.check_any(commands.is_owner(), has_perms(6))
-    async def admin_enable(self, ctx, *, command: str):
+    async def admin_enable(self, ctx : commands.Context, *, command: str):
         """For when regular enable isn't enough. Re-enables the command discord-wide.
 
         {usage}
@@ -291,7 +291,7 @@ class Admin(commands.Cog):
 
     @admin.command(name="blacklist")
     @commands.is_owner()
-    async def admin_blacklist(self, ctx, object_id: int):
+    async def admin_blacklist(self, ctx : commands.Context, object_id: int):
         """Blacklist a user
 
         {usage}
@@ -305,7 +305,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(6)
-    async def pm(self, ctx, user: UserConverter, *, message: str):
+    async def pm(self, ctx : commands.Context, user: UserConverter, *, message: str):
         """Sends the given message to the user of the given id. It will then wait for an answer and
         print it to the channel it was called it.
 
@@ -329,7 +329,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(6)
-    async def get(self, ctx, obj_id: int):
+    async def get(self, ctx : commands.Context, obj_id: int):
         """Returns the name of the user or server based on the given id. Used to debug errors.
 
         {usage}
@@ -378,7 +378,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def invites(self, ctx, *, guild: GuildConverter = None):
+    async def invites(self, ctx : commands.Context, *, guild: GuildConverter = None):
         """Returns invites (if the bot has valid permissions) for each server the bot is on if no guild id is specified.
 
         {usage}"""
@@ -399,7 +399,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def debug(self, ctx, *, cmd: str):
+    async def debug(self, ctx : commands.Context, *, cmd: str):
         """Evaluates code.
 
         {usage}
@@ -451,7 +451,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(6)
-    async def logs(self, ctx, *arguments):
+    async def logs(self, ctx : commands.Context, *arguments):
         """Get a list of commands. SQL arguments can be passed to filter the output.
 
         {usage}"""
@@ -486,7 +486,7 @@ class Admin(commands.Cog):
 
     @commands.command(name="as")
     @commands.is_owner()
-    async def _as(self, ctx, user: MemberConverter, *, message: str):
+    async def _as(self, ctx : commands.Context, user: MemberConverter, *, message: str):
         """Call a command as another user, used for debugging purposes
 
         {usage}
@@ -504,7 +504,7 @@ class Admin(commands.Cog):
         await self.bot.process_commands(ctx.message)
 
     @commands.command()
-    async def stats(self, ctx):
+    async def stats(self, ctx : commands.Context):
         """Provides meta data on the bot.
 
         {usage}"""
@@ -555,7 +555,7 @@ class Admin(commands.Cog):
     @commands.command()
     @has_perms(6)
     async def gate(
-        self, ctx, channel: Union[discord.TextChannel, discord.Thread, UserConverter]
+        self, ctx : commands.Context, channel: Union[discord.TextChannel, discord.Thread, UserConverter]
     ):
         """Connects two channels with a magic gate so that users on both servers can communicate. Magic:tm:
 
@@ -592,7 +592,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def reset(self, ctx):
+    async def reset(self, ctx : commands.Context):
         """{usage}"""
         self.bot.check_enabled = True
         await ctx.send(":white_check_mark: | Process checks re-enabled")

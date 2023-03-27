@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, check_channel
+from rings.utils.utils import BotError, build_format_dict, check_channel
 from rings.db import DatabaseError
 from rings.utils.converters import (
     TimeConverter,
@@ -30,7 +30,7 @@ class Server(commands.Cog):
     ## Cog Functions
     #######################################################################
 
-    def cog_check(self, ctx):
+    def cog_check(self, ctx : commands.Context):
         if ctx.guild:
             return True
 
@@ -40,7 +40,7 @@ class Server(commands.Cog):
     ## Functions
     #######################################################################
 
-    def get_all(self, ctx, entries):
+    def get_all(self, ctx : commands.Context, entries):
         l = []
         for x in entries:
             channel = ctx.guild.get_channel(x)
@@ -125,7 +125,7 @@ class Server(commands.Cog):
     @commands.group(invoke_without_command=True, aliases=["perms"])
     @has_perms(4)
     async def permissions(
-        self, ctx, user: MemberConverter = None, level: RangeConverter(0, 7) = None
+        self, ctx : commands.Context, user: MemberConverter = None, level: RangeConverter(0, 7) = None
     ):
         """Sets the NecroBot permission level of the given user, you can only set permission levels lower than your own.
         Permissions reset if you leave the server.
@@ -194,7 +194,7 @@ class Server(commands.Cog):
 
     @permissions.command(name="commands")
     @has_perms(1)
-    async def permissions_commands(self, ctx, level: RangeConverter(1, 7)):
+    async def permissions_commands(self, ctx : commands.Context, level: RangeConverter(1, 7)):
         """See what permission level has access to which commands
 
         {usage}
@@ -227,7 +227,7 @@ class Server(commands.Cog):
     @permissions.command(name="bind")
     @has_perms(4)
     async def permissions_bind(
-        self, ctx, level: RangeConverter(1, 4) = None, role: RoleConverter = None
+        self, ctx : commands.Context, level: RangeConverter(1, 4) = None, role: RoleConverter = None
     ):
         """See current bindings, create a binding or remove a binding. Bindings between a role and a level mean that
         the bot automatically assigns that permission level to the users when they are given the role (if it is higher
@@ -348,7 +348,7 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(4)
-    async def promote(self, ctx, member: MemberConverter):
+    async def promote(self, ctx : commands.Context, member: MemberConverter):
         """Promote a member by one on the Necrobot hierarchy scale. Gaining access to additional commands.
 
         {usage}
@@ -363,7 +363,7 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(4)
-    async def demote(self, ctx, member: MemberConverter):
+    async def demote(self, ctx : commands.Context, member: MemberConverter):
         """Demote a member by one on the Necrobot hierarchy scale. Losing access to certain commands.
 
         {usage}
@@ -379,7 +379,7 @@ class Server(commands.Cog):
     @commands.group(invoke_without_command=True)
     @has_perms(4)
     async def automod(
-        self, ctx, *mentions: Union[MemberConverter, discord.TextChannel, RoleConverter]
+        self, ctx : commands.Context, *mentions: Union[MemberConverter, discord.TextChannel, RoleConverter]
     ):
         """Used to manage the list of channels and user ignored by the bot's automoderation system. If no mentions are
         given it will print out the list of ignored Users (**U**) and the list of ignored Channels (**C**). The automoderation
@@ -440,7 +440,7 @@ class Server(commands.Cog):
     @automod.command(name="channel")
     @has_perms(4)
     async def automod_channel(
-        self, ctx, channel: Union[discord.TextChannel, str] = None
+        self, ctx : commands.Context, channel: Union[discord.TextChannel, str] = None
     ):
         """Sets the automoderation channel to [channel], [channel] argument should be a channel mention. All the
         auto-moderation related messages will be sent there.
@@ -472,7 +472,7 @@ class Server(commands.Cog):
     @commands.command()
     @has_perms(4)
     async def ignore(
-        self, ctx, *mentions: Union[MemberConverter, discord.TextChannel, RoleConverter]
+        self, ctx : commands.Context, *mentions: Union[MemberConverter, discord.TextChannel, RoleConverter]
     ):
         """Used to manage the list of channels and user ignored by the bot's command system. If no mentions are
         given it will print out the list of ignored Users (**U**) and the list of ignored Channels (**C**). Being ignored
@@ -544,7 +544,7 @@ class Server(commands.Cog):
 
     @commands.command(aliases=["setting"])
     @has_perms(4)
-    async def settings(self, ctx):
+    async def settings(self, ctx : commands.Context):
         """Creates a rich embed of the server settings
 
         {usage}"""
@@ -614,7 +614,7 @@ class Server(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @has_perms(4)
-    async def welcome(self, ctx, *, message: str = ""):
+    async def welcome(self, ctx : commands.Context, *, message: str = ""):
         """Sets the message that will be sent to the designated channel everytime a member joins the server. You
         can use special keywords to replace certain words by stuff like the name of the member or a mention.
         List of keywords:
@@ -636,12 +636,7 @@ class Server(commands.Cog):
             await ctx.send(":white_check_mark: | Welcome message reset and disabled")
         else:
             try:
-                test = message.format(
-                    member=ctx.author,
-                    server=ctx.guild.name,
-                    mention=ctx.author.mention,
-                    name=ctx.author.name,
-                    id=ctx.author.id,
+                test = message.format(build_format_dict(guild=ctx.guild, member=ctx.author)
                 )
                 await ctx.send(
                     f":white_check_mark: | Your server's welcome message will be: \n{test}"
@@ -655,7 +650,7 @@ class Server(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @has_perms(4)
-    async def farewell(self, ctx, *, message: str = ""):
+    async def farewell(self, ctx : commands.Context, *, message: str = ""):
         """Sets the message that will be sent to the designated channel everytime a member leaves the server. You
         can use special keywords to replace certain words by stuff like the name of the member or a mention.
         List of keywords:
@@ -676,13 +671,7 @@ class Server(commands.Cog):
             await ctx.send(":white_check_mark: | Farewell message reset and disabled")
         else:
             try:
-                test = message.format(
-                    member=ctx.author,
-                    server=ctx.guild.name,
-                    mention=ctx.author.mention,
-                    name=ctx.author.name,
-                    id=ctx.author.id,
-                )
+                test = message.format(build_format_dict(guild=ctx.guild, member=ctx.author)
                 await ctx.send(
                     f":white_check_mark: | Your server's farewell message will be: \n{test}"
                 )
@@ -693,7 +682,7 @@ class Server(commands.Cog):
 
         await self.bot.db.update_farewell_message(ctx.guild.id, message)
 
-    async def channel_set(self, ctx, channel):
+    async def channel_set(self, ctx : commands.Context, channel):
         if not channel:
             await self.bot.db.update_greeting_channel(ctx.guild.id)
             await ctx.send(
@@ -708,7 +697,7 @@ class Server(commands.Cog):
 
     @welcome.command(name="channel")
     @has_perms(4)
-    async def welcome_channel(self, ctx, channel: discord.TextChannel = 0):
+    async def welcome_channel(self, ctx : commands.Context, channel: discord.TextChannel = 0):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention/name/id. The welcome
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use
         the same channel, calling the command with both parent commands but different channel will not make
@@ -724,7 +713,7 @@ class Server(commands.Cog):
 
     @farewell.command(name="channel")
     @has_perms(4)
-    async def farewell_channel(self, ctx, channel: discord.TextChannel = 0):
+    async def farewell_channel(self, ctx : commands.Context, channel: discord.TextChannel = 0):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention. The welcome
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use
         the same channel, calling the command with both parent commands but different channel will not make
@@ -740,7 +729,7 @@ class Server(commands.Cog):
 
     @commands.command(name="prefix")
     @has_perms(4)
-    async def prefix(self, ctx, *, prefix=""):
+    async def prefix(self, ctx : commands.Context, *, prefix=""):
         r"""Sets the bot to only respond to the given prefix. If no prefix is given it will reset it to NecroBot's deafult
         list of prefixes: `n!`, `N!` or `@NecroBot `. The prefix can't be longer than 15 characters.
 
@@ -766,7 +755,7 @@ class Server(commands.Cog):
 
     @commands.command(name="auto-role")
     @has_perms(4)
-    async def auto_role(self, ctx, role: RoleConverter = 0, time: TimeConverter = 0):
+    async def auto_role(self, ctx : commands.Context, role: RoleConverter = 0, time: TimeConverter = 0):
         """Sets the auto-role for this server to the given role. Auto-role will assign the role to the member when they join.
         The following times can be used: days (d), hours (h), minutes (m), seconds (s).
 
@@ -794,7 +783,7 @@ class Server(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @has_perms(4)
-    async def broadcast(self, ctx):
+    async def broadcast(self, ctx : commands.Context):
         """See all the broadcasts currently set up on the server. Root command for setting up other broadcasts
 
         {usage}
@@ -996,7 +985,7 @@ class Server(commands.Cog):
 
     @broadcast.command(name="delete")
     @has_perms(4)
-    async def broadcast_del(self, ctx, broadcast_id: int):
+    async def broadcast_del(self, ctx : commands.Context, broadcast_id: int):
         """Delete a broadcast permanently
 
         {usage}
@@ -1015,7 +1004,7 @@ class Server(commands.Cog):
 
     @broadcast.command(name="toggle")
     @has_perms(4)
-    async def broadcast_toggle(self, ctx, broadcast_id: int):
+    async def broadcast_toggle(self, ctx : commands.Context, broadcast_id: int):
         """Toggle a broadcast on/off. Turning a broadcast off retains the data but stops the message
         from broadcasting.
 
@@ -1040,7 +1029,7 @@ class Server(commands.Cog):
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
-    async def giveme(self, ctx, *, role: RoleConverter = None):
+    async def giveme(self, ctx : commands.Context, *, role: RoleConverter = None):
         """Gives the user the role if it is part of this Server's list of self assignable roles. If the user already
         has the role it will remove it. **Roles names are case sensitive** If no role name is given then it will list
         the self-assignable roles for the server
@@ -1082,7 +1071,7 @@ class Server(commands.Cog):
 
     @giveme.command(name="add")
     @has_perms(4)
-    async def giveme_add(self, ctx, *, role: RoleConverter):
+    async def giveme_add(self, ctx : commands.Context, *, role: RoleConverter):
         """Adds [role] to the list of the server's self assignable roles.
 
         {usage}
@@ -1099,7 +1088,7 @@ class Server(commands.Cog):
 
     @giveme.command(name="delete")
     @has_perms(4)
-    async def giveme_delete(self, ctx, *, role: RoleConverter):
+    async def giveme_delete(self, ctx : commands.Context, *, role: RoleConverter):
         """Removes [role] from the list of the server's self assignable roles.
 
         {usage}
@@ -1117,7 +1106,7 @@ class Server(commands.Cog):
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @has_perms(4)
-    async def starboard(self, ctx, channel: discord.TextChannel = None):
+    async def starboard(self, ctx : commands.Context, channel: discord.TextChannel = None):
         """Sets a channel for the starboard messages, required in order for starboard to be enabled. Call the command
         without a channel to disable starboard.
 
@@ -1139,7 +1128,7 @@ class Server(commands.Cog):
 
     @starboard.command(name="limit")
     @has_perms(4)
-    async def starboard_limit(self, ctx, limit: int):
+    async def starboard_limit(self, ctx : commands.Context, limit: int):
         """Sets the amount of stars required to the given intenger. Must be more than 0.
 
         {usage}
@@ -1157,7 +1146,7 @@ class Server(commands.Cog):
 
     @starboard.command(name="force")
     @has_perms(3)
-    async def starboard_force(self, ctx, message_id: int):
+    async def starboard_force(self, ctx : commands.Context, message_id: int):
         """Allows to manually star a message that either has failed to be sent to starboard or doesn't
         have the amount of stars required.
 
@@ -1190,7 +1179,7 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(3)
-    async def poll(self, ctx, channel: WritableChannelConverter, *, message):
+    async def poll(self, ctx : commands.Context, channel: WritableChannelConverter, *, message):
         """Create a reaction poll for your server in the specified channel. This will also ask you to specify a
         maximum number of reactions. This number will limit how many options users can vote for.
 
@@ -1224,7 +1213,7 @@ class Server(commands.Cog):
         )
 
     @commands.command()
-    async def results(self, ctx):
+    async def results(self, ctx : commands.Context):
         """Get the results of a poll
 
         {usage}

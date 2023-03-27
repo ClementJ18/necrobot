@@ -34,7 +34,7 @@ class Utilities(commands.Cog):
     #######################################################################
 
     @commands.command()
-    async def calc(self, ctx, *, equation: str):
+    async def calc(self, ctx : commands.Context, *, equation: str):
         """Evaluates a pythonics mathematical equation, use the following to build your mathematical equations:
         `*` - for multiplication
         `+` - for additions
@@ -60,7 +60,7 @@ class Utilities(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def serverinfo(self, ctx):
+    async def serverinfo(self, ctx : commands.Context):
         """Returns a rich embed of the server's information.
 
         {usage}"""
@@ -99,7 +99,7 @@ class Utilities(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def avatar(self, ctx, *, user: MemberConverter = None):
+    async def avatar(self, ctx : commands.Context, *, user: MemberConverter = None):
         """Returns a link to the given user's profile pic
 
         {usage}
@@ -113,7 +113,7 @@ class Utilities(commands.Cog):
         await ctx.send(embed=discord.Embed().set_image(url=avatar))
 
     @commands.command()
-    async def today(self, ctx, choice: str = None, date: str = None):
+    async def today(self, ctx : commands.Context, choice: str = None, date: str = None):
         """Creates a rich information about events/deaths/births that happened today or any day you indicate using the
         `dd/mm` format. The choice argument can be either `events`, `deaths` or `births`.
 
@@ -195,7 +195,7 @@ class Utilities(commands.Cog):
         await paginate(ctx, res["data"][choice], 5, embed_maker)
 
     @commands.group(invoke_without_command=True)
-    async def remindme(self, ctx, *, message):
+    async def remindme(self, ctx : commands.Context, *, message):
         """Creates a reminder in seconds. The following times can be used: days (d),
         hours (h), minutes (m), seconds (s). You can also pass a timestamp to be reminded
         at a certain date in the format "YYYY/MM/DD HH:MM". You can omit either sides if you
@@ -236,7 +236,7 @@ class Utilities(commands.Cog):
         await ctx.send(f":white_check_mark: | I will remind you of that on **{stamp}**")
 
     @remindme.command(name="delete")
-    async def remindme_delete(self, ctx, reminder_id: int):
+    async def remindme_delete(self, ctx : commands.Context, reminder_id: int):
         """Cancels a reminder based on its id on the reminder list. You can check out the id of each
         reminder using `remindme list`.
 
@@ -256,7 +256,7 @@ class Utilities(commands.Cog):
         await ctx.send(":white_check_mark: | Reminder cancelled")
 
     @remindme.command(name="list")
-    async def remindme_list(self, ctx, user: MemberConverter = None):
+    async def remindme_list(self, ctx : commands.Context, user: MemberConverter = None):
         """List all the reminder you currently have in necrobot's typical paginator. All the reminders include their
         position on the remindme list which can be given to `remindme delete` to cancel a reminder.
 
@@ -301,7 +301,7 @@ class Utilities(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
-    async def q(self, ctx):
+    async def q(self, ctx : commands.Context):
         """Displays the content of the queue at the moment. Queue are shortlive instances, do not use them to
         hold data for extended periods of time. A queue should atmost only last a couple of days.
 
@@ -329,7 +329,7 @@ class Utilities(commands.Cog):
     @q.command(name="start")
     @commands.guild_only()
     @has_perms(2)
-    async def q_start(self, ctx):
+    async def q_start(self, ctx : commands.Context):
         """Starts a queue, if there is already an ongoing queue it will fail. The ongoing queue must be cleared first
         using `{pre}q clear`.
 
@@ -343,7 +343,7 @@ class Utilities(commands.Cog):
     @q.command(name="end")
     @commands.guild_only()
     @has_perms(2)
-    async def q_end(self, ctx):
+    async def q_end(self, ctx : commands.Context):
         """Ends a queue but does not clear it. Users will no longer be able to use `{pre}q me`
 
         {usage}"""
@@ -355,7 +355,7 @@ class Utilities(commands.Cog):
     @q.command(name="clear")
     @commands.guild_only()
     @has_perms(2)
-    async def q_clear(self, ctx):
+    async def q_clear(self, ctx : commands.Context):
         """Ends a queue and clears it. Users will no longer be able to add themselves and the content of the queue will be
         emptied. Use it in order to start a new queue
 
@@ -368,7 +368,7 @@ class Utilities(commands.Cog):
 
     @q.command(name="me")
     @commands.guild_only()
-    async def q_me(self, ctx):
+    async def q_me(self, ctx : commands.Context):
         """Queue the user that used the command to the current queue. Will fail if queue has been ended or cleared.
 
         {usage}"""
@@ -386,7 +386,7 @@ class Utilities(commands.Cog):
     @q.command(name="next")
     @commands.guild_only()
     @has_perms(2)
-    async def q_next(self, ctx):
+    async def q_next(self, ctx : commands.Context):
         """Mentions the next user and the one after that so they can get ready.
 
         {usage}"""
@@ -405,7 +405,7 @@ class Utilities(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @leaderboard_enabled()
-    async def leaderboard(self, ctx):
+    async def leaderboard(self, ctx : commands.Context):
         """Base command for the leaderboard, a fun system built for servers to be able to have their own arbitrary
         point system.
 
@@ -444,7 +444,7 @@ class Utilities(commands.Cog):
 
     @leaderboard.command(name="message")
     @has_perms(4)
-    async def leaderboard_message(self, ctx, *, message: str = ""):
+    async def leaderboard_message(self, ctx : commands.Context, *, message: str = ""):
         """Enable the leaderboard and set a message. (Permission level of 4+)
 
         {usage}
@@ -465,7 +465,7 @@ class Utilities(commands.Cog):
     @leaderboard.command(name="symbol")
     @has_perms(4)
     @leaderboard_enabled()
-    async def leaderboard_symbol(self, ctx, *, symbol):
+    async def leaderboard_symbol(self, ctx : commands.Context, *, symbol):
         """Change the symbol for your points (Permission level of 4+)
 
         {usage}
@@ -482,7 +482,7 @@ class Utilities(commands.Cog):
     @leaderboard.command(name="award")
     @has_perms(2)
     @leaderboard_enabled()
-    async def leaderboard_award(self, ctx, user: MemberConverter, points: int):
+    async def leaderboard_award(self, ctx : commands.Context, user: MemberConverter, points: int):
         """Add remove some points. (Permission level of 2+)
 
         {usage}
@@ -500,7 +500,7 @@ class Utilities(commands.Cog):
             await ctx.send(f"{user.mention}, {points} {symbol} has been taken from you")
 
     @commands.command()
-    async def sun(self, ctx, city: str, date: str = None):
+    async def sun(self, ctx : commands.Context, city: str, date: str = None):
         """Get the sunrise and sunset for today based on a city, with an
         optional date in DD/MM/YYYY
 
@@ -549,7 +549,7 @@ class Utilities(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
-    async def giveaway(self, ctx, winners: int, *, time_string: str):
+    async def giveaway(self, ctx : commands.Context, winners: int, *, time_string: str):
         """Start a giveaway that will last for the specified time, after that time a number of winners specified
         with the [winners] argument will be selected. The following times can be used: days (d),
         hours (h), minutes (m), seconds (s).
@@ -623,7 +623,7 @@ class Utilities(commands.Cog):
 
     @giveaway.command(name="list")
     @commands.guild_only()
-    async def giveaway_list(self, ctx):
+    async def giveaway_list(self, ctx : commands.Context):
         """Get a list of all current giveaways in this server
 
         {usage}"""
@@ -655,7 +655,7 @@ class Utilities(commands.Cog):
 
     @giveaway.command(name="cancel")
     @commands.guild_only()
-    async def giveaway_cancel(self, ctx, msg_id: int):
+    async def giveaway_cancel(self, ctx : commands.Context, msg_id: int):
         """Cancel an ongoing giveaway, see `giveaway list` for a list of giveaways and their ID's
 
         {usage}
@@ -701,7 +701,7 @@ class Utilities(commands.Cog):
 
     @commands.command()
     @commands.max_concurrency(1)
-    async def shortcuts(self, ctx, *, new_shortcuts):
+    async def shortcuts(self, ctx : commands.Context, *, new_shortcuts):
         """Customise your edain shortcuts. Pass a mapping of shortcuts to replace. At
         the moment this is only available for the english version of Edain and only for 
         a single version. Current version: 4.5.5

@@ -153,7 +153,7 @@ class NecroBot(commands.Bot):
         self.loop.create_task(self.meta.load_cache())
         self.queued_posts = asyncio.Queue()
 
-    async def invoke(self, ctx):
+    async def invoke(self, ctx : commands.Context):
         if (
             self.maintenance
             and ctx.command is not None

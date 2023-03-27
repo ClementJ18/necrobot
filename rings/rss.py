@@ -160,7 +160,7 @@ class RSS(commands.Cog):
     @commands.group(invoke_without_command=True, aliases=["yt"])
     @has_perms(3)
     async def youtube(
-        self, ctx, youtube: str = None, *, channel: WritableChannelConverter = None
+        self, ctx : commands.Context, youtube: str = None, *, channel: WritableChannelConverter = None
     ):
         """Add/edit a youtube stream. As long as you provide a channel, the stream will be set to that
         channelYou can simply pass a channel URL for the ID to be retrieved.
@@ -227,7 +227,7 @@ class RSS(commands.Cog):
 
     @youtube.command(name="delete")
     @has_perms(3)
-    async def youtube_delete(self, ctx, *, youtuber_name):
+    async def youtube_delete(self, ctx : commands.Context, *, youtuber_name):
         """This subcommand allows you to unsubscribe from a youtube channel based on the name
 
         {usage}
@@ -250,7 +250,7 @@ class RSS(commands.Cog):
 
     @youtube.command(name="filters")
     @has_perms(3)
-    async def youtube_filters(self, ctx, youtuber_name: str, *, filters: str = ""):
+    async def youtube_filters(self, ctx : commands.Context, youtuber_name: str, *, filters: str = ""):
         """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted.
         The filter itself is very rudimentary but will work so that any video that has exactly these words (in
         any case) in that order in the title will be posted. You can clear filters by calling this command with just
@@ -315,7 +315,7 @@ class RSS(commands.Cog):
     @commands.group(invoke_without_command=True)
     @has_perms(3)
     async def twitch(
-        self, ctx, twitch: str = None, *, channel: WritableChannelConverter = None
+        self, ctx : commands.Context, twitch: str = None, *, channel: WritableChannelConverter = None
     ):
         """Add/edit twitch streams. Simply provide a channel name or url to get started
 
@@ -361,7 +361,7 @@ class RSS(commands.Cog):
 
     @twitch.command(name="delete")
     @has_perms(3)
-    async def twitch_delete(self, ctx, *, twitch_name):
+    async def twitch_delete(self, ctx : commands.Context, *, twitch_name):
         """This subcommand allows you to unsubscribe from a twitch channel based on the name
 
         {usage}
@@ -384,7 +384,7 @@ class RSS(commands.Cog):
 
     @twitch.command(name="filters")
     @has_perms(3)
-    async def twitch_filters(self, ctx, twitch_name: str, *, filters: str = ""):
+    async def twitch_filters(self, ctx : commands.Context, twitch_name: str, *, filters: str = ""):
         """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted.
         The filter itself is very rudimentary but will work so that any video that has exactly these words (in
         any case) in that order in the title will be posted. You can clear filters by calling this command with just

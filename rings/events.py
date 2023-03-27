@@ -2,7 +2,7 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError
+from rings.utils.utils import BotError, build_format_dict
 from rings.db import DatabaseError
 from rings.utils.ui import FightError
 
@@ -126,7 +126,7 @@ class Events(commands.Cog):
     #######################################################################
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(self, ctx : commands.Context, error):
         """Catches error and sends a message to the user that caused the error with a helpful message."""
         msg = None
         error = getattr(error, "original", error)
@@ -293,7 +293,7 @@ class Events(commands.Cog):
             await self.bot.db.update_permission(after.owner.id, after.id, update=5)
 
     @commands.Cog.listener()
-    async def on_command(self, ctx):
+    async def on_command(self, ctx : commands.Context):
         try:
             can_run = await ctx.command.can_run(ctx) and ctx.command.enabled
         except commands.CheckFailure:
@@ -484,13 +484,8 @@ class Events(commands.Cog):
                     f":eight_pointed_black_star: | {member.mention}. **You are not welcome here, disturber of the peace**"
                 )
             else:
-                message = message.format(
-                    member=member,
-                    server=member.guild.name,
-                    mention=member.mention,
-                    name=member.name,
-                    id=member.id,
-                )
+                
+                message = message.format(build_format_dict(member=member))
                 try:
                     await channel.send(
                         message, allowed_mentions=discord.AllowedMentions()
@@ -563,13 +558,7 @@ class Events(commands.Cog):
             if member.id in self.bot.settings["blacklist"]:
                 await channel.send(":eight_pointed_black_star: | **...**")
             else:
-                message = message.format(
-                    member=member,
-                    server=member.guild.name,
-                    mention=member.mention,
-                    name=member.name,
-                    id=member.id,
-                )
+                message = message.format(build_format_dict(member=member))
                 try:
                     await channel.send(
                         message, allowed_mentions=discord.AllowedMentions()

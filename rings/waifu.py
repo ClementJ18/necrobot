@@ -18,7 +18,7 @@ class Flowers(commands.Cog):
     ## Cog Functions
     #######################################################################
 
-    def cog_check(self, ctx):
+    def cog_check(self, ctx : commands.Context):
         if ctx.guild:
             return True
 
@@ -70,7 +70,7 @@ class Flowers(commands.Cog):
     @commands.group(invoke_without_command=True)
     @has_perms(3)
     async def flowers(
-        self, ctx, member: discord.Member, amount: int, *, reason: str = None
+        self, ctx : commands.Context, member: discord.Member, amount: int, *, reason: str = None
     ):
         """Award flowers to a user, can be a negative value to take away flowers.
 
@@ -101,7 +101,7 @@ class Flowers(commands.Cog):
 
     @flowers.command(name="symbol")
     @has_perms(4)
-    async def flowers_symbol(self, ctx, symbol: str):
+    async def flowers_symbol(self, ctx : commands.Context, symbol: str):
         """Change the symbol for the flowers for your server. Max 50 char.
 
         {usage}
@@ -116,7 +116,7 @@ class Flowers(commands.Cog):
         await ctx.send(":white_check_mark: | Updated!")
 
     @flowers.command(name="balance")
-    async def flowers_balance(self, ctx, user: discord.Member = None):
+    async def flowers_balance(self, ctx : commands.Context, user: discord.Member = None):
         """Check your or a user's balance of flowers
 
         {usage}
@@ -172,7 +172,7 @@ class Flowers(commands.Cog):
         self.bot.events[msg.id] = {"users": [], "amount": amount}
 
     @commands.command()
-    async def give(self, ctx, member: discord.Member, amount: FlowerConverter):
+    async def give(self, ctx : commands.Context, member: discord.Member, amount: FlowerConverter):
         """Transfer flowers from one user to another.
 
         {usage}

@@ -41,7 +41,7 @@ class Misc(commands.Cog):
 
     @commands.command()
     @commands.cooldown(3, 5, BucketType.channel)
-    async def cat(self, ctx):
+    async def cat(self, ctx : commands.Context):
         """Posts a random cat picture from random.cat
 
         {usage}"""
@@ -64,7 +64,7 @@ class Misc(commands.Cog):
                     ) from e
 
     @commands.command()
-    async def dog(self, ctx):
+    async def dog(self, ctx : commands.Context):
         """Posts a random dog picture from random.dog
 
         {usage}"""
@@ -76,7 +76,7 @@ class Misc(commands.Cog):
                 await ctx.send(embed=discord.Embed().set_image(url=res["url"]))
 
     @commands.command()
-    async def fight(self, ctx, *, tributes):
+    async def fight(self, ctx : commands.Context, *, tributes):
         """Takes in a list of tributes separated by `,` and simulates a hunger games based on Bransteele's Hunger Game
         Simulator. More than one tribute needs to be supplied. Duplicate names will be supressed.
 
@@ -103,7 +103,7 @@ class Misc(commands.Cog):
 
     @commands.group(invoke_without_command=True, aliases=["matchup"])
     @guild_only(496617962334060545)
-    async def matchups(self, ctx, *, arguments=None):
+    async def matchups(self, ctx : commands.Context, *, arguments=None):
         """Get data about the results of matchups stored in the bot. You can pass either a faction name, a sorting key
         or both.
 
@@ -222,7 +222,7 @@ class Misc(commands.Cog):
     @commands.check_any(
         commands.has_role(497009979857960963), has_perms(6)
     )  # has Admin role on server or is Bot Admin
-    async def matchups_reset(self, ctx):
+    async def matchups_reset(self, ctx : commands.Context):
         """Reset the counters
 
         {usage}
@@ -248,7 +248,7 @@ class Misc(commands.Cog):
     @commands.check_any(
         commands.has_role(497009979857960963), has_perms(6)
     )  # has Admin role on server or is Bot Admin
-    async def matchups_logs(self, ctx, *, args=None):
+    async def matchups_logs(self, ctx : commands.Context, *, args=None):
         """Check who submitted what results, can be filtered using arguments.
 
         user=[user]
@@ -338,7 +338,7 @@ class Misc(commands.Cog):
     @commands.check_any(
         commands.has_role(497009979857960963), has_perms(6)
     )  # has Admin role on server or is Bot Admin
-    async def matchups_delete(self, ctx, log_id: int):
+    async def matchups_delete(self, ctx : commands.Context, log_id: int):
         """Delete a log to remove the entry and remove it from the counters. Get the log_id
         from the `matchup logs` command.
 
@@ -367,7 +367,7 @@ class Misc(commands.Cog):
         await ctx.send(":white_check_mark: | Log removed, counters adjusted.")
 
     # @commands.command()
-    async def pdf(self, ctx, *, doi):
+    async def pdf(self, ctx : commands.Context, *, doi):
         """Get a PDF from a doi using sci-hub
 
         {usage}

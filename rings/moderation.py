@@ -27,7 +27,7 @@ class Moderation(commands.Cog):
     ## Cog Functions
     #######################################################################
 
-    def cog_check(self, ctx):
+    def cog_check(self, ctx : commands.Context):
         if ctx.guild:
             return True
 
@@ -37,7 +37,7 @@ class Moderation(commands.Cog):
     ## Functions
     #######################################################################
 
-    async def mute_task(self, ctx, user, role, time):
+    async def mute_task(self, ctx : commands.Context, user, role, time):
         await asyncio.sleep(time)
 
         if user.id in self.bot.guild_data[user.guild.id]["mutes"]:
@@ -63,7 +63,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @has_perms(3)
     @commands.bot_has_permissions(ban_members=True)
-    async def ban(self, ctx, soft : Optional[Literal["soft"]], user: Union[MemberConverter, int], *, reason=None):
+    async def ban(self, ctx : commands.Context, soft : Optional[Literal["soft"]], user: Union[MemberConverter, int], *, reason=None):
         """Ban a user, sending them a message and add the message as a reason
 
         {usage}
@@ -108,7 +108,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @has_perms(1)
     @commands.bot_has_permissions(manage_nicknames=True)
-    async def rename(self, ctx, user: MemberConverter, *, nickname=None):
+    async def rename(self, ctx : commands.Context, user: MemberConverter, *, nickname=None):
         """Nicknames a user, use to clean up offensive or vulgar names or just to prank your friends. Will return
         an error message if the user cannot be renamed due to permission issues.
 
@@ -154,7 +154,7 @@ class Moderation(commands.Cog):
     @has_perms(2)
     @requires_mute_role()
     @commands.bot_has_permissions(manage_roles=True)
-    async def mute(self, ctx, user: MemberConverter, time: TimeConverter = None):
+    async def mute(self, ctx : commands.Context, user: MemberConverter, time: TimeConverter = None):
         """Blocks the user from writing in channels by giving it the server's mute role. Make sure an admin has set a
         mute role using `{pre}mute role`. The user can either be muted for the given amount of seconds or indefinitely
         if no amount is given. The following times can be used: days (d), hours (h), minutes (m), seconds (s).
@@ -210,7 +210,7 @@ class Moderation(commands.Cog):
 
     @mute.group(name="role", invoke_without_command=True)
     @has_perms(4)
-    async def mute_role(self, ctx, *, role: RoleConverter = 0):
+    async def mute_role(self, ctx : commands.Context, *, role: RoleConverter = 0):
         """Sets the mute role for this server to [role], this is used for the `mute` command, it is the role assigned by
         the command to the user. Make sure to spell the role correctly, the role name is case sensitive. It is up to the server
         authorities to set up the proper permissions for the chosen mute role. Once the role is set up it can be renamed and
@@ -236,7 +236,7 @@ class Moderation(commands.Cog):
     @mute_role.command(name="create")
     @has_perms(4)
     @commands.bot_has_permissions(manage_roles=True, manage_channels=True)
-    async def mute_role_create(self, ctx, *, name: str = None):
+    async def mute_role_create(self, ctx : commands.Context, *, name: str = None):
         """Creates the mute role for you if not already set and updates the channels where there are no overwrite
         already set for the mute role. This means any channel with overwrites already set will be skipped over.
 
@@ -282,7 +282,7 @@ class Moderation(commands.Cog):
     @has_perms(2)
     @requires_mute_role()
     @commands.bot_has_permissions(manage_roles=True)
-    async def unmute(self, ctx, user: MemberConverter):
+    async def unmute(self, ctx : commands.Context, user: MemberConverter):
         """Unmutes a user by removing the mute role, allowing them once again to write in text channels.
 
         {usage}
@@ -321,7 +321,7 @@ class Moderation(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @has_perms(1)
-    async def warn(self, ctx, user: MemberConverter, *, message: str):
+    async def warn(self, ctx : commands.Context, user: MemberConverter, *, message: str):
         """Adds the given message as a warning to the user's NecroBot profile
 
         {usage}
@@ -367,7 +367,7 @@ class Moderation(commands.Cog):
 
     @warn.command(name="delete")
     @has_perms(3)
-    async def warn_delete(self, ctx, warning_id: int):
+    async def warn_delete(self, ctx : commands.Context, warning_id: int):
         """Removes the warning from the user's NecroBot system based on the given warning id.
 
         {usage}
@@ -395,7 +395,7 @@ class Moderation(commands.Cog):
             await automod.send(embed=embed)
 
     @warn.command(name="list")
-    async def warn_list(self, ctx, user: MemberConverter = None):
+    async def warn_list(self, ctx : commands.Context, user: MemberConverter = None):
         """List a user's warnings
 
         {usage}
@@ -434,7 +434,7 @@ class Moderation(commands.Cog):
         await paginate(ctx, warnings, 5, embed_maker)
 
     @warn.command(name="get")
-    async def warn_get(self, ctx, warn_id: int):
+    async def warn_get(self, ctx : commands.Context, warn_id: int):
         """Get the information for a specific warning
 
         {usage}
@@ -476,7 +476,7 @@ class Moderation(commands.Cog):
 
     @warn.command(name="pm")
     @has_perms(4)
-    async def warn_pm(self, ctx, pm: bool):
+    async def warn_pm(self, ctx : commands.Context, pm: bool):
         """Defines the setting on whether or not the user that is warned will be DM'd the warning. They
         will be DM'd if the setting is True. Disabled by default.
 
@@ -551,7 +551,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @has_perms(3)
     async def speak(
-        self, ctx, channel: Union[discord.Thread, discord.TextChannel], *, message: str
+        self, ctx : commands.Context, channel: Union[discord.Thread, discord.TextChannel], *, message: str
     ):
         """Send the given message to the channel mentioned by mention or name. Cannot send to other servers.
 
@@ -573,7 +573,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @has_perms(4)
-    async def disable(self, ctx, name: str = None):
+    async def disable(self, ctx : commands.Context, name: str = None):
         """Disables a command or cog. Once a command or cog is disabled only admins can use it. To re-enable a 
         command or cog call the `enable` command on it. Disabling cogs works as a sort of "select all"
         button which means that all commands will be disabled and individual commands can then be enabled separatly for
@@ -620,7 +620,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @has_perms(4)
-    async def enable(self, ctx, name: str = None):
+    async def enable(self, ctx : commands.Context, name: str = None):
         """Enable a command or cog. Once a command or cog is enabled everybody can use it given no other restrictions such
         as blacklisted or ignored. To disable a command or cog call the `disable` comannd on it. Enabling cogs works as a
         sort of "select all" button which means that all commands will be enabled and individual commands can then be disabled

@@ -18,7 +18,7 @@ class Tags(commands.Cog):
     ## Functions
     #######################################################################
 
-    async def is_tag_owner(self, ctx, tag):
+    async def is_tag_owner(self, ctx : commands.Context, tag):
         if ctx.author.id == tag["owner_id"]:
             return True
 
@@ -33,7 +33,7 @@ class Tags(commands.Cog):
 
     @commands.group(invoke_without_command=True, aliases=["t", "tags"])
     @commands.guild_only()
-    async def tag(self, ctx, tag: Tag, *tag_args):
+    async def tag(self, ctx : commands.Context, tag: Tag, *tag_args):
         """The base of the tag system. Also used to summoned tags through the [tag] argument. Tags can also
         be called by mentionning the bot, however tags that need arguments will not work with this. In addition,
         multi word tags need to be wraped in quotation marks when being created.
@@ -44,7 +44,7 @@ class Tags(commands.Cog):
         `{pre}tag necro` - prints the content of the tag 'necro' given that it exists on this server"""
         await self._tag(ctx, tag, *tag_args)
 
-    async def _tag(self, ctx, tag: Tag, *tag_args):
+    async def _tag(self, ctx : commands.Context, tag: Tag, *tag_args):
         arg_dict = build_format_dict(guild=ctx.guild, member=ctx.author, channel=ctx.channel)
         arg_dict.update({
             "content": str(ctx.message.content),
@@ -84,7 +84,7 @@ class Tags(commands.Cog):
 
     @tag.command(name="add")
     @commands.guild_only()
-    async def tag_add(self, ctx, tag, *, content):
+    async def tag_add(self, ctx : commands.Context, tag, *, content):
         """Assigns the [text] passed through to the tag named [name]. A few reserved keywords can be used to render the
         tag dynamic. If a tag starts with `cmd:` it will be interpreted as a command.
 
@@ -152,7 +152,7 @@ class Tags(commands.Cog):
 
     @tag.group(name="delete", invoke_without_command=True)
     @commands.guild_only()
-    async def tag_delete(self, ctx, *, tag: Tag):
+    async def tag_delete(self, ctx : commands.Context, *, tag: Tag):
         """Deletes the tag [tag] if the users calling the command is its owner or a Server Admin (4+)
 
         {usage}
@@ -172,7 +172,7 @@ class Tags(commands.Cog):
 
     @tag_delete.command(name="alias")
     @commands.guild_only()
-    async def tag_delete_alias(self, ctx, *, alias: str):
+    async def tag_delete_alias(self, ctx : commands.Context, *, alias: str):
         """Remove the alias to a tag. Only Server Admins and the tag owner can remove aliases and they can
         remove any aliases.
 
@@ -199,7 +199,7 @@ class Tags(commands.Cog):
 
     @tag.command(name="edit")
     @commands.guild_only()
-    async def tag_edit(self, ctx, tag: Tag, *, content):
+    async def tag_edit(self, ctx : commands.Context, tag: Tag, *, content):
         """Replaces the content of [tag] with the [text] given. Basically works as a delete + create function
         but without the risk of losing the tag name ownership and counts.
 
@@ -220,7 +220,7 @@ class Tags(commands.Cog):
 
     @tag.command(name="raw")
     @commands.guild_only()
-    async def tag_raw(self, ctx, *, tag: Tag):
+    async def tag_raw(self, ctx : commands.Context, *, tag: Tag):
         """Returns the unformatted content of the tag [tag] so other users can see how it works.
 
         {usage}
@@ -233,7 +233,7 @@ class Tags(commands.Cog):
 
     @tag.command(name="list")
     @commands.guild_only()
-    async def tag_list(self, ctx):
+    async def tag_list(self, ctx : commands.Context):
         """Returns the list of tags present on the guild.
 
         {usage}"""
@@ -257,7 +257,7 @@ class Tags(commands.Cog):
 
     @tag.command(name="info")
     @commands.guild_only()
-    async def tag_info(self, ctx, *, tag: Tag):
+    async def tag_info(self, ctx : commands.Context, *, tag: Tag):
         """Returns information on the tag given.
 
         {usage}
@@ -280,7 +280,7 @@ class Tags(commands.Cog):
 
     @tag.command(name="alias")
     @commands.guild_only()
-    async def tag_alias(self, ctx, tag: Tag, *, new_name: str):
+    async def tag_alias(self, ctx : commands.Context, tag: Tag, *, new_name: str):
         """Allows to create an alias for a tag, allowing to call the content of the
         tag by another name without changing the name or editing the content. Alias are
         merely a link, therefore any content updates to the original tag will be reflected

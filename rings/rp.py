@@ -15,13 +15,13 @@ class RP(commands.Cog):
         self.bot = bot
 
 
-    def cog_check(self, ctx):
+    def cog_check(self, ctx : commands.Context):
         if ctx.guild:
             return True
 
         raise commands.CheckFailure("This command cannot be used in private messages.")
 
-    async def _activity(self, ctx, duration, channels):
+    async def _activity(self, ctx : commands.Context, duration, channels):
         def is_active(ch):
             if getattr(ch, "last_message_id", None) is None:
                 return False
@@ -53,7 +53,7 @@ class RP(commands.Cog):
         await paginate(ctx, filtered_channels, 10, embed_maker)
 
     @commands.group(invoke_without_command=True)
-    async def activity(self, ctx, *, duration : str = None):
+    async def activity(self, ctx : commands.Context, *, duration : str = None):
         """Get a list of channels that have had a message in the last amount of time specified.
         The following times can be used: days (d), hours (h), minutes (m), seconds (s).
 
@@ -67,7 +67,7 @@ class RP(commands.Cog):
 
 
     @activity.command(name="ignore")
-    async def activity_ignore(self, ctx, ignored : commands.Greedy[Union[discord.TextChannel, discord.CategoryChannel, discord.Thread]], *, duration : str = None):
+    async def activity_ignore(self, ctx : commands.Context, ignored : commands.Greedy[Union[discord.TextChannel, discord.CategoryChannel, discord.Thread]], *, duration : str = None):
         to_ignore = [ctx.channel.id]
 
         for channel in ignored:
