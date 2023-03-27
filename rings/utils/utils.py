@@ -153,3 +153,38 @@ def default_settings():
         "messages": {},
         "day": 0,
     }
+
+def build_format_dict(*, guild=None, member=None, channel=None):
+    arg_dict = {}
+
+    if guild is not None:
+        arg_dict.update({
+            "server": str(guild),
+            "server.name": str(guild.name),
+            "server.id": str(guild.id),
+            "server.created_at": str(guild.created_at),
+            "server.member_count": str(guild.member_count),
+        })
+
+    if member is not None:
+        arg_dict.update({
+            "member": str(member),
+            "member.display_name": str(member.display_name),
+            "member.name": str(member.name),
+            "member.discriminator": str(member.discriminator),
+            "member.joined_at": str(member.joined_at),
+            "member.id": str(member.id),
+            "member.mention": str(member.mention),
+            "member.created_at": str(member.created_at),
+        })
+
+    if channel is not None:
+        arg_dict.update({
+            "channel": str(channel),
+            "channel.name": str(channel.name),
+            "channel.id": str(channel.id),
+            "channel.topic": str(channel.topic),
+            "channel.mention": str(channel.mention),
+        })
+
+    return arg_dict

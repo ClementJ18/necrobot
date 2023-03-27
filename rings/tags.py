@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError
+from rings.utils.utils import BotError, build_format_dict
 from rings.utils.converters import Tag
 from rings.db import DatabaseError
 from rings.utils.ui import paginate
@@ -45,30 +45,11 @@ class Tags(commands.Cog):
         await self._tag(ctx, tag, *tag_args)
 
     async def _tag(self, ctx, tag: Tag, *tag_args):
-        arg_dict = {
-            "server": str(ctx.guild),
-            "server.name": str(ctx.guild.name),
-            "server.id": str(ctx.guild.id),
-            "server.created_at": str(ctx.guild.created_at),
-            "server.member_count": str(ctx.guild.member_count),
-
-            "member": str(ctx.author),
-            "member.display_name": str(ctx.author.display_name),
-            "member.name": str(ctx.author.name),
-            "member.discriminator": str(ctx.author.discriminator),
-            "member.joined_at": str(ctx.author.joined_at),
-            "member.id": str(ctx.author.id),
-            "member.mention": str(ctx.author.mention),
-            "member.created_at": str(ctx.author.created_at),
-
-            "channel": str(ctx.channel),
-            "channel.name": str(ctx.channel.name),
-            "channel.id": str(ctx.channel.id),
-            "channel.topic": str(ctx.channel.topic),
-            "channel.mention": str(ctx.channel.mention),
-
+        arg_dict = build_format_dict(guild=ctx.guild, member=ctx.author, channel=ctx.channel)
+        arg_dict.update({
             "content": str(ctx.message.content),
-        }
+        })
+
         content = tag["content"]
         for match in re.findall(r'{(\w*)(?:=(.*))?}', content):
             if match[1]:
