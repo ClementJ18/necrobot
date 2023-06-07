@@ -329,3 +329,25 @@ class WritableChannelConverter(commands.TextChannelConverter):
             raise BotError(f"I cannot send messages in {result.mention}")
 
         return result
+    
+class GachaCharacterConverter(commands.Converter):
+    def __init__(self, respect_obtainable=False):
+        self.respect_obtainable = respect_obtainable
+
+    async def convert(self, ctx : commands.Context, argument):
+        char_id = None
+        if argument.isdigit():
+            char_id = int(argument)
+
+        query = await ctx.bot.db.query("SELECT * FROM necrobot.Characters WHERE LOWER(name)=$1 OR id=$2", argument, char_id)
+
+        if not query:
+            query = await ctx.bot.db.query("SELECT * FROM necrobot.Characters WHERE STARTS_WITH(LOWER(name), $1);", argument)
+
+        if not query:
+            raise commands.BadArgument(f"Character **{argument}** could not be found.")
+        
+        if self.respect_obtainable and not query["obtainable"]:
+            raise commands.BadArgument(f"Characters **{query['name']}** cannot currently be added to a banner")
+        
+        return query[0]

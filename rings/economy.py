@@ -233,16 +233,17 @@ class BlackJack(discord.ui.View):
         self.remove_item(self.double_down)
 
     async def on_timeout(self):
-        self.status = "**GAME ABANDONNED**"
-        self.remove_item(self.pass_turn)
-        self.remove_item(self.draw_card)
-        self.remove_item(self.double_down)
-        self.actions.append("**You** timed out")
-        await self.lose()
+        if self.status != "**GAME FINISHED**":
+            self.status = "**GAME ABANDONNED**"
+            self.remove_item(self.pass_turn)
+            self.remove_item(self.draw_card)
+            self.remove_item(self.double_down)
+            self.actions.append("**You** timed out")
+            await self.lose()
 
-        await self.message.edit(
-            embed=self.format_message(), view=self
-        )
+            await self.message.edit(
+                embed=self.format_message(), view=self
+            )
 
 
     async def dealer_turn(self):

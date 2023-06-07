@@ -671,7 +671,7 @@ class Server(commands.Cog):
             await ctx.send(":white_check_mark: | Farewell message reset and disabled")
         else:
             try:
-                test = message.format(build_format_dict(guild=ctx.guild, member=ctx.author)
+                test = message.format(build_format_dict(guild=ctx.guild, member=ctx.author))
                 await ctx.send(
                     f":white_check_mark: | Your server's farewell message will be: \n{test}"
                 )

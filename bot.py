@@ -437,7 +437,7 @@ if __name__ == "__main__":
     except Exception as error:
         tc = traceback.format_exception(type(error), error, error.__traceback__)
         with open("error.log", "w") as f:
-            f.write(str(tc))
+            f.write("\n".join(tc))
 
     finally:
         with open("rings/utils/data/settings.json", "w") as outfile:

@@ -254,8 +254,50 @@ CREATE TABLE necrobot.Flowers(
 
 CREATE TABLE necrobot.FlowersGuild(
     guild_id bigint PRIMARY KEY REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
-    symbol varchar(50) DEFAULT ':cherry_blossom:'
+    symbol varchar(50) DEFAULT ':cherry_blossom:',
+    roll_cost int DEFAULT 50
+);
 
+-- ALTER TABLE necrobot.FlowersGuild ADD COLUMN roll_cost int DEFAULT 50
+
+CREATE TABLE necrobot.Characters(
+    id SERIAL PRIMARY KEY,
+    name text,
+    title text,
+    description text,
+    image_url text,
+    tier int,
+    obtainable boolean,
+    universe text
+);
+
+CREATE TABLE necrobot.Banners(
+    id SERIAL PRIMARY KEY,
+    guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
+    name text,
+    description text,
+    image_url text,
+    ongoing boolean DEFAULT false
+);
+
+CREATE TABLE necrobot.Pity(
+    user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
+    banner_id int REFERENCES necrobot.Banners(id) ON DELETE CASCADE,
+    pity int
+);
+
+CREATE TABLE necrobot.BannerCharacters(
+    banner_id int REFERENCES necrobot.Banners(id) ON DELETE CASCADE,
+    char_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
+    modifier int DEFAULT 1
+);
+
+CREATE TABLE necrobot.RolledCharacters(
+    guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
+    user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
+    char_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
+    level int NOT NULL DEFAULT 1,
+    PRIMARY KEY (guild_id, user_id, char_id)
 );
 
 CREATE TYPE channel_filter_hybrid as (
@@ -267,3 +309,4 @@ CREATE TYPE emote_count_hybrid as (
     reaction varchar(200),
     count int
 );
+

@@ -96,10 +96,15 @@ async def paginate(ctx, entries, page_size, embed_maker, *, timeout=300):
         raise BotError("No entries in this list")
 
     paginator = Paginator(embed_maker, page_size, entries, timeout=timeout)
+
+    if len(entries) == 1:
+        return await ctx.send(embed=paginator.embed_maker(paginator, paginator.get_entry_subset()))
+
     paginator.message = await ctx.send(
         embed=paginator.embed_maker(paginator, paginator.get_entry_subset()),
         view=paginator,
     )
+
     await paginator.wait()
 
 
@@ -112,6 +117,7 @@ class Paginator(discord.ui.View):
         self.index = 0
         self.max_index = max(0, ((len(entries) - 1) // page_size))
         self.page_size = page_size
+        self.message = None
 
     @property
     def page_number(self):
@@ -131,50 +137,44 @@ class Paginator(discord.ui.View):
             self.index * self.page_size : (self.index + 1) * self.page_size
         ]
         return subset[0] if self.page_size == 1 else subset
+    
+    async def change_page(self, interaction, change):
+        if self.index + change > self.max_index:
+            new_change = change - (self.max_index - self.index)
+            return await self.change_page(interaction, new_change)
+        
+        if self.index + change < 0:
+            new_change = self.max_index - (change + self.index)
+            return await self.change_page(interaction, new_change)
+        
+        self.index = self.index + change
+        await interaction.response.edit_message(
+            embed=self.embed_maker(self, self.get_entry_subset()), view=self
+        )
 
-    @discord.ui.button(label="First", style=discord.ButtonStyle.grey)
+    @discord.ui.button(label="-10", style=discord.ButtonStyle.grey)
     async def first_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        self.index = 0
-        await interaction.response.edit_message(
-            embed=self.embed_maker(self, self.get_entry_subset()), view=self
-        )
+        await self.change_page(interaction, -10)
 
-    @discord.ui.button(label="Previous", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="-1", style=discord.ButtonStyle.blurple)
     async def previous_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        if self.index - 1 < 0:
-            self.index = self.max_index
-        else:
-            self.index -= 1
+        await self.change_page(interaction, -1)
 
-        await interaction.response.edit_message(
-            embed=self.embed_maker(self, self.get_entry_subset()), view=self
-        )
-
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="+1", style=discord.ButtonStyle.blurple)
     async def next_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        if self.index + 1 > self.max_index:
-            self.index = 0
-        else:
-            self.index += 1
+        await self.change_page(interaction, 1)
 
-        await interaction.response.edit_message(
-            embed=self.embed_maker(self, self.get_entry_subset()), view=self
-        )
-
-    @discord.ui.button(label="Last", style=discord.ButtonStyle.grey)
+    @discord.ui.button(label="+10", style=discord.ButtonStyle.grey)
     async def last_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        self.index = self.max_index
-        await interaction.response.edit_message(
-            embed=self.embed_maker(self, self.get_entry_subset()), view=self
-        )
+        await self.change_page(interaction, 10)
 
 class FightError(Exception):
     def __init__(self, message, event=None, format_dict=None):
