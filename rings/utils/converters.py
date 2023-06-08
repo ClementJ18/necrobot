@@ -342,7 +342,7 @@ class GachaCharacterConverter(commands.Converter):
         query = await ctx.bot.db.query("SELECT * FROM necrobot.Characters WHERE LOWER(name)=$1 OR id=$2", argument.lower(), char_id)
 
         if not query:
-            query = await ctx.bot.db.query("SELECT * FROM necrobot.Characters WHERE STARTS_WITH(LOWER(name), $1);", argument.lower())
+            query = await ctx.bot.db.query("SELECT * FROM necrobot.Characters WHERE LOWER(name) LIKE $1;", f"%{argument.lower()}%")
 
         if not query:
             raise commands.BadArgument(f"Character **{argument}** could not be found.")
@@ -364,7 +364,7 @@ class GachaBannerConverter(commands.Converter):
         query = await ctx.bot.db.query("SELECT * FROM necrobot.Banners WHERE (LOWER(name)=$1 OR id=$2) AND guild_id = $3", argument.lower(), banner_id, ctx.guild.id)
 
         if not query:
-            query = await ctx.bot.db.query("SELECT * FROM necrobot.Banners WHERE STARTS_WITH(LOWER(name), $1) AND guild_id = $2;", argument.lower(), ctx.guild.id)
+            query = await ctx.bot.db.query("SELECT * FROM necrobot.Banners WHERE WHERE LOWER(name) LIKE $1 AND guild_id = $2;", f"%{argument.lower()}%", ctx.guild.id)
 
         if not query:
             raise commands.BadArgument(f"Banner **{argument}** could not be found.")

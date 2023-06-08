@@ -1,5 +1,7 @@
+import asyncio
 from itertools import groupby
 import json
+import math
 import random
 import discord
 from discord.ext import commands
@@ -13,11 +15,26 @@ from rings.utils.converters import FlowerConverter, GachaBannerConverter, GachaC
 from typing import Literal, Union
 
 
+DUD_TEMPLATES = [
+    {
+        "name": "Bag of Goodies",
+        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116482199466819695/HReach-HealthPack.png",
+        "description": "A bag containing some goodies, good to eat but not for much else.",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
+]
+
+
 class Flowers(commands.Cog):
     """A server specific economy system. Use it to reward/punish users at you heart's content."""
 
     def __init__(self, bot):
         self.bot = bot
+
+        self.DUD_PERCENT = 0.33
 
     #######################################################################
     ## Cog Functions
@@ -121,7 +138,7 @@ class Flowers(commands.Cog):
         return level, exp, threshold
     
     def calculate_weight(self, tier, modifier):
-        return ( 2 * ( 1 + ( 5 - tier ) ) / 5 ** 2 ) * modifier
+        return ( 2 ** ( 1 + ( 5 - tier ) ) ) * modifier
     
     def embed_character(self, character, admin=False):
         embed = discord.Embed(
@@ -134,9 +151,12 @@ class Flowers(commands.Cog):
             embed.set_image(url=character["image_url"])
 
         embed.set_footer(**self.bot.bot_footer)
-        embed.add_field(name="ID", value=character["id"])
+
+        if character.get("id"):
+            embed.add_field(name="ID", value=character["id"])
+    
         embed.add_field(name="Title", value=character["title"])
-        embed.add_field(name="Tier", value=f"{character['tier']*':star:'}")
+        embed.add_field(name="Tier", value=f"{character['tier']*':star:' if character['tier'] else ':fleur_de_lis:'}")
         embed.add_field(name="Origin", value=character["universe"])
     
         if character.get("level"):
@@ -190,6 +210,15 @@ class Flowers(commands.Cog):
             GROUP BY chars.id
             ORDER BY universe ASC, name ASC
         """)
+    
+    def pull(self, characters):
+        duds = [random.choice(DUD_TEMPLATES) for _ in range(math.ceil(len(characters) * self.DUD_PERCENT))]
+        pool = [*characters, *duds]
+        weights = [self.calculate_weight(char["tier"], char["modifier"]) for char in pool]
+
+        pulled_char = dict(random.choices(pool, weights=weights, k=1)[0])
+
+        return pulled_char
 
     #######################################################################
     ## Commands
@@ -732,7 +761,7 @@ class Flowers(commands.Cog):
         mutable_banner = dict(banner)
         mutable_banner["characters"] = [f"{char['name']} ({char['tier']} :star:)" for char in characters]
 
-        view = Confirm()
+        view = Confirm(confirm_msg=None)
         view.message = await ctx.send(f"Roll on this banner for **{data[0]['roll_cost']}** {data[0]['symbol']}?", embed=self.embed_banner(mutable_banner), view=view)
         await view.wait()
         if not view.value:
@@ -750,13 +779,13 @@ class Flowers(commands.Cog):
             banner["id"]
         )
 
-        weights = [self.calculate_weight(char["tier"], char["modifier"]) for char in characters]
-        pulled_char = dict(random.choices(characters, weights=weights, k=1)[0])
-
+        pulled_char = self.pull(characters)
         
-        level = await self.add_characters_to_user(ctx.guild.id, ctx.author.id, pulled_char["id"])
-        pulled_char["level"] = level
+        if pulled_char.get("id"): #not a dud
+            level = await self.add_characters_to_user(ctx.guild.id, ctx.author.id, pulled_char["id"])
+            pulled_char["level"] = level
 
+        await asyncio.sleep(1)
         await view.message.edit(content=f":game_die: | You payed **{data[0]['roll_cost']}** {data[0]['symbol']} and got the following reward:", embed=self.embed_character(pulled_char))
 
     @gacha_roll.command(name="cost")
