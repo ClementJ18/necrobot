@@ -291,7 +291,8 @@ CREATE TABLE necrobot.Pity(
 CREATE TABLE necrobot.BannerCharacters(
     banner_id int REFERENCES necrobot.Banners(id) ON DELETE CASCADE,
     char_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
-    modifier int DEFAULT 1
+    modifier int DEFAULT 1,
+    PRIMARY KEY (banner_id, char_id)
 );
 
 CREATE TABLE necrobot.RolledCharacters(

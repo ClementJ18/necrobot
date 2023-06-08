@@ -132,7 +132,7 @@ class Events(commands.Cog):
         error = getattr(error, "original", error)
 
         if isinstance(error, commands.MissingRequiredArgument):
-            msg = f"Missing required argument: `{error.param.name}`! Check help guide with `n!help {ctx.command.qualified_name}`"
+            msg = f"Missing required argument: `{error.param.name}`! Check help guide with `{ctx.prefix}help {ctx.command.qualified_name}`"
         elif isinstance(
             error,
             (

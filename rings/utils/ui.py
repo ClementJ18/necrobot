@@ -97,7 +97,7 @@ async def paginate(ctx, entries, page_size, embed_maker, *, timeout=300):
 
     paginator = Paginator(embed_maker, page_size, entries, timeout=timeout)
 
-    if len(entries) == 1:
+    if paginator.max_index == 0:
         return await ctx.send(embed=paginator.embed_maker(paginator, paginator.get_entry_subset()))
 
     paginator.message = await ctx.send(
