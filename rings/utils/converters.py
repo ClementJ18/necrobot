@@ -335,19 +335,41 @@ class GachaCharacterConverter(commands.Converter):
         self.respect_obtainable = respect_obtainable
 
     async def convert(self, ctx : commands.Context, argument):
-        char_id = None
+        char_id = 0
         if argument.isdigit():
             char_id = int(argument)
 
-        query = await ctx.bot.db.query("SELECT * FROM necrobot.Characters WHERE LOWER(name)=$1 OR id=$2", argument, char_id)
+        query = await ctx.bot.db.query("SELECT * FROM necrobot.Characters WHERE LOWER(name)=$1 OR id=$2", argument.lower(), char_id)
 
         if not query:
-            query = await ctx.bot.db.query("SELECT * FROM necrobot.Characters WHERE STARTS_WITH(LOWER(name), $1);", argument)
+            query = await ctx.bot.db.query("SELECT * FROM necrobot.Characters WHERE STARTS_WITH(LOWER(name), $1);", argument.lower())
 
         if not query:
             raise commands.BadArgument(f"Character **{argument}** could not be found.")
         
-        if self.respect_obtainable and not query["obtainable"]:
-            raise commands.BadArgument(f"Characters **{query['name']}** cannot currently be added to a banner")
+        if self.respect_obtainable and not query[0]["obtainable"]:
+            raise commands.BadArgument(f"Characters **{query[0]['name']}** cannot currently be added to a banner")
+        
+        return query[0]
+    
+class GachaBannerConverter(commands.Converter):
+    def __init__(self, respect_ongoing=True):
+        self.respect_ongoing = respect_ongoing
+
+    async def convert(self, ctx : commands.Context, argument):
+        banner_id = 0
+        if argument.isdigit():
+            banner_id = int(argument)
+
+        query = await ctx.bot.db.query("SELECT * FROM necrobot.Banners WHERE (LOWER(name)=$1 OR id=$2) AND guild_id = $3", argument.lower(), banner_id, ctx.guild.id)
+
+        if not query:
+            query = await ctx.bot.db.query("SELECT * FROM necrobot.Banners WHERE STARTS_WITH(LOWER(name), $1) AND guild_id = $2;", argument.lower(), ctx.guild.id)
+
+        if not query:
+            raise commands.BadArgument(f"Banner **{argument}** could not be found.")
+        
+        if self.respect_ongoing and not query[0]["ongoing"]:
+            raise commands.BadArgument(f"Banner **{query[0]['name']}** is not ongoing")
         
         return query[0]

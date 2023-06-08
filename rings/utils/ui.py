@@ -140,11 +140,13 @@ class Paginator(discord.ui.View):
     
     async def change_page(self, interaction, change):
         if self.index + change > self.max_index:
-            new_change = change - (self.max_index - self.index)
+            new_change = (change - 1) - (self.max_index - self.index)
+            self.index = 0
             return await self.change_page(interaction, new_change)
         
         if self.index + change < 0:
-            new_change = self.max_index - (change + self.index)
+            new_change = (change + 1) + self.index
+            self.index = self.max_index
             return await self.change_page(interaction, new_change)
         
         self.index = self.index + change

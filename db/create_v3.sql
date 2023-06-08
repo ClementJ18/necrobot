@@ -248,9 +248,11 @@ CREATE TABLE necrobot.PermissionRoles(
 CREATE TABLE necrobot.Flowers(
     guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
     user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
-    flowers bigint DEFAULT 0,
+    flowers bigint CHECK (flowers >= 0) DEFAULT 0,
     PRIMARY KEY(guild_id, user_id)
 );
+
+-- ALTER TABLE necrobot.Flowers ADD CONSTRAINT check_positive CHECK (flowers >= 0);
 
 CREATE TABLE necrobot.FlowersGuild(
     guild_id bigint PRIMARY KEY REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
@@ -258,24 +260,24 @@ CREATE TABLE necrobot.FlowersGuild(
     roll_cost int DEFAULT 50
 );
 
--- ALTER TABLE necrobot.FlowersGuild ADD COLUMN roll_cost int DEFAULT 50
+-- ALTER TABLE necrobot.FlowersGuild ADD COLUMN roll_cost int DEFAULT 50;
 
 CREATE TABLE necrobot.Characters(
     id SERIAL PRIMARY KEY,
-    name text,
-    title text,
-    description text,
-    image_url text,
-    tier int,
-    obtainable boolean,
-    universe text
+    name text NOT NULL,
+    title text NOT NULL,
+    description text NOT NULL,
+    image_url text NOT NULL,
+    tier int NOT NULL,
+    obtainable boolean DEFAULT false,
+    universe text NOT NULL
 );
 
 CREATE TABLE necrobot.Banners(
     id SERIAL PRIMARY KEY,
     guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
-    name text,
-    description text,
+    name text NOT NULL,
+    description text NOT NULL,
     image_url text,
     ongoing boolean DEFAULT false
 );
@@ -283,7 +285,7 @@ CREATE TABLE necrobot.Banners(
 CREATE TABLE necrobot.Pity(
     user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
     banner_id int REFERENCES necrobot.Banners(id) ON DELETE CASCADE,
-    pity int
+    pity int DEFAULT 0
 );
 
 CREATE TABLE necrobot.BannerCharacters(
