@@ -257,10 +257,12 @@ CREATE TABLE necrobot.Flowers(
 CREATE TABLE necrobot.FlowersGuild(
     guild_id bigint PRIMARY KEY REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
     symbol varchar(50) DEFAULT ':cherry_blossom:',
-    roll_cost int DEFAULT 50
+    roll_cost int DEFAULT 50,
+    guaranteed int DEFAULT 9,
 );
 
 -- ALTER TABLE necrobot.FlowersGuild ADD COLUMN roll_cost int DEFAULT 50;
+-- ALTER TABLE necrobot.FlowersGuild ADD COLUMN guaranteed int DEFAULT 9;
 
 CREATE TABLE necrobot.Characters(
     id SERIAL PRIMARY KEY,
@@ -285,7 +287,9 @@ CREATE TABLE necrobot.Banners(
 CREATE TABLE necrobot.Pity(
     user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
     banner_id int REFERENCES necrobot.Banners(id) ON DELETE CASCADE,
-    pity int DEFAULT 0
+    tier_5_pity int DEFAULT 0,
+    tier_4_pity int DEFAULT 0,
+    PRIMARY KEY (user_id, banner_id)
 );
 
 CREATE TABLE necrobot.BannerCharacters(

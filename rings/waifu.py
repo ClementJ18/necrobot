@@ -5,11 +5,12 @@ import math
 import random
 import discord
 from discord.ext import commands
+from discord.ext.commands.cooldowns import BucketType
 from rings.db import DatabaseError
 
 from rings.utils.checks import has_perms
 from rings.utils.ui import Confirm, paginate
-from rings.utils.utils import check_channel, BotError, time_string_parser 
+from rings.utils.utils import check_channel, BotError 
 from rings.utils.converters import FlowerConverter, GachaBannerConverter, GachaCharacterConverter, TimeConverter
 
 from typing import Literal, Union
@@ -118,8 +119,8 @@ class Flowers(commands.Cog):
 
         return level, deleted
     
-    def convert_exp_to_level(self, exp):
-        level = -1
+    def convert_exp_to_level(self, exp, tier):
+        level = 0
         thresholds = [
             1,
             3,
@@ -129,16 +130,28 @@ class Flowers(commands.Cog):
         ]
 
         for threshold in thresholds:
-            if exp >= threshold:
+            true_threshold = (5 - threshold) * tier // 2
+            if exp >= true_threshold:
                 level += 1
-                exp -= threshold
+                exp -= true_threshold
             else:
                 break
+        else:
+            true_threshold = 0
 
-        return level, exp, threshold
+        return level, exp, true_threshold
     
-    def calculate_weight(self, tier, modifier):
-        return ( 2 ** ( 1 + ( 5 - tier ) ) ) * modifier
+    def calculate_weight(self, tier, modifier, pity):
+        weight = ( 2 ** ( 1 + ( 5 - tier ) ) ) * modifier
+
+        if tier != 5:
+            return weight
+        
+        pity_pass = random.choices([False, True], [60, pity])
+        if pity_pass[0]:
+            weight = weight + max(0, pity - 30)
+
+        return weight
     
     def embed_character(self, character, admin=False):
         embed = discord.Embed(
@@ -157,10 +170,10 @@ class Flowers(commands.Cog):
     
         embed.add_field(name="Title", value=character["title"])
         embed.add_field(name="Tier", value=f"{character['tier']*':star:' if character['tier'] else ':fleur_de_lis:'}")
-        embed.add_field(name="Origin", value=character["universe"])
+        embed.add_field(name="Universe", value=character["universe"])
     
         if character.get("level"):
-            level, exp, next_threshold = self.convert_exp_to_level(character["level"])
+            level, exp, next_threshold = self.convert_exp_to_level(character["level"], character["tier"])
             embed.add_field(name="Level", value=f"{level} ({exp}/{next_threshold})")
 
         if admin and character.get("obtainable"):
@@ -211,14 +224,24 @@ class Flowers(commands.Cog):
             ORDER BY universe ASC, name ASC
         """)
     
-    def pull(self, characters):
+    def pull(self, characters, pity = 0, guarantee = False):
         duds = [random.choice(DUD_TEMPLATES) for _ in range(math.ceil(len(characters) * self.DUD_PERCENT))]
         pool = [*characters, *duds]
-        weights = [self.calculate_weight(char["tier"], char["modifier"]) for char in pool]
+        weights = [self.calculate_weight(char["tier"], char["modifier"], pity) for char in pool]
 
+        print([(x["name"], y) for x, y in zip(pool, weights)])
         pulled_char = dict(random.choices(pool, weights=weights, k=1)[0])
 
-        return pulled_char
+        if pulled_char["tier"] < 4 and guarantee:
+            tier_4_list = [char for char in characters if char["tier"] == 4]
+            if tier_4_list:
+                return dict(random.choice(tier_4_list)), True
+            
+            tier_3_list = [char for char in characters if char["tier"] == 3]
+            if tier_3_list:
+                return dict(random.choice(tier_3_list)), True
+
+        return pulled_char, pulled_char["tier"] >= 4
 
     #######################################################################
     ## Commands
@@ -708,8 +731,13 @@ class Flowers(commands.Cog):
         __Examples__
         `{pre}gacha` - get information on the gacha in this server
         """
-        guild = await self.bot.db.query("SELECT roll_cost, symbol FROM necrobot.FlowersGuild WHERE guild_id = $1", ctx.guild.id)
-        await ctx.send(f":game_die: | A roll on this server costs {guild[0]['roll_cost']} {guild[0]['symbol']}.")
+        guild = await self.bot.db.query("SELECT roll_cost, symbol, guaranteed FROM necrobot.FlowersGuild WHERE guild_id = $1", ctx.guild.id)
+        if guild[0]["guaranteed"] >= 0:
+            guarantee = f"You are guaranteed a character after **{guild[0]['guaranteed'] + 1}** rolls."
+        else:
+            guarantee = "You are not guaranteed a character after any amount of rolls."
+
+        await ctx.send(f":game_die: | A roll on this server costs **{guild[0]['roll_cost']}** {guild[0]['symbol']}.\n:star2: | {guarantee}")
 
     @gacha.command(name="balance")
     @commands.guild_only()
@@ -749,8 +777,9 @@ class Flowers(commands.Cog):
 
     @gacha.group(name="roll", invoke_without_command=True)
     @commands.guild_only()
+    @commands.max_concurrency(1, per=BucketType.user, wait=True)
     async def gacha_roll(self, ctx, *, banner : GachaBannerConverter):
-        data = await self.bot.db.query("SELECT symbol, roll_cost FROM necrobot.FlowersGuild WHERE guild_id = $1", ctx.guild.id)
+        data = await self.bot.db.query("SELECT symbol, roll_cost, guaranteed FROM necrobot.FlowersGuild WHERE guild_id = $1", ctx.guild.id)
         characters = await self.bot.db.query("""
             SELECT name, tier FROM necrobot.BannerCharacters as bc 
                 JOIN necrobot.Characters as c ON bc.char_id = c.id 
@@ -772,6 +801,14 @@ class Flowers(commands.Cog):
         except DatabaseError as e:
             raise BotError("You no longer have enough flowers for a pull.") from e
 
+        query = await self.bot.db.query("SELECT tier_5_pity, tier_4_pity FROM necrobot.Pity WHERE user_id = $1 AND banner_id = $2", ctx.author.id, banner["id"])
+        if query:
+            pity = query[0]["tier_5_pity"]
+            guarantee = query[0]["tier_4_pity"] >= data[0]["guaranteed"]
+        else:
+            pity = 0
+            guarantee = False
+
         characters = await self.bot.db.query("""
             SELECT c.*, bc.modifier FROM necrobot.BannerCharacters as bc 
                 JOIN necrobot.Characters as c ON bc.char_id = c.id
@@ -779,14 +816,56 @@ class Flowers(commands.Cog):
             banner["id"]
         )
 
-        pulled_char = self.pull(characters)
-        
+        pulled_char, guaranteed = self.pull(characters, pity, guarantee)
+
+        sleep = 5
+        if pulled_char["tier"] == 5:
+            pity_increase = -1
+            pull_animation = "https://media.tenor.com/rOuL0G1uRpMAAAAd/genshin-impact-pull.gif"
+        elif pulled_char["tier"] == 4:
+            pity_increase = 3
+            pull_animation = "https://media.tenor.com/pVzBgcp1RPQAAAAd/genshin-impact-animation.gif"
+        else:
+            sleep = 2
+            pity_increase = 2
+            pull_animation = "https://media.tenor.com/-0gPdn6GMVAAAAAC/genshin3star-wish.gif"
+
         if pulled_char.get("id"): #not a dud
             level = await self.add_characters_to_user(ctx.guild.id, ctx.author.id, pulled_char["id"])
             pulled_char["level"] = level
+        else:
+            pity = 1
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.5)
+        await view.message.edit(embed=discord.Embed().set_image(url=pull_animation))
+        await asyncio.sleep(sleep)
         await view.message.edit(content=f":game_die: | You payed **{data[0]['roll_cost']}** {data[0]['symbol']} and got the following reward:", embed=self.embed_character(pulled_char))
+
+        if guaranteed:
+            guarantee_change = -query[0]["tier_4_pity"]
+        elif pulled_char["tier"] == 3:
+            guarantee_change = 0
+        else:
+            guarantee_change = 1
+        
+        if pity_increase > 0:
+            await self.bot.db.query("""
+                INSERT INTO necrobot.Pity(user_id, banner_id, tier_5_pity) VALUES($1, $2, $3) 
+                ON CONFLICT (user_id, banner_id) DO
+                UPDATE SET 
+                    tier_5_pity = necrobot.Pity.tier_5_pity + $3, 
+                    tier_4_pity = necrobot.Pity.tier_4_pity + $4""", 
+                ctx.author.id, banner["id"], pity_increase, guarantee_change
+            )
+        else:
+            await self.bot.db.query("""
+                INSERT INTO necrobot.Pity(user_id, banner_id) VALUES($1, $2) 
+                ON CONFLICT (user_id, banner_id) DO
+                UPDATE SET 
+                    tier_5_pity = $3,
+                    tier_4_pity = necrobot.Pity.tier_4_pity + $4""", 
+                ctx.author.id, banner["id"], pity_increase, guarantee_change
+            )
 
     @gacha_roll.command(name="cost")
     @has_perms(4)
@@ -804,6 +883,22 @@ class Flowers(commands.Cog):
 
         await self.bot.db.query("UPDATE necrobot.FlowersGuild SET roll_cost = $1 WHERE guild_id = $2", amount, ctx.guild.id)
         await ctx.send(f":white_check_mark: | Updated roll cost to **{amount}**")
+
+    @gacha_roll.command(name="guarantee")
+    @has_perms(4)
+    async def gacha_roll_guarantee(self, ctx, amount: int):
+        """Change the number of rolls it takes to guarantee a 4 or 3 star characters. Set to 0 to never guarantee.
+        
+        {usage}
+        
+        __Examples__
+        `{pre}gacha roll guarantee 5` - On the 5th roll, the roller will be guaranteed a characters.
+        """
+        if amount < 0:
+            raise BotError("Please specify a value of at least 1")
+
+        await self.bot.db.query("UPDATE necrobot.FlowersGuild SET guaranteed = $1 WHERE guild_id = $2", amount-1, ctx.guild.id)
+        await ctx.send(f":white_check_mark: | Updated guaranteed to **{amount}**")
 
     #######################################################################
     ## Events

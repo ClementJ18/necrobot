@@ -74,21 +74,35 @@ class Confirm(discord.ui.View):
             view=self,
         )
 
+    async def confirm_action(self, interaction):
+        self.value = True
+        self.stop()
+        self.clear_items()
+
+        if self.confirm_msg is None:
+            await interaction.response.edit_message(view=self)
+        else:
+            await interaction.response.edit_message(content=self.confirm_msg, view=self)
+
+    async def cancel_action(self, interaction):
+        self.value = False
+        self.stop()
+        self.clear_items()
+
+        if self.cancel_msg is None:
+            await interaction.response.edit_message(view=self)
+        else:
+            await interaction.response.edit_message(content=self.cancel_msg, view=self)
+
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
     async def confirm(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        self.value = True
-        self.stop()
-        self.clear_items()
-        await interaction.response.edit_message(content=self.confirm_msg, view=self)
+        await self.confirm_action(interaction)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.value = False
-        self.stop()
-        self.clear_items()
-        await interaction.response.edit_message(content=self.cancel_msg, view=self)
+        await self.cancel_action(interaction)
 
 
 async def paginate(ctx, entries, page_size, embed_maker, *, timeout=300):
