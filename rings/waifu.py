@@ -15,12 +15,105 @@ from rings.utils.converters import FlowerConverter, GachaBannerConverter, GachaC
 
 from typing import Literal, Union
 
+"""
+{
+        "name": "",
+        "image_url": "",
+        "description": "",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
+"""
+
 
 DUD_TEMPLATES = [
     {
         "name": "Bag of Goodies",
         "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116482199466819695/HReach-HealthPack.png",
         "description": "A bag containing some goodies, good to eat but not for much else.",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
+    {
+        "name": "Ancient Blade",
+        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116707849876275260/462px-Weapon_b_1020002200.png",
+        "description": "An old sword, very finely crafted but dulled by time.",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
+    {
+        "name": "Broken Hourglass",
+        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116718269496299520/desktop-wallpaper-fantasy-artistic-video-game-sand-clock.png",
+        "description": "This hourglass used to be able to tell the time with no equal but evert since the glass was shattered it has been abandoned.",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
+    {
+        "name": "Shattered Crown",
+        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116797755659128923/Broken_Crown_icon.png",
+        "description": "The crown of the empress of an long forgotten empire. It is said she wore it till she was betrayed by her own knights. The killing blow shattered the crown and doomed the kingdom.",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
+    {
+        "name": "Rusty Goblet",
+        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116799230338662480/public.png",
+        "description": "This goblet sat on the table of the many kings of an ancient realm before it fell to the forces of evil.",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
+    {
+        "name": "The Twin Dragons",
+        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116800827185696778/latest.png",
+        "description": "A dirty medallion, long ago it held power of life itself. Roughly welded together, the pieces were used in a dark ritual before being discarded.",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
+    {
+        "name": "Tablets of the Arbiter",
+        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116814455829971148/latest.png",
+        "description": "An ancient tablet, a powerful tool used by the Arbiter to defeat his enemies. Now, long after his death, it is just a shattered pile of stone.",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
+    {
+        "name": "Splintered Síoraíocht",
+        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116816978523455498/636284768481526959.png",
+        "description": "The flame staff was once a symbol of power of an entire civilisation, it was taken away when that civilisation fell in a fool hope. Now its owner lays dead and the staff has been splintered.",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
+    {
+        "name": "Extinguished Silverlight",
+        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1117099808822407268/glass_weapon_7_by_rittik_designs-d895tzq.png",
+        "description": "Once the blade of a powerful king, its light faded when the great darkness swept over the land, the likes of it never to be again.",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
+    {
+        "name": "Thawed Frostpear",
+        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1117116745736523827/Select20a20file20name20for20output20files_004.png",
+        "description": "This wet spear was once a great frost spear, wielded by the mightiest of Dragon-knights. Bathed in demonic flames during the Cataclysm, its icy point thawed and its power was undone.",
         "tier": 0,
         "universe": "Nexus",
         "title": "*Poof*",
@@ -206,13 +299,10 @@ class Flowers(commands.Cog):
 
         return embed
     
-    async def pay_for_roll(self, guild_id, user_id):
+    async def pay_for_roll(self, guild_id, user_id, cost):
         await self.bot.db.query("""
-            UPDATE necrobot.Flowers 
-            SET flowers = flowers - (
-                SELECT roll_cost FROM necrobot.FlowersGuild WHERE guild_id = $1
-            ) WHERE user_id = $2 AND guild_id = $1""", 
-            guild_id, user_id, fetchval=True
+            UPDATE necrobot.Flowers SET flowers = flowers - $3 WHERE user_id = $2 AND guild_id = $1""", 
+            guild_id, user_id, cost
         )
 
     async def get_characters(self):
@@ -229,7 +319,6 @@ class Flowers(commands.Cog):
         pool = [*characters, *duds]
         weights = [self.calculate_weight(char["tier"], char["modifier"], pity) for char in pool]
 
-        print([(x["name"], y) for x, y in zip(pool, weights)])
         pulled_char = dict(random.choices(pool, weights=weights, k=1)[0])
 
         if pulled_char["tier"] < 4 and guarantee:
@@ -764,7 +853,8 @@ class Flowers(commands.Cog):
         characters = await self.bot.db.query("""
             SELECT c.*, rc.level FROM necrobot.RolledCharacters as rc 
                 JOIN necrobot.Characters as c ON rc.char_id = c.id 
-            WHERE rc.guild_id = $1 AND rc.user_id = $2""", 
+            WHERE rc.guild_id = $1 AND rc.user_id = $2
+            ORDER BY c.universe, c.name""", 
             ctx.guild.id, ctx.author.id
         )
 
@@ -781,9 +871,10 @@ class Flowers(commands.Cog):
     async def gacha_roll(self, ctx, *, banner : GachaBannerConverter):
         data = await self.bot.db.query("SELECT symbol, roll_cost, guaranteed FROM necrobot.FlowersGuild WHERE guild_id = $1", ctx.guild.id)
         characters = await self.bot.db.query("""
-            SELECT name, tier FROM necrobot.BannerCharacters as bc 
+            SELECT c.*, bc.modifier FROM necrobot.BannerCharacters as bc 
                 JOIN necrobot.Characters as c ON bc.char_id = c.id 
-            WHERE bc.banner_id = $1""", 
+            WHERE bc.banner_id = $1
+            ORDER BY c.universe, c.name""", 
             banner["id"]
         )
 
@@ -797,24 +888,17 @@ class Flowers(commands.Cog):
             return
 
         try:
-            await self.pay_for_roll(ctx.guild.id, ctx.author.id)
+            await self.pay_for_roll(ctx.guild.id, ctx.author.id, data[0]["roll_cost"])
         except DatabaseError as e:
             raise BotError("You no longer have enough flowers for a pull.") from e
 
         query = await self.bot.db.query("SELECT tier_5_pity, tier_4_pity FROM necrobot.Pity WHERE user_id = $1 AND banner_id = $2", ctx.author.id, banner["id"])
         if query:
             pity = query[0]["tier_5_pity"]
-            guarantee = query[0]["tier_4_pity"] >= data[0]["guaranteed"]
+            guarantee = query[0]["tier_4_pity"] >= data[0]["guaranteed"] and data[0]["guaranteed"] >= 0
         else:
             pity = 0
             guarantee = False
-
-        characters = await self.bot.db.query("""
-            SELECT c.*, bc.modifier FROM necrobot.BannerCharacters as bc 
-                JOIN necrobot.Characters as c ON bc.char_id = c.id
-            WHERE bc.banner_id = $1""",
-            banner["id"]
-        )
 
         pulled_char, guaranteed = self.pull(characters, pity, guarantee)
 
@@ -843,7 +927,7 @@ class Flowers(commands.Cog):
 
         if guaranteed:
             guarantee_change = -query[0]["tier_4_pity"]
-        elif pulled_char["tier"] == 3:
+        elif pulled_char["tier"] == 3 or data[0]["guaranteed"] < 0:
             guarantee_change = 0
         else:
             guarantee_change = 1
@@ -864,7 +948,7 @@ class Flowers(commands.Cog):
                 UPDATE SET 
                     tier_5_pity = $3,
                     tier_4_pity = necrobot.Pity.tier_4_pity + $4""", 
-                ctx.author.id, banner["id"], pity_increase, guarantee_change
+                ctx.author.id, banner["id"], 0, guarantee_change
             )
 
     @gacha_roll.command(name="cost")
@@ -895,7 +979,7 @@ class Flowers(commands.Cog):
         `{pre}gacha roll guarantee 5` - On the 5th roll, the roller will be guaranteed a characters.
         """
         if amount < 0:
-            raise BotError("Please specify a value of at least 1")
+            raise BotError("Please specify a value of at least 0")
 
         await self.bot.db.query("UPDATE necrobot.FlowersGuild SET guaranteed = $1 WHERE guild_id = $2", amount-1, ctx.guild.id)
         await ctx.send(f":white_check_mark: | Updated guaranteed to **{amount}**")
