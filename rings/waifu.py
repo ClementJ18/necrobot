@@ -1,5 +1,4 @@
 import asyncio
-from itertools import groupby
 import json
 import math
 import random
@@ -119,11 +118,20 @@ DUD_TEMPLATES = [
         "title": "*Poof*",
         "modifier": 1,
     },
+    {
+        "name": "Failnaught",
+        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1117182929311899789/latest.png",
+        "description": "A dull, unstrung bow. Age has faded the ornate painting on the wood and rendered it brittle. ",
+        "tier": 0,
+        "universe": "Nexus",
+        "title": "*Poof*",
+        "modifier": 1,
+    },
 ]
 
 
 class Flowers(commands.Cog):
-    """A server specific economy system. Use it to reward/punish users at you heart's content."""
+    """A server specific economy system. Use it to reward/punish users at you heart's content. Also contains a gacha system."""
 
     def __init__(self, bot):
         self.bot = bot
@@ -296,6 +304,9 @@ class Flowers(commands.Cog):
 
         if banner.get("id"):
             embed.add_field(name="ID", value=banner["id"])
+
+        if banner.get("max_rolls") is not None:
+            embed.add_field(name="Max Rolls", value=banner["max_rolls"] if banner["max_rolls"] > 0 else "No max")
 
         return embed
     
@@ -699,6 +710,7 @@ class Flowers(commands.Cog):
         image = None
         characters = []
         banner_id = None
+        max_rolls = 0
 
         def general_check(m):
             if not m.author == ctx.author or not m.channel == ctx.channel:
@@ -708,6 +720,20 @@ class Flowers(commands.Cog):
                 raise BotError("Exited setup")
 
             return True
+        
+        def number_check(m):
+            if not general_check(m):
+                return False
+            
+            argument = m.content.strip()
+            if not argument.isdigit():
+                return False
+            
+            argument = int(argument)
+            if not argument >= 0:
+                return False
+            
+            return True
 
         def embed_maker():
             return self.embed_banner({
@@ -715,7 +741,8 @@ class Flowers(commands.Cog):
                 "image_url": image,
                 "description": description,
                 "characters":  [f"{char['name']} ({char['tier']} :star:)" for char in characters],
-                "name": name
+                "name": name,
+                "max_rolls": max_rolls
             })
 
         msg = await ctx.send("Let's get started", embed=embed_maker())
@@ -730,6 +757,15 @@ class Flowers(commands.Cog):
         image = start_m.content.strip()
         if image.lower() == "null":
             image = None
+        
+        try:
+            await msg.edit(embed=embed_maker())
+        except Exception as e:
+            raise BotError(f"Not a valid image: {e}") from e
+
+        await ctx.send("Post a positive number for the max amount of times a player can roll on this banner. Type exit to cancel or `0` to not have a max roll.")
+        start_m = await self.bot.wait_for("message", check=number_check, timeout=300)
+        max_rolls = int(start_m.content.strip())
         await msg.edit(embed=embed_maker())
 
         await ctx.send("Post a comma separated list of characters for the banner. Type exit to cancel.")
@@ -747,8 +783,8 @@ class Flowers(commands.Cog):
             return
         
         banner_id = await self.bot.db.query(
-            "INSERT INTO necrobot.Banners(guild_id, name, description, image_url) VALUES($1, $2, $3, $4) RETURNING id",
-            ctx.guild.id, name, description, image, fetchval=True
+            "INSERT INTO necrobot.Banners(guild_id, name, description, image_url, max_rolls) VALUES($1, $2, $3, $4, $5) RETURNING id",
+            ctx.guild.id, name, description, image, max_rolls, fetchval=True
         )
 
         await self.bot.db.query(
@@ -865,11 +901,26 @@ class Flowers(commands.Cog):
 
         await paginate(ctx, characters, 1, embed_maker)
 
-    @gacha.group(name="roll", invoke_without_command=True)
+    @gacha.group(name="roll", invoke_without_command=True, aliases=["pull"])
     @commands.guild_only()
     @commands.max_concurrency(1, per=BucketType.user, wait=True)
     async def gacha_roll(self, ctx, *, banner : GachaBannerConverter):
+        pity = 0
+        guarantee = False
+        roll_count = 0
+
+        query = await self.bot.db.query("SELECT tier_5_pity, tier_4_pity, roll_count FROM necrobot.Pity WHERE user_id = $1 AND banner_id = $2", ctx.author.id, banner["id"])
         data = await self.bot.db.query("SELECT symbol, roll_cost, guaranteed FROM necrobot.FlowersGuild WHERE guild_id = $1", ctx.guild.id)
+        
+        if query:
+            pity = query[0]["tier_5_pity"]
+            guarantee = query[0]["tier_4_pity"] >= data[0]["guaranteed"] and data[0]["guaranteed"] >= 0
+            roll_count = query[0]["roll_count"]            
+
+        if banner["max_rolls"] > 0 and roll_count >= banner["max_rolls"]:
+            raise BotError("You've hit the max amount of rolls on this banner.")
+
+
         characters = await self.bot.db.query("""
             SELECT c.*, bc.modifier FROM necrobot.BannerCharacters as bc 
                 JOIN necrobot.Characters as c ON bc.char_id = c.id 
@@ -891,14 +942,6 @@ class Flowers(commands.Cog):
             await self.pay_for_roll(ctx.guild.id, ctx.author.id, data[0]["roll_cost"])
         except DatabaseError as e:
             raise BotError("You no longer have enough flowers for a pull.") from e
-
-        query = await self.bot.db.query("SELECT tier_5_pity, tier_4_pity FROM necrobot.Pity WHERE user_id = $1 AND banner_id = $2", ctx.author.id, banner["id"])
-        if query:
-            pity = query[0]["tier_5_pity"]
-            guarantee = query[0]["tier_4_pity"] >= data[0]["guaranteed"] and data[0]["guaranteed"] >= 0
-        else:
-            pity = 0
-            guarantee = False
 
         pulled_char, guaranteed = self.pull(characters, pity, guarantee)
 
@@ -932,24 +975,22 @@ class Flowers(commands.Cog):
         else:
             guarantee_change = 1
         
-        if pity_increase > 0:
-            await self.bot.db.query("""
-                INSERT INTO necrobot.Pity(user_id, banner_id, tier_5_pity) VALUES($1, $2, $3) 
-                ON CONFLICT (user_id, banner_id) DO
-                UPDATE SET 
-                    tier_5_pity = necrobot.Pity.tier_5_pity + $3, 
-                    tier_4_pity = necrobot.Pity.tier_4_pity + $4""", 
-                ctx.author.id, banner["id"], pity_increase, guarantee_change
-            )
-        else:
-            await self.bot.db.query("""
-                INSERT INTO necrobot.Pity(user_id, banner_id) VALUES($1, $2) 
-                ON CONFLICT (user_id, banner_id) DO
-                UPDATE SET 
-                    tier_5_pity = $3,
-                    tier_4_pity = necrobot.Pity.tier_4_pity + $4""", 
-                ctx.author.id, banner["id"], 0, guarantee_change
-            )
+        if pity_increase == 0:
+            pity_increase = -query[0]["tier_5_pity"]
+
+        counted_roll = 0
+        if banner["max_rolls"] > 0:
+            counted_roll = 1
+        
+        await self.bot.db.query("""
+            INSERT INTO necrobot.Pity(user_id, banner_id, tier_5_pity) VALUES($1, $2, $3) 
+            ON CONFLICT (user_id, banner_id) DO
+            UPDATE SET 
+                tier_5_pity = necrobot.Pity.tier_5_pity + $3, 
+                tier_4_pity = necrobot.Pity.tier_4_pity + $4,
+                roll_count = necrobot.Pity.roll_count + $5""", 
+            ctx.author.id, banner["id"], pity_increase, guarantee_change, counted_roll
+        )
 
     @gacha_roll.command(name="cost")
     @has_perms(4)

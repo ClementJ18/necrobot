@@ -391,7 +391,8 @@ async def off(ctx):
         bot.maintenance = True
         task = bot.meta.rotate_status
         tasks_hourly = bot.meta.tasks_hourly
-        tasks_hourly.remove(task)
+        if task in tasks_hourly:
+            tasks_hourly.remove(task)
 
         await bot.change_presence(
             activity=discord.Game(name="Going down for maintenance soon")
