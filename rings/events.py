@@ -484,8 +484,7 @@ class Events(commands.Cog):
                     f":eight_pointed_black_star: | {member.mention}. **You are not welcome here, disturber of the peace**"
                 )
             else:
-                
-                message = message.format(build_format_dict(member=member))
+                message = message.format(**build_format_dict(member=member, guild=member.guild, channel=channel))
                 try:
                     await channel.send(
                         message, allowed_mentions=discord.AllowedMentions()
@@ -558,7 +557,7 @@ class Events(commands.Cog):
             if member.id in self.bot.settings["blacklist"]:
                 await channel.send(":eight_pointed_black_star: | **...**")
             else:
-                message = message.format(build_format_dict(member=member))
+                message = message.format(**build_format_dict(member=member, guild=member.guild, channel=channel))
                 try:
                     await channel.send(
                         message, allowed_mentions=discord.AllowedMentions()

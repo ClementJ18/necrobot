@@ -154,37 +154,53 @@ def default_settings():
         "day": 0,
     }
 
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+    def __str__(self):
+        return self.get("str")
+
+
 def build_format_dict(*, guild=None, member=None, channel=None):
-    arg_dict = {}
+    arg_dict = dict()
 
     if guild is not None:
-        arg_dict.update({
-            "server": str(guild),
-            "server.name": str(guild.name),
-            "server.id": str(guild.id),
-            "server.created_at": str(guild.created_at),
-            "server.member_count": str(guild.member_count),
+        guild_dict = dotdict({
+            "str": str(guild),
+            "name": str(guild.name),
+            "id": str(guild.id),
+            "created_at": str(guild.created_at),
+            "member_count": str(guild.member_count),
         })
+
+        arg_dict["server"] = guild_dict
 
     if member is not None:
-        arg_dict.update({
-            "member": str(member),
-            "member.display_name": str(member.display_name),
-            "member.name": str(member.name),
-            "member.discriminator": str(member.discriminator),
-            "member.joined_at": str(member.joined_at),
-            "member.id": str(member.id),
-            "member.mention": str(member.mention),
-            "member.created_at": str(member.created_at),
+        member_dict = dotdict({
+            "str": str(member),
+            "display_name": str(member.display_name),
+            "name": str(member.name),
+            "discriminator": str(member.discriminator),
+            "joined_at": str(member.joined_at),
+            "id": str(member.id),
+            "mention": str(member.mention),
+            "created_at": str(member.created_at),
         })
 
+        arg_dict["member"] = member_dict
+
     if channel is not None:
-        arg_dict.update({
-            "channel": str(channel),
-            "channel.name": str(channel.name),
-            "channel.id": str(channel.id),
-            "channel.topic": str(channel.topic),
-            "channel.mention": str(channel.mention),
+        channel_dict = dotdict({
+            "str": str(channel),
+            "name": str(channel.name),
+            "id": str(channel.id),
+            "topic": str(channel.topic),
+            "mention": str(channel.mention),
         })
+
+        arg_dict["channel"] = channel_dict
 
     return arg_dict
