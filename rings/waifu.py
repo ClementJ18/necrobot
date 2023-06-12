@@ -322,7 +322,7 @@ class Flowers(commands.Cog):
             FROM necrobot.Characters as chars
             LEFT JOIN necrobot.RolledCharacters as rolled on chars.id = rolled.char_id
             GROUP BY chars.id
-            ORDER BY universe ASC, name ASC
+            ORDER BY tier DESC, universe ASC, name ASC
         """)
     
     def pull(self, characters, pity = 0, guarantee = False):
@@ -510,7 +510,7 @@ class Flowers(commands.Cog):
         await paginate(ctx, characters, 10, embed_maker)
 
     @characters.command(name="get")
-    async def characters_list(self, ctx, character: GachaCharacterConverter):
+    async def characters_get(self, ctx, character: GachaCharacterConverter):
         """Get info on a specific character.
         
         {usage}

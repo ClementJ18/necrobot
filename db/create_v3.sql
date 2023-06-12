@@ -280,8 +280,6 @@ CREATE TABLE necrobot.Banners(
     max_rolls int DEFAULT 0,
 );
 
--- ALTER TABLE necrobot.Banners ADD COLUMN max_rolls int DEFAULT 0;
-
 CREATE TABLE necrobot.Pity(
     user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
     banner_id int REFERENCES necrobot.Banners(id) ON DELETE CASCADE,
@@ -290,8 +288,6 @@ CREATE TABLE necrobot.Pity(
     roll_count int DEFAULT 1,
     PRIMARY KEY (user_id, banner_id)
 );
-
--- ALTER TABLE necrobot.Pity ADD COLUMN roll_count int DEFAULT 1;
 
 CREATE TABLE necrobot.BannerCharacters(
     banner_id int REFERENCES necrobot.Banners(id) ON DELETE CASCADE,
