@@ -44,9 +44,7 @@ class Events(commands.Cog):
 
             return
 
-        counter = (
-            self.bot.polls[payload.message_id]["voters"].count(payload.user_id) + 1
-        )
+        counter = self.bot.polls[payload.message_id]["voters"].count(payload.user_id) + 1
         if counter > self.bot.polls[payload.message_id]["votes"]:
             if await self.bot.db.get_permission(payload.user_id, payload.guild_id) < 4:
                 emoji = payload.emoji._as_reaction()
@@ -76,9 +74,7 @@ class Events(commands.Cog):
     async def starred_reaction_handler(self, payload):
         await self.bot.db.update_stars(payload.message_id, payload.user_id, 1)
 
-        if not self.is_starrable(
-            payload.guild_id, payload.channel_id, payload.message_id
-        ):
+        if not self.is_starrable(payload.guild_id, payload.channel_id, payload.message_id):
             return
 
         if not payload.message_id in self.bot.potential_stars:
@@ -103,7 +99,7 @@ class Events(commands.Cog):
             if channel.is_nsfw() and not starboard.is_nsfw():
                 return await channel.send(
                     ":negative_squared_cross_mark: | Could not send message to starboard because channel is marked as NSFW and starboard is marked as SFW. Either make this channel SFW or make the starboard NSFW",
-                    delete_after=30
+                    delete_after=30,
                 )
 
             del self.bot.potential_stars[payload.message_id]
@@ -126,7 +122,7 @@ class Events(commands.Cog):
     #######################################################################
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx : commands.Context, error):
+    async def on_command_error(self, ctx: commands.Context, error):
         """Catches error and sends a message to the user that caused the error with a helpful message."""
         msg = None
         error = getattr(error, "original", error)
@@ -168,16 +164,11 @@ class Events(commands.Cog):
             msg = f"`{error.param}` must be any of **{', '.join(error.literals)}"
         elif isinstance(error, discord.Forbidden):
             msg = "Looks like I don't have permission to do this."
-        elif (
-            isinstance(error, discord.HTTPException)
-            and getattr(error, "status", 0) >= 500
-        ):
+        elif isinstance(error, discord.HTTPException) and getattr(error, "status", 0) >= 500:
             msg = "An error occured with Discord's servers. Unable to complete action, the Discord servers might be struggling, please try again later"
         else:
             error_traceback = " ".join(
-                traceback.format_exception(
-                    type(error), error, error.__traceback__, chain=True
-                )
+                traceback.format_exception(type(error), error, error.__traceback__, chain=True)
             )
             if ctx.guild is not None:
                 guild = f"{ctx.guild.name} ({ctx.guild.id})"
@@ -194,12 +185,8 @@ class Events(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             embed.add_field(name="Command", value=ctx.command.name)
             embed.add_field(name="Author", value=ctx.author.mention)
-            embed.add_field(
-                name="Location", value=f"**Guild:** {guild}\n**Channel:** {channel}"
-            )
-            embed.add_field(
-                name="Message", value=ctx.message.content[:1024], inline=False
-            )
+            embed.add_field(name="Location", value=f"**Guild:** {guild}\n**Channel:** {channel}")
+            embed.add_field(name="Message", value=ctx.message.content[:1024], inline=False)
 
             try:
                 await self.bot.get_error_channel().send(embed=embed)
@@ -212,9 +199,7 @@ class Events(commands.Cog):
 
         if msg is not None:
             try:
-                await ctx.send(
-                    f":negative_squared_cross_mark: | {msg}", delete_after=60
-                )
+                await ctx.send(f":negative_squared_cross_mark: | {msg}", delete_after=60)
             except discord.Forbidden:
                 pass
 
@@ -275,25 +260,19 @@ class Events(commands.Cog):
         if role.id in guild["ignore-command"]:
             await self.bot.db.delete_command_ignore(guild_id, role.id)
 
-        await self.bot.db.query(
-            "DELETE FROM necrobot.PermissionRoles WHERE role_id=$1", role.id
-        )
+        await self.bot.db.query("DELETE FROM necrobot.PermissionRoles WHERE role_id=$1", role.id)
 
     @commands.Cog.listener()
     async def on_guild_update(self, before, after):
         if before.owner.id != after.owner.id:
             after_perms = (
-                4
-                if after.get_member(before.owner.id).guild_permissions.administrator
-                else 0
+                4 if after.get_member(before.owner.id).guild_permissions.administrator else 0
             )
-            await self.bot.db.update_permission(
-                before.owner.id, before.id, update=after_perms
-            )
+            await self.bot.db.update_permission(before.owner.id, before.id, update=after_perms)
             await self.bot.db.update_permission(after.owner.id, after.id, update=5)
 
     @commands.Cog.listener()
-    async def on_command(self, ctx : commands.Context):
+    async def on_command(self, ctx: commands.Context):
         try:
             can_run = await ctx.command.can_run(ctx) and ctx.command.enabled
         except commands.CheckFailure:
@@ -353,9 +332,7 @@ class Events(commands.Cog):
                 value="Yes" if message.attachments else "No",
                 inline=False,
             )
-            channel = self.bot.get_channel(
-                self.bot.guild_data[message.guild.id]["automod"]
-            )
+            channel = self.bot.get_channel(self.bot.guild_data[message.guild.id]["automod"])
             try:
                 await channel.send(embed=embed)
             except discord.Forbidden:
@@ -392,14 +369,10 @@ class Events(commands.Cog):
             )
             embed.add_field(
                 name="After",
-                value=after.content
-                if len(after.content) < 1024
-                else after.content[1020:] + "...",
+                value=after.content if len(after.content) < 1024 else after.content[1020:] + "...",
                 inline=False,
             )
-            channel = self.bot.get_channel(
-                self.bot.guild_data[before.guild.id]["automod"]
-            )
+            channel = self.bot.get_channel(self.bot.guild_data[before.guild.id]["automod"])
             try:
                 await channel.send(embed=embed)
             except discord.Forbidden:
@@ -413,9 +386,7 @@ class Events(commands.Cog):
         # we have less roles than before
         if len(before.roles) > len(after.roles):
             # get the role that was removed
-            role = [x for x in before.roles if x.id not in [x.id for x in after.roles]][
-                0
-            ]
+            role = [x for x in before.roles if x.id not in [x.id for x in after.roles]][0]
 
             # get all permision bindings that the member had before one was removed
             before_bindings = await self.bot.db.query(
@@ -445,9 +416,7 @@ class Events(commands.Cog):
         # we have more roles than before
         if len(after.roles) > len(before.roles):
             # get the role that was added
-            role = [x for x in after.roles if x.id not in [x.id for x in before.roles]][
-                0
-            ]
+            role = [x for x in after.roles if x.id not in [x.id for x in before.roles]][0]
 
             # does it have a binding?
             level = await self.bot.db.query(
@@ -475,29 +444,25 @@ class Events(commands.Cog):
             return
 
         if self.bot.has_welcome(member):
-            channel = self.bot.get_channel(
-                self.bot.guild_data[member.guild.id]["welcome-channel"]
-            )
+            channel = self.bot.get_channel(self.bot.guild_data[member.guild.id]["welcome-channel"])
             message = self.bot.guild_data[member.guild.id]["welcome"]
             if self.bot.blacklist_check(member.id):
                 await channel.send(
                     f":eight_pointed_black_star: | {member.mention}. **You are not welcome here, disturber of the peace**"
                 )
             else:
-                message = message.format(**build_format_dict(member=member, guild=member.guild, channel=channel))
+                message = message.format(
+                    **build_format_dict(member=member, guild=member.guild, channel=channel)
+                )
                 try:
-                    await channel.send(
-                        message, allowed_mentions=discord.AllowedMentions()
-                    )
+                    await channel.send(message, allowed_mentions=discord.AllowedMentions())
                 except discord.Forbidden:
                     pass
 
         invite = await self.bot.db.update_invites(member.guild)
 
         if self.bot.guild_data[member.guild.id]["automod"]:
-            channel = member.guild.get_channel(
-                self.bot.guild_data[member.guild.id]["automod"]
-            )
+            channel = member.guild.get_channel(self.bot.guild_data[member.guild.id]["automod"])
             if invite:
                 embed = discord.Embed(
                     title="Member Joined",
@@ -535,9 +500,7 @@ class Events(commands.Cog):
             await member.add_roles(role)
 
             if self.bot.guild_data[member.guild.id]["auto-role-timer"] > 0:
-                await asyncio.sleep(
-                    self.bot.guild_data[member.guild.id]["auto-role-timer"]
-                )
+                await asyncio.sleep(self.bot.guild_data[member.guild.id]["auto-role-timer"])
                 try:
                     await member.remove_roles(role)
                 except discord.HTTPException:
@@ -549,19 +512,17 @@ class Events(commands.Cog):
         # await self.bot.db.delete_automod_ignore(member.guild.id, member.id)
 
         if self.bot.has_goodbye(member):
-            channel = self.bot.get_channel(
-                self.bot.guild_data[member.guild.id]["welcome-channel"]
-            )
+            channel = self.bot.get_channel(self.bot.guild_data[member.guild.id]["welcome-channel"])
             message = self.bot.guild_data[member.guild.id]["goodbye"]
 
             if member.id in self.bot.settings["blacklist"]:
                 await channel.send(":eight_pointed_black_star: | **...**")
             else:
-                message = message.format(**build_format_dict(member=member, guild=member.guild, channel=channel))
+                message = message.format(
+                    **build_format_dict(member=member, guild=member.guild, channel=channel)
+                )
                 try:
-                    await channel.send(
-                        message, allowed_mentions=discord.AllowedMentions()
-                    )
+                    await channel.send(message, allowed_mentions=discord.AllowedMentions())
                 except discord.Forbidden:
                     pass
 
@@ -581,10 +542,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        if (
-            payload.user_id in self.bot.settings["blacklist"]
-            or payload.guild_id is None
-        ):
+        if payload.user_id in self.bot.settings["blacklist"] or payload.guild_id is None:
             return
 
         if payload.message_id in self.bot.polls:

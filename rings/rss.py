@@ -75,7 +75,11 @@ class RSS(commands.Cog):
 
             to_send.append(d)
 
-            await self.bot.db.query("UPDATE necrobot.Youtube SET last_update=$1 WHERE youtuber_id=$2", date, feed[0])
+            await self.bot.db.query(
+                "UPDATE necrobot.Youtube SET last_update=$1 WHERE youtuber_id=$2",
+                date,
+                feed[0],
+            )
 
         for feed in to_send:
             for entry in feed["entries"]:
@@ -126,9 +130,7 @@ class RSS(commands.Cog):
                 title="Streamer Live",
                 description=f"**{stream['user_name']}** has started streaming. Join here: [{stream['title'] if stream['title'] else 'Link'}](https://www.twitch.tv/{stream['user_name']}).",
             )
-            embed.set_thumbnail(
-                url=stream["thumbnail_url"].format(width=1280, height=720)
-            )
+            embed.set_thumbnail(url=stream["thumbnail_url"].format(width=1280, height=720))
             embed.set_footer(**self.bot.bot_footer)
 
             for channel, title_filter in feeds[str(stream["user_id"])]:
@@ -160,7 +162,11 @@ class RSS(commands.Cog):
     @commands.group(invoke_without_command=True, aliases=["yt"])
     @has_perms(3)
     async def youtube(
-        self, ctx : commands.Context, youtube: str = None, *, channel: WritableChannelConverter = None
+        self,
+        ctx: commands.Context,
+        youtube: str = None,
+        *,
+        channel: WritableChannelConverter = None,
     ):
         """Add/edit a youtube stream. As long as you provide a channel, the stream will be set to that
         channelYou can simply pass a channel URL for the ID to be retrieved.
@@ -193,14 +199,10 @@ class RSS(commands.Cog):
         try:
             async with self.bot.session.get(
                 youtube,
-                cookies={
-                    "CONSENT": f"YES+cb.20210328-17-p0.en-GB+FX+{random.randint(100, 999)}"
-                },
+                cookies={"CONSENT": f"YES+cb.20210328-17-p0.en-GB+FX+{random.randint(100, 999)}"},
             ) as resp:
                 if resp.status != 200:
-                    raise BotError(
-                        "This channel does not exist, double check the youtuber id."
-                    )
+                    raise BotError("This channel does not exist, double check the youtuber id.")
 
                 try:
                     youtuber_id = re.findall(
@@ -221,13 +223,11 @@ class RSS(commands.Cog):
             )
         else:
             await self.bot.db.delete_yt_rss_channel(ctx.guild.id, youtuber_name=name)
-            await ctx.send(
-                f":white_check_mark: | Upload notifications for **{name}** disabled."
-            )
+            await ctx.send(f":white_check_mark: | Upload notifications for **{name}** disabled.")
 
     @youtube.command(name="delete")
     @has_perms(3)
-    async def youtube_delete(self, ctx : commands.Context, *, youtuber_name):
+    async def youtube_delete(self, ctx: commands.Context, *, youtuber_name):
         """This subcommand allows you to unsubscribe from a youtube channel based on the name
 
         {usage}
@@ -250,7 +250,9 @@ class RSS(commands.Cog):
 
     @youtube.command(name="filters")
     @has_perms(3)
-    async def youtube_filters(self, ctx : commands.Context, youtuber_name: str, *, filters: str = ""):
+    async def youtube_filters(
+        self, ctx: commands.Context, youtuber_name: str, *, filters: str = ""
+    ):
         """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted.
         The filter itself is very rudimentary but will work so that any video that has exactly these words (in
         any case) in that order in the title will be posted. You can clear filters by calling this command with just
@@ -262,16 +264,12 @@ class RSS(commands.Cog):
         `{pre}youtube filters Jojo edain` - only post videos containing the word `edain`in their title
         `{pre}youtube filters Jojo - clear all filters for that channel, posting every video
         """
-        updated = await self.bot.db.update_yt_filter(
-            ctx.guild.id, youtuber_name, filters.lower()
-        )
+        updated = await self.bot.db.update_yt_filter(ctx.guild.id, youtuber_name, filters.lower())
         if not updated:
             raise BotError("No channel with that name")
 
         if filters == "":
-            await ctx.send(
-                f":white_check_mark: | Filters have been disabled for {youtuber_name}"
-            )
+            await ctx.send(f":white_check_mark: | Filters have been disabled for {youtuber_name}")
         else:
             await ctx.send(
                 f":white_check_mark: | Only videos with the words **{filters}** will be posted for **{youtuber_name}**"
@@ -318,7 +316,11 @@ class RSS(commands.Cog):
     @commands.group(invoke_without_command=True)
     @has_perms(3)
     async def twitch(
-        self, ctx : commands.Context, twitch: str = None, *, channel: WritableChannelConverter = None
+        self,
+        ctx: commands.Context,
+        twitch: str = None,
+        *,
+        channel: WritableChannelConverter = None,
     ):
         """Add/edit twitch streams. Simply provide a channel name or url to get started
 
@@ -350,9 +352,7 @@ class RSS(commands.Cog):
             twitch = re.sub(r"https?:\/\/(?:(?:www|go|m)\.)?twitch\.tv\/", "", twitch)
             user = await self.get_twitch_user(twitch)
 
-            await self.bot.db.upsert_tw_rss(
-                ctx.guild.id, channel.id, user["id"], user["login"]
-            )
+            await self.bot.db.upsert_tw_rss(ctx.guild.id, channel.id, user["id"], user["login"])
             await ctx.send(
                 f":white_check_mark: | Live streams from **{user['display_name']}** will now be posted in {channel.mention}."
             )
@@ -364,7 +364,7 @@ class RSS(commands.Cog):
 
     @twitch.command(name="delete")
     @has_perms(3)
-    async def twitch_delete(self, ctx : commands.Context, *, twitch_name):
+    async def twitch_delete(self, ctx: commands.Context, *, twitch_name):
         """This subcommand allows you to unsubscribe from a twitch channel based on the name
 
         {usage}
@@ -387,7 +387,7 @@ class RSS(commands.Cog):
 
     @twitch.command(name="filters")
     @has_perms(3)
-    async def twitch_filters(self, ctx : commands.Context, twitch_name: str, *, filters: str = ""):
+    async def twitch_filters(self, ctx: commands.Context, twitch_name: str, *, filters: str = ""):
         """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted.
         The filter itself is very rudimentary but will work so that any video that has exactly these words (in
         any case) in that order in the title will be posted. You can clear filters by calling this command with just
@@ -399,16 +399,12 @@ class RSS(commands.Cog):
         `{pre}youtube filters scarra edain` - only post videos containing the word `edain`in their title
         `{pre}youtube filters scarra - clear all filters for that channel, posting every video
         """
-        updated = await self.bot.db.update_tw_filter(
-            ctx.guild.id, twitch_name, filters.lower()
-        )
+        updated = await self.bot.db.update_tw_filter(ctx.guild.id, twitch_name, filters.lower())
         if not updated:
             raise BotError("No channel with that name")
 
         if filters == "":
-            await ctx.send(
-                f":white_check_mark: | Filters have been disabled for {twitch_name}"
-            )
+            await ctx.send(f":white_check_mark: | Filters have been disabled for {twitch_name}")
         else:
             await ctx.send(
                 f":white_check_mark: | Only streams with the words **{filters}** will be posted for **{twitch_name}**"

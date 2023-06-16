@@ -4,11 +4,6 @@ from discord.ext import commands
 from rings.utils.converters import time_converter
 from rings.utils.config import twitch_id, twitch_secret
 
-try:
-    import sh
-except ImportError:
-    import pbs as sh
-
 import io
 import re
 import time
@@ -26,7 +21,7 @@ class Meta(commands.Cog):
 
         self.tasks_hourly = [
             self.rotate_status,
-            self.check_processes,
+            # self.check_processes,
             self.broadcast,
         ]
 
@@ -110,9 +105,7 @@ class Meta(commands.Cog):
             return
 
         del self.bot.guild_data[guild_id]
-        await self.bot.db.query(
-            "DELETE FROM necrobot.Guilds WHERE guild_id = $1", guild_id
-        )
+        await self.bot.db.query("DELETE FROM necrobot.Guilds WHERE guild_id = $1", guild_id)
 
     async def new_member(self, user, guild=None):
         await self.bot.db.query(
@@ -180,9 +173,7 @@ class Meta(commands.Cog):
                     inline=False,
                 )
 
-        embed.add_field(
-            name="Message", value=f"[Jump]({message.jump_url})", inline=False
-        )
+        embed.add_field(name="Message", value=f"[Jump]({message.jump_url})", inline=False)
 
         msg = await starboard.send(content=f"In {message.channel.mention}", embed=embed)
 
@@ -219,21 +210,22 @@ class Meta(commands.Cog):
 
             self.bot.counter += 1
 
-    async def check_processes(self):
-        if not self.bot.check_enabled or self.bot.user.id == self.bot.TEST_BOT_ID:
-            return
+    # NEED TO FIND MODULE FOR SH ON WINDOWS
+    # async def check_processes(self):
+    #     if not self.bot.check_enabled or self.bot.user.id == self.bot.TEST_BOT_ID:
+    #         return
 
-        ps = sh.grep(sh.ps("-ef"), "python3.8")
-        downed = []
-        for file, name in self.processes.items():
-            if file not in ps:
-                downed.append(name)
+    #     ps = sh.grep(sh.ps("-ef"), "python3.8")
+    #     downed = []
+    #     for file, name in self.processes.items():
+    #         if file not in ps:
+    #             downed.append(name)
 
-        if downed:
-            await self.bot.get_bot_channel().send(
-                f":negative_squared_cross_mark: | The following processes are down: {', '.join(downed)}"
-            )
-            self.bot.check_enabled = False
+    #     if downed:
+    #         await self.bot.get_bot_channel().send(
+    #             f":negative_squared_cross_mark: | The following processes are down: {', '.join(downed)}"
+    #         )
+    #         self.bot.check_enabled = False
 
     async def clear_potential_star(self):
         ids = list(self.bot.potential_stars.keys())
@@ -310,9 +302,7 @@ class Meta(commands.Cog):
         except discord.Forbidden:
             pass
 
-        automod = scam_msg.guild.get_channel(
-            self.bot.guild_data[scam_msg.guild.id]["automod"]
-        )
+        automod = scam_msg.guild.get_channel(self.bot.guild_data[scam_msg.guild.id]["automod"])
         if automod is not None:
             embed = discord.Embed(
                 title="Scam Warning",
@@ -457,13 +447,9 @@ class Meta(commands.Cog):
         user = self.bot.get_user(user_id)
         if channel is not None and user is not None:
             if message is None or message == "":
-                await channel.send(
-                    f":alarm_clock: | {user.mention}, you asked to be reminded!"
-                )
+                await channel.send(f":alarm_clock: | {user.mention}, you asked to be reminded!")
             else:
-                await channel.send(
-                    f":alarm_clock: | {user.mention} reminder: **{message}**"
-                )
+                await channel.send(f":alarm_clock: | {user.mention} reminder: **{message}**")
 
         del self.bot.reminders[reminder_id]
         await self.bot.db.delete_reminder(reminder_id)

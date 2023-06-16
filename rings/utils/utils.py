@@ -139,7 +139,7 @@ def midnight():
         hour=0,
         minute=0,
         second=0,
-        tzinfo=datetime.timezone.utc
+        tzinfo=datetime.timezone.utc,
     )
     return time - datetime.datetime.now(datetime.timezone.utc)
 
@@ -154,8 +154,10 @@ def default_settings():
         "day": 0,
     }
 
+
 class dotdict(dict):
     """dot.notation access to dictionary attributes"""
+
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
@@ -168,38 +170,44 @@ def build_format_dict(*, guild=None, member=None, channel=None):
     arg_dict = dict()
 
     if guild is not None:
-        guild_dict = dotdict({
-            "str": str(guild),
-            "name": str(guild.name),
-            "id": str(guild.id),
-            "created_at": str(guild.created_at),
-            "member_count": str(guild.member_count),
-        })
+        guild_dict = dotdict(
+            {
+                "str": str(guild),
+                "name": str(guild.name),
+                "id": str(guild.id),
+                "created_at": str(guild.created_at),
+                "member_count": str(guild.member_count),
+            }
+        )
 
         arg_dict["server"] = guild_dict
 
     if member is not None:
-        member_dict = dotdict({
-            "str": str(member),
-            "display_name": str(member.display_name),
-            "name": str(member.name),
-            "discriminator": str(member.discriminator),
-            "joined_at": str(member.joined_at),
-            "id": str(member.id),
-            "mention": str(member.mention),
-            "created_at": str(member.created_at),
-        })
+        member_dict = dotdict(
+            {
+                "str": str(member),
+                "display_name": str(member.display_name),
+                "name": str(member.name),
+                "discriminator": str(member.discriminator),
+                "joined_at": str(member.joined_at),
+                "id": str(member.id),
+                "mention": str(member.mention),
+                "created_at": str(member.created_at),
+            }
+        )
 
         arg_dict["member"] = member_dict
 
     if channel is not None:
-        channel_dict = dotdict({
-            "str": str(channel),
-            "name": str(channel.name),
-            "id": str(channel.id),
-            "topic": str(channel.topic),
-            "mention": str(channel.mention),
-        })
+        channel_dict = dotdict(
+            {
+                "str": str(channel),
+                "name": str(channel.name),
+                "id": str(channel.id),
+                "topic": str(channel.topic),
+                "mention": str(channel.mention),
+            }
+        )
 
         arg_dict["channel"] = channel_dict
 

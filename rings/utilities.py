@@ -34,7 +34,7 @@ class Utilities(commands.Cog):
     #######################################################################
 
     @commands.command()
-    async def calc(self, ctx : commands.Context, *, equation: str):
+    async def calc(self, ctx: commands.Context, *, equation: str):
         """Evaluates a pythonics mathematical equation, use the following to build your mathematical equations:
         `*` - for multiplication
         `+` - for additions
@@ -60,7 +60,7 @@ class Utilities(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def serverinfo(self, ctx : commands.Context):
+    async def serverinfo(self, ctx: commands.Context):
         """Returns a rich embed of the server's information.
 
         {usage}"""
@@ -84,22 +84,18 @@ class Utilities(commands.Cog):
         embed.add_field(name="**Server ID**", value=guild.id, inline=True)
 
         channel_list = [channel.name for channel in guild.channels]
-        channels = (
-            ", ".join(channel_list) if len(", ".join(channel_list)) < 1024 else ""
-        )
+        channels = ", ".join(channel_list) if len(", ".join(channel_list)) < 1024 else ""
         role_list = [role.name for role in guild.roles]
         roles = ", ".join(role_list) if len(", ".join(role_list)) < 1024 else ""
         embed.add_field(
             name="**Channels**", value=f"{len(channel_list)}: {channels}", inline=False
         )
-        embed.add_field(
-            name="**Roles**", value=f"{len(role_list)}: {roles}", inline=False
-        )
+        embed.add_field(name="**Roles**", value=f"{len(role_list)}: {roles}", inline=False)
 
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def avatar(self, ctx : commands.Context, *, user: MemberConverter = None):
+    async def avatar(self, ctx: commands.Context, *, user: MemberConverter = None):
         """Returns a link to the given user's profile pic
 
         {usage}
@@ -113,7 +109,7 @@ class Utilities(commands.Cog):
         await ctx.send(embed=discord.Embed().set_image(url=avatar))
 
     @commands.command()
-    async def today(self, ctx : commands.Context, choice: str = None, date: str = None):
+    async def today(self, ctx: commands.Context, choice: str = None, date: str = None):
         """Creates a rich information about events/deaths/births that happened today or any day you indicate using the
         `dd/mm` format. The choice argument can be either `events`, `deaths` or `births`.
 
@@ -195,7 +191,7 @@ class Utilities(commands.Cog):
         await paginate(ctx, res["data"][choice], 5, embed_maker)
 
     @commands.group(invoke_without_command=True)
-    async def remindme(self, ctx : commands.Context, *, message):
+    async def remindme(self, ctx: commands.Context, *, message):
         """Creates a reminder in seconds. The following times can be used: days (d),
         hours (h), minutes (m), seconds (s). You can also pass a timestamp to be reminded
         at a certain date in the format "YYYY/MM/DD HH:MM". You can omit either sides if you
@@ -221,22 +217,25 @@ class Utilities(commands.Cog):
             raise BotError("Can't have a reminder that's less than one second!")
 
         reminder_id = await self.bot.db.insert_reminder(
-            ctx.author.id, ctx.channel.id, text, time, datetime.datetime.now(datetime.timezone.utc)
+            ctx.author.id,
+            ctx.channel.id,
+            text,
+            time,
+            datetime.datetime.now(datetime.timezone.utc),
         )
         task = self.bot.loop.create_task(
-            self.bot.meta.reminder_task(
-                reminder_id, sleep, text, ctx.channel.id, ctx.author.id
-            )
+            self.bot.meta.reminder_task(reminder_id, sleep, text, ctx.channel.id, ctx.author.id)
         )
         self.bot.reminders[reminder_id] = task
 
         stamp = format_dt(
-            datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=sleep), style="f"
+            datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=sleep),
+            style="f",
         )
         await ctx.send(f":white_check_mark: | I will remind you of that on **{stamp}**")
 
     @remindme.command(name="delete")
-    async def remindme_delete(self, ctx : commands.Context, reminder_id: int):
+    async def remindme_delete(self, ctx: commands.Context, reminder_id: int):
         """Cancels a reminder based on its id on the reminder list. You can check out the id of each
         reminder using `remindme list`.
 
@@ -256,7 +255,7 @@ class Utilities(commands.Cog):
         await ctx.send(":white_check_mark: | Reminder cancelled")
 
     @remindme.command(name="list")
-    async def remindme_list(self, ctx : commands.Context, user: MemberConverter = None):
+    async def remindme_list(self, ctx: commands.Context, user: MemberConverter = None):
         """List all the reminder you currently have in necrobot's typical paginator. All the reminders include their
         position on the remindme list which can be given to `remindme delete` to cancel a reminder.
 
@@ -282,14 +281,8 @@ class Utilities(commands.Cog):
                     + datetime.timedelta(seconds=time_converter(reminder["timer"])),
                     style="f",
                 )
-                text = (
-                    reminder["reminder"][:500]
-                    if reminder["reminder"][:500]
-                    else "`No Text`"
-                )
-                embed.add_field(
-                    name=f'{reminder["id"]}: {stamp}', value=text, inline=False
-                )
+                text = reminder["reminder"][:500] if reminder["reminder"][:500] else "`No Text`"
+                embed.add_field(name=f'{reminder["id"]}: {stamp}', value=text, inline=False)
 
             return embed
 
@@ -301,7 +294,7 @@ class Utilities(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
-    async def q(self, ctx : commands.Context):
+    async def q(self, ctx: commands.Context):
         """Displays the content of the queue at the moment. Queue are shortlive instances, do not use them to
         hold data for extended periods of time. A queue should atmost only last a couple of days.
 
@@ -321,15 +314,14 @@ class Utilities(commands.Cog):
             return embed
 
         queue = [
-            f"**{ctx.guild.get_member(x).display_name}**"
-            for x in self.queue[ctx.guild.id]["list"]
+            f"**{ctx.guild.get_member(x).display_name}**" for x in self.queue[ctx.guild.id]["list"]
         ]
         await paginate(ctx, queue, 10, embed_maker)
 
     @q.command(name="start")
     @commands.guild_only()
     @has_perms(2)
-    async def q_start(self, ctx : commands.Context):
+    async def q_start(self, ctx: commands.Context):
         """Starts a queue, if there is already an ongoing queue it will fail. The ongoing queue must be cleared first
         using `{pre}q clear`.
 
@@ -343,7 +335,7 @@ class Utilities(commands.Cog):
     @q.command(name="end")
     @commands.guild_only()
     @has_perms(2)
-    async def q_end(self, ctx : commands.Context):
+    async def q_end(self, ctx: commands.Context):
         """Ends a queue but does not clear it. Users will no longer be able to use `{pre}q me`
 
         {usage}"""
@@ -355,7 +347,7 @@ class Utilities(commands.Cog):
     @q.command(name="clear")
     @commands.guild_only()
     @has_perms(2)
-    async def q_clear(self, ctx : commands.Context):
+    async def q_clear(self, ctx: commands.Context):
         """Ends a queue and clears it. Users will no longer be able to add themselves and the content of the queue will be
         emptied. Use it in order to start a new queue
 
@@ -368,7 +360,7 @@ class Utilities(commands.Cog):
 
     @q.command(name="me")
     @commands.guild_only()
-    async def q_me(self, ctx : commands.Context):
+    async def q_me(self, ctx: commands.Context):
         """Queue the user that used the command to the current queue. Will fail if queue has been ended or cleared.
 
         {usage}"""
@@ -386,7 +378,7 @@ class Utilities(commands.Cog):
     @q.command(name="next")
     @commands.guild_only()
     @has_perms(2)
-    async def q_next(self, ctx : commands.Context):
+    async def q_next(self, ctx: commands.Context):
         """Mentions the next user and the one after that so they can get ready.
 
         {usage}"""
@@ -405,7 +397,7 @@ class Utilities(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @leaderboard_enabled()
-    async def leaderboard(self, ctx : commands.Context):
+    async def leaderboard(self, ctx: commands.Context):
         """Base command for the leaderboard, a fun system built for servers to be able to have their own arbitrary
         point system.
 
@@ -444,7 +436,7 @@ class Utilities(commands.Cog):
 
     @leaderboard.command(name="message")
     @has_perms(4)
-    async def leaderboard_message(self, ctx : commands.Context, *, message: str = ""):
+    async def leaderboard_message(self, ctx: commands.Context, *, message: str = ""):
         """Enable the leaderboard and set a message. (Permission level of 4+)
 
         {usage}
@@ -465,7 +457,7 @@ class Utilities(commands.Cog):
     @leaderboard.command(name="symbol")
     @has_perms(4)
     @leaderboard_enabled()
-    async def leaderboard_symbol(self, ctx : commands.Context, *, symbol):
+    async def leaderboard_symbol(self, ctx: commands.Context, *, symbol):
         """Change the symbol for your points (Permission level of 4+)
 
         {usage}
@@ -482,7 +474,7 @@ class Utilities(commands.Cog):
     @leaderboard.command(name="award")
     @has_perms(2)
     @leaderboard_enabled()
-    async def leaderboard_award(self, ctx : commands.Context, user: MemberConverter, points: int):
+    async def leaderboard_award(self, ctx: commands.Context, user: MemberConverter, points: int):
         """Add remove some points. (Permission level of 2+)
 
         {usage}
@@ -500,7 +492,7 @@ class Utilities(commands.Cog):
             await ctx.send(f"{user.mention}, {points} {symbol} has been taken from you")
 
     @commands.command()
-    async def sun(self, ctx : commands.Context, city: str, date: str = None):
+    async def sun(self, ctx: commands.Context, city: str, date: str = None):
         """Get the sunrise and sunset for today based on a city, with an
         optional date in DD/MM/YYYY
 
@@ -515,9 +507,7 @@ class Utilities(commands.Cog):
             return dt.strftime("%H:%M")
 
         def suffix(d):
-            return (
-                "th" if 11 <= d <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(d % 10, "th")
-            )
+            return "th" if 11 <= d <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(d % 10, "th")
 
         def custom_strftime(dt_format, t):
             return t.strftime(dt_format).replace("{S}", str(t.day) + suffix(t.day))
@@ -539,7 +529,9 @@ class Utilities(commands.Cog):
         sun = location.sun(date)
 
         date_string = custom_strftime("%A {S} %B, %Y", date)
-        description = f"**Sunrise**: {to_string(sun['sunrise'])} \n**Sunset**: {to_string(sun['sunset'])}"
+        description = (
+            f"**Sunrise**: {to_string(sun['sunrise'])} \n**Sunset**: {to_string(sun['sunset'])}"
+        )
         embed = discord.Embed(
             colour=self.bot.bot_color, title=date_string, description=description
         )
@@ -549,7 +541,7 @@ class Utilities(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
-    async def giveaway(self, ctx : commands.Context, winners: int, *, time_string: str):
+    async def giveaway(self, ctx: commands.Context, winners: int, *, time_string: str):
         """Start a giveaway that will last for the specified time, after that time a number of winners specified
         with the [winners] argument will be selected. The following times can be used: days (d),
         hours (h), minutes (m), seconds (s).
@@ -592,9 +584,7 @@ class Utilities(commands.Cog):
         if ga_results is None:
             return
 
-        await msg.edit(
-            content=":white_check_mark: The giveaway has ended!", embed=embed
-        )
+        await msg.edit(content=":white_check_mark: The giveaway has ended!", embed=embed)
 
         winner_users = []
         for entry in ga_results["entries"]:
@@ -623,14 +613,12 @@ class Utilities(commands.Cog):
 
     @giveaway.command(name="list")
     @commands.guild_only()
-    async def giveaway_list(self, ctx : commands.Context):
+    async def giveaway_list(self, ctx: commands.Context):
         """Get a list of all current giveaways in this server
 
         {usage}"""
         ga_entries = [
-            x
-            for x in self.bot.ongoing_giveaways.values()
-            if x["msg"].guild.id == ctx.guild.id
+            x for x in self.bot.ongoing_giveaways.values() if x["msg"].guild.id == ctx.guild.id
         ]
         ga_entries.sort(key=lambda x: x["limit"])
 
@@ -655,7 +643,7 @@ class Utilities(commands.Cog):
 
     @giveaway.command(name="cancel")
     @commands.guild_only()
-    async def giveaway_cancel(self, ctx : commands.Context, msg_id: int):
+    async def giveaway_cancel(self, ctx: commands.Context, msg_id: int):
         """Cancel an ongoing giveaway, see `giveaway list` for a list of giveaways and their ID's
 
         {usage}
@@ -686,7 +674,7 @@ class Utilities(commands.Cog):
             if not any(x in line for x in mapping):
                 new_content.append(line)
                 continue
-            
+
             for key, value in mapping.items():
                 if key in line:
                     new_content.append(line.replace(key, value))
@@ -701,9 +689,9 @@ class Utilities(commands.Cog):
 
     @commands.command()
     @commands.max_concurrency(1)
-    async def shortcuts(self, ctx : commands.Context, *, new_shortcuts):
+    async def shortcuts(self, ctx: commands.Context, *, new_shortcuts):
         """Customise your edain shortcuts. Pass a mapping of shortcuts to replace. At
-        the moment this is only available for the english version of Edain and only for 
+        the moment this is only available for the english version of Edain and only for
         a single version. Current version: 4.5.5
 
         Possible key values: y, x, c, v, b
@@ -732,7 +720,10 @@ class Utilities(commands.Cog):
         async with ctx.typing():
             file = self.customise_shortcut(new_shortcuts_mapping)
 
-        await ctx.send(":white_check_mark: | Place this file in the `lang` folder of your game installation", file=file)
+        await ctx.send(
+            ":white_check_mark: | Place this file in the `lang` folder of your game installation",
+            file=file,
+        )
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -746,9 +737,7 @@ class Utilities(commands.Cog):
             return
 
         if payload.emoji.name == "\N{WRAPPED PRESENT}":
-            self.bot.ongoing_giveaways[payload.message_id]["entries"].append(
-                payload.user_id
-            )
+            self.bot.ongoing_giveaways[payload.message_id]["entries"].append(payload.user_id)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
@@ -763,12 +752,9 @@ class Utilities(commands.Cog):
 
         if (
             payload.emoji.name == "\N{WRAPPED PRESENT}"
-            and payload.user_id
-            in self.bot.ongoing_giveaways[payload.message_id]["entries"]
+            and payload.user_id in self.bot.ongoing_giveaways[payload.message_id]["entries"]
         ):
-            self.bot.ongoing_giveaways[payload.message_id]["entries"].remove(
-                payload.user_id
-            )
+            self.bot.ongoing_giveaways[payload.message_id]["entries"].remove(payload.user_id)
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):

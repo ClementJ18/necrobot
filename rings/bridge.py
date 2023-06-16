@@ -46,7 +46,7 @@ class Bridge(commands.Cog):
             },
             "mm": {
                 "id": 688040356184588423,
-                "url": "https://modding-union.com/index.php/topic,36986.0.html"
+                "url": "https://modding-union.com/index.php/topic,36986.0.html",
             },
             "mordor": {
                 "id": 687749364692549651,
@@ -127,9 +127,7 @@ class Bridge(commands.Cog):
                     f":negative_squared_cross_mark: | Error while sending: {e}"
                 )
                 self.bot.pending_posts[post["message"].id] = post
-                await post["message"].remove_reaction(
-                    "\N{GEAR}", post["message"].guild.me
-                )
+                await post["message"].remove_reaction("\N{GEAR}", post["message"].guild.me)
 
     async def get_form(self, url, form_name):
         async with self.bot.session.get(url) as resp:
@@ -201,9 +199,9 @@ class Bridge(commands.Cog):
     async def on_raw_message_edit(self, payload):
         if payload.message_id in self.bot.pending_posts:
             self.bot.pending_posts[payload.message_id]["message"]._update(payload.data)
-            self.bot.pending_posts[payload.message_id][
-                "content"
-            ] = self.bot.pending_posts[payload.message_id]["message"].content
+            self.bot.pending_posts[payload.message_id]["content"] = self.bot.pending_posts[
+                payload.message_id
+            ]["message"].content
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
@@ -225,9 +223,7 @@ class Bridge(commands.Cog):
 
         if message.reference:
             if message.reference.message_id in self.bot.pending_posts:
-                self.bot.pending_posts[message.reference.message_id]["replies"].append(
-                    message
-                )
+                self.bot.pending_posts[message.reference.message_id]["replies"].append(message)
                 return
 
         perms = await self.bot.db.get_permission(message.author.id, message.guild.id)
@@ -257,14 +253,11 @@ class Bridge(commands.Cog):
         if not payload.message_id in self.bot.pending_posts:
             return
 
-        if (
-            not payload.user_id == 241942232867799040
-        ):  # that's me, only I can authorize posts
+        if not payload.user_id == 241942232867799040:  # that's me, only I can authorize posts
             return
 
         if not payload.emoji.name in self.mapping and (
-            not payload.emoji.name in self.test_mapping
-            and payload.channel_id == self.TEST_CHANNEL
+            not payload.emoji.name in self.test_mapping and payload.channel_id == self.TEST_CHANNEL
         ):
             return
 

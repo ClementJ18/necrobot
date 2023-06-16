@@ -88,9 +88,7 @@ def guild_only(guild_id):
             raise commands.CheckFailure("This command cannot be executed in DMs")
 
         if ctx.guild.id not in (guild_id, 311630847969198082):
-            raise commands.CheckFailure(
-                "This command cannot be executed in this server"
-            )
+            raise commands.CheckFailure("This command cannot be executed in this server")
 
         return True
 

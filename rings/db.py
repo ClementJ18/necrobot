@@ -18,9 +18,7 @@ class DatabaseError(Exception):
         self.args = args
 
     def embed(self, bot):
-        formatted = traceback.format_exception(
-            type(self), self, self.__traceback__, chain=False
-        )
+        formatted = traceback.format_exception(type(self), self, self.__traceback__, chain=False)
         msg = f"```py\n{' '.join(formatted)}\n```"
 
         embed = discord.Embed(title="DB Error", description=msg, colour=bot.bot_color)
@@ -73,8 +71,10 @@ class Database(commands.Cog):
         )
 
     async def update_money(self, user_id, *, update=None, add=None):
-        query = "UPDATE necrobot.Users SET necroins = {} WHERE user_id = $1 RETURNING necroins".format(
-            self.math_builder("necroins", 2, update, add),
+        query = (
+            "UPDATE necrobot.Users SET necroins = {} WHERE user_id = $1 RETURNING necroins".format(
+                self.math_builder("necroins", 2, update, add),
+            )
         )
 
         return await self.query(query, user_id, update if update is not None else add)
@@ -100,15 +100,11 @@ class Database(commands.Cog):
         await self.bot.pool.release(conn)
 
     async def get_user(self, user_id):
-        return await self.query(
-            "SELECT * FROM necrobot.Users WHERE user_id = $1", user_id
-        )
+        return await self.query("SELECT * FROM necrobot.Users WHERE user_id = $1", user_id)
 
     async def get_permission(self, user_id, guild_id=None):
         if guild_id is None:
-            query = (
-                "SELECT guild_id, level FROM necrobot.Permissions WHERE user_id = $1"
-            )
+            query = "SELECT guild_id, level FROM necrobot.Permissions WHERE user_id = $1"
             return await self.query(query, user_id)
 
         query = "SELECT level FROM necrobot.Permissions WHERE user_id = $1 AND guild_id = $2"
@@ -135,16 +131,12 @@ class Database(commands.Cog):
             query = "UPDATE necrobot.Permissions SET level = {} WHERE user_id = $1 RETURNING level".format(
                 self.math_builder("level", 2, update, add),
             )
-            return await self.query(
-                query, user_id, update if update is not None else add
-            )
+            return await self.query(query, user_id, update if update is not None else add)
 
         query = "UPDATE necrobot.Permissions SET level = {} WHERE user_id = $1 AND guild_id = $2 RETURNING level".format(
             self.math_builder("level", 3, update, add),
         )
-        return await self.query(
-            query, user_id, guild_id, update if update is not None else add
-        )
+        return await self.query(query, user_id, guild_id, update if update is not None else add)
 
     async def insert_permission(self, user_id, guild_id, level):
         await self.query(
@@ -261,9 +253,7 @@ class Database(commands.Cog):
         raise DatabaseError("Something went wrong with badge selection")
 
     async def insert_badge(self, user_id, badge, spot=0):
-        await self.query(
-            "INSERT INTO necrobot.Badges VALUES ($1, $2, $3)", user_id, badge, spot
-        )
+        await self.query("INSERT INTO necrobot.Badges VALUES ($1, $2, $3)", user_id, badge, spot)
 
     async def delete_badge(self, user_id, badge=None):
         if badge is None:
@@ -294,9 +284,7 @@ class Database(commands.Cog):
         if name is None:
             return await self.query("SELECT * FROM necrobot.BadgeShop")
 
-        return await self.query(
-            "SELECT * FROM necrobot.BadgeShop WHERE name = $1", name
-        )
+        return await self.query("SELECT * FROM necrobot.BadgeShop WHERE name = $1", name)
 
     async def get_tutorial(self, user_id):
         return await self.query(
@@ -412,9 +400,7 @@ class Database(commands.Cog):
         )
 
         self.bot.guild_data[guild_id]["ignore-automod"] = [
-            x
-            for x in self.bot.guild_data[guild_id]["ignore-automod"]
-            if x not in objects_id
+            x for x in self.bot.guild_data[guild_id]["ignore-automod"] if x not in objects_id
         ]
 
     async def insert_command_ignore(self, guild_id, *objects_id):
@@ -440,9 +426,7 @@ class Database(commands.Cog):
         )
 
         self.bot.guild_data[guild_id]["ignore-command"] = [
-            x
-            for x in self.bot.guild_data[guild_id]["ignore-command"]
-            if x not in objects_id
+            x for x in self.bot.guild_data[guild_id]["ignore-command"] if x not in objects_id
         ]
 
     async def update_mute_role(self, guild_id, role_id=0):
@@ -476,11 +460,7 @@ class Database(commands.Cog):
         )
 
         self.bot.guild_data[guild_id]["self-roles"].extend(
-            [
-                x
-                for x in roles_id
-                if x not in self.bot.guild_data[guild_id]["self-roles"]
-            ]
+            [x for x in roles_id if x not in self.bot.guild_data[guild_id]["self-roles"]]
         )
 
     async def delete_self_roles(self, guild_id, *roles_id):
@@ -562,9 +542,7 @@ class Database(commands.Cog):
         if user_id is None:
             return await self.query("SELECT * FROM necrobot.Reminders")
 
-        return await self.query(
-            "SELECT * FROM necrobot.Reminders WHERE user_id = $1", user_id
-        )
+        return await self.query("SELECT * FROM necrobot.Reminders WHERE user_id = $1", user_id)
 
     async def insert_reminder(self, user_id, channel_id, reminder, timer, start_date):
         return await self.query(
@@ -635,17 +613,13 @@ class Database(commands.Cog):
 
     async def get_yt_rss(self, guild_id=None):
         if guild_id is not None:
-            return await self.query(
-                "SELECT * FROM necrobot.Youtube WHERE guild_id = $1", guild_id
-            )
+            return await self.query("SELECT * FROM necrobot.Youtube WHERE guild_id = $1", guild_id)
 
         return await self.query("SELECT * FROM necrobot.Youtube")
 
     async def get_tw_rss(self, guild_id=None):
         if guild_id is not None:
-            return await self.query(
-                "SELECT * FROM necrobot.Twitch WHERE guild_id = $1", guild_id
-            )
+            return await self.query("SELECT * FROM necrobot.Twitch WHERE guild_id = $1", guild_id)
 
         return await self.query("SELECT * FROM necrobot.Twitch")
 
@@ -701,9 +675,7 @@ class Database(commands.Cog):
             fetchval=True,
         )
 
-    async def delete_yt_rss_channel(
-        self, guild_id, *, channel_id=None, youtuber_name=None
-    ):
+    async def delete_yt_rss_channel(self, guild_id, *, channel_id=None, youtuber_name=None):
         if channel_id is not None:
             return await self.query(
                 "DELETE FROM necrobot.Youtube WHERE guild_id = $1 AND channel_id = $2",
@@ -718,13 +690,9 @@ class Database(commands.Cog):
                 youtuber_name,
             )
 
-        return await self.query(
-            "DELETE FROM necrobot.Youtube WHERE guild_id = $1", guild_id
-        )
+        return await self.query("DELETE FROM necrobot.Youtube WHERE guild_id = $1", guild_id)
 
-    async def delete_tw_rss_channel(
-        self, guild_id, *, channel_id=None, twitch_name=None
-    ):
+    async def delete_tw_rss_channel(self, guild_id, *, channel_id=None, twitch_name=None):
         if channel_id is not None:
             return await self.query(
                 "DELETE FROM necrobot.Twitch WHERE guild_id = $1 AND channel_id = $2",
@@ -739,9 +707,7 @@ class Database(commands.Cog):
                 twitch_name,
             )
 
-        return await self.query(
-            "DELETE FROM necrobot.Twitch WHERE guild_id = $1", guild_id
-        )
+        return await self.query("DELETE FROM necrobot.Twitch WHERE guild_id = $1", guild_id)
 
     async def query(self, query, *args, fetchval=False, many=False, cn=None, **kwargs):
         if cn is None:

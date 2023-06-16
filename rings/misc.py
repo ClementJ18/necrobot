@@ -15,6 +15,7 @@ import itertools
 from io import BytesIO
 from bs4 import BeautifulSoup
 
+
 class Misc(commands.Cog):
     """A cog for all bunch commands that don't have a specific category they can stick to."""
 
@@ -41,7 +42,7 @@ class Misc(commands.Cog):
 
     @commands.command()
     @commands.cooldown(3, 5, BucketType.channel)
-    async def cat(self, ctx : commands.Context):
+    async def cat(self, ctx: commands.Context):
         """Posts a random cat picture from random.cat
 
         {usage}"""
@@ -64,19 +65,17 @@ class Misc(commands.Cog):
                     ) from e
 
     @commands.command()
-    async def dog(self, ctx : commands.Context):
+    async def dog(self, ctx: commands.Context):
         """Posts a random dog picture from random.dog
 
         {usage}"""
-        async with aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(ssl=False)
-        ) as cs:
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as cs:
             async with cs.get("https://random.dog/woof.json") as r:
                 res = await r.json()
                 await ctx.send(embed=discord.Embed().set_image(url=res["url"]))
 
     @commands.command()
-    async def fight(self, ctx : commands.Context, *, tributes):
+    async def fight(self, ctx: commands.Context, *, tributes):
         """Takes in a list of tributes separated by `,` and simulates a hunger games based on Bransteele's Hunger Game
         Simulator. More than one tribute needs to be supplied. Duplicate names will be supressed.
 
@@ -103,7 +102,7 @@ class Misc(commands.Cog):
 
     @commands.group(invoke_without_command=True, aliases=["matchup"])
     @guild_only(496617962334060545)
-    async def matchups(self, ctx : commands.Context, *, arguments=None):
+    async def matchups(self, ctx: commands.Context, *, arguments=None):
         """Get data about the results of matchups stored in the bot. You can pass either a faction name, a sorting key
         or both.
 
@@ -185,9 +184,7 @@ class Misc(commands.Cog):
             "played": {"key": lambda x: x["victories"] + x["defeats"], "reverse": True},
             "victories": {"key": lambda x: x["victories"], "reverse": True},
             "defeats": {
-                "key": lambda x: x["defeats"]
-                if x["victories"] + x["defeats"] > 0
-                else -1,
+                "key": lambda x: x["defeats"] if x["victories"] + x["defeats"] > 0 else -1,
                 "reverse": True,
             },
         }
@@ -222,7 +219,7 @@ class Misc(commands.Cog):
     @commands.check_any(
         commands.has_role(497009979857960963), has_perms(6)
     )  # has Admin role on server or is Bot Admin
-    async def matchups_reset(self, ctx : commands.Context):
+    async def matchups_reset(self, ctx: commands.Context):
         """Reset the counters
 
         {usage}
@@ -248,7 +245,7 @@ class Misc(commands.Cog):
     @commands.check_any(
         commands.has_role(497009979857960963), has_perms(6)
     )  # has Admin role on server or is Bot Admin
-    async def matchups_logs(self, ctx : commands.Context, *, args=None):
+    async def matchups_logs(self, ctx: commands.Context, *, args=None):
         """Check who submitted what results, can be filtered using arguments.
 
         user=[user]
@@ -323,9 +320,7 @@ class Misc(commands.Cog):
 
         filters = {}
         if args is not None:
-            filters_r = re.findall(
-                r"(user|winner|loser)=(.*?)(?=user|winner|loser|$)", args
-            )
+            filters_r = re.findall(r"(user|winner|loser)=(.*?)(?=user|winner|loser|$)", args)
             for key, value in filters_r:
                 filters[key] = await filter_check[key](value)
 
@@ -338,7 +333,7 @@ class Misc(commands.Cog):
     @commands.check_any(
         commands.has_role(497009979857960963), has_perms(6)
     )  # has Admin role on server or is Bot Admin
-    async def matchups_delete(self, ctx : commands.Context, log_id: int):
+    async def matchups_delete(self, ctx: commands.Context, log_id: int):
         """Delete a log to remove the entry and remove it from the counters. Get the log_id
         from the `matchup logs` command.
 
@@ -367,7 +362,7 @@ class Misc(commands.Cog):
         await ctx.send(":white_check_mark: | Log removed, counters adjusted.")
 
     # @commands.command()
-    async def pdf(self, ctx : commands.Context, *, doi):
+    async def pdf(self, ctx: commands.Context, *, doi):
         """Get a PDF from a doi using sci-hub
 
         {usage}
@@ -408,9 +403,7 @@ class Misc(commands.Cog):
         if g.get_role(497009979857960963) in g.get_member(payload.user_id).roles:
             return
 
-        faction_index = self.bot.settings["messages"]["victories"].index(
-            payload.message_id
-        )
+        faction_index = self.bot.settings["messages"]["victories"].index(payload.message_id)
         faction_name = self.bot.settings["messages"]["factions"][faction_index]
 
         enemy_index = self.bot.settings["messages"]["emotes"].index(payload.emoji.id)
@@ -424,9 +417,7 @@ class Misc(commands.Cog):
             )
 
         try:
-            checkmark = await self.bot.wait_for(
-                "raw_reaction_add", check=check, timeout=15
-            )
+            checkmark = await self.bot.wait_for("raw_reaction_add", check=check, timeout=15)
         except asyncio.TimeoutError:
             return await self.bot._connection.http.remove_reaction(
                 payload.channel_id,

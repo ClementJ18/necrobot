@@ -14,31 +14,39 @@ class RP(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-
-    def cog_check(self, ctx : commands.Context):
+    def cog_check(self, ctx: commands.Context):
         if ctx.guild:
             return True
 
         raise commands.CheckFailure("This command cannot be used in private messages.")
 
-    async def _activity(self, ctx : commands.Context, duration, channels):
+    async def _activity(self, ctx: commands.Context, duration, channels):
         def is_active(ch):
             if getattr(ch, "last_message_id", None) is None:
                 return False
 
             ch_time = discord.utils.snowflake_time(ch.last_message_id)
             return ch_time > (now - datetime.timedelta(seconds=time))
-    
+
         now = discord.utils.utcnow()
         time = 300
         if duration is not None:
             time = time_converter(duration)
 
-        filtered_channels = [channel for channel in channels if is_active(channel[0]) and channel[0].id != ctx.channel.id]
+        filtered_channels = [
+            channel
+            for channel in channels
+            if is_active(channel[0]) and channel[0].id != ctx.channel.id
+        ]
         filtered_channels.sort(key=lambda x: (now - discord.utils.snowflake_time(x[1])).seconds)
 
         def embed_maker(view, entries):
-            formatted_channels = '\n'.join([f"{channel.mention} - {(now - discord.utils.snowflake_time(last_message_id)).seconds // 60} minute(s) ago" for channel, last_message_id in entries])
+            formatted_channels = "\n".join(
+                [
+                    f"{channel.mention} - {(now - discord.utils.snowflake_time(last_message_id)).seconds // 60} minute(s) ago"
+                    for channel, last_message_id in entries
+                ]
+            )
 
             embed = discord.Embed(
                 title=f"Active Channels ({view.page_number}/{view.page_count})",
@@ -53,7 +61,7 @@ class RP(commands.Cog):
         await paginate(ctx, filtered_channels, 10, embed_maker)
 
     @commands.group(invoke_without_command=True)
-    async def activity(self, ctx : commands.Context, *, duration : str = None):
+    async def activity(self, ctx: commands.Context, *, duration: str = None):
         """Get a list of channels that have had a message in the last amount of time specified.
         The following times can be used: days (d), hours (h), minutes (m), seconds (s).
 
@@ -62,12 +70,22 @@ class RP(commands.Cog):
         __Examples__
         {pre}activity 2d - Get channels that have had a message in the last 2 days
         """
-        channels = [(channel, channel.last_message_id) for channel in [*ctx.guild.text_channels, *ctx.guild.threads]]
+        channels = [
+            (channel, channel.last_message_id)
+            for channel in [*ctx.guild.text_channels, *ctx.guild.threads]
+        ]
         await self._activity(ctx, duration, channels)
 
-
     @activity.command(name="ignore")
-    async def activity_ignore(self, ctx : commands.Context, ignored : commands.Greedy[Union[discord.TextChannel, discord.CategoryChannel, discord.Thread]], *, duration : str = None):
+    async def activity_ignore(
+        self,
+        ctx: commands.Context,
+        ignored: commands.Greedy[
+            Union[discord.TextChannel, discord.CategoryChannel, discord.Thread]
+        ],
+        *,
+        duration: str = None,
+    ):
         to_ignore = [ctx.channel.id]
 
         for channel in ignored:
@@ -76,7 +94,11 @@ class RP(commands.Cog):
             else:
                 to_ignore.extend([ch.id for ch in channel.channels])
 
-        channels = [(channel, channel.last_message_id) for channel in [*ctx.guild.text_channels, *ctx.guild.threads] if channel.id not in to_ignore]
+        channels = [
+            (channel, channel.last_message_id)
+            for channel in [*ctx.guild.text_channels, *ctx.guild.threads]
+            if channel.id not in to_ignore
+        ]
         await self._activity(ctx, duration, channels)
 
 

@@ -44,7 +44,11 @@ class NecrobotHelp(cmd.HelpCommand):
         return f"~~{command.qualified_name}~~"
 
     async def get_brief_signature(self, command):
-        first_line = command.help.split("\n")[0]
+        help = command.help
+        if help is None:
+            help = "{usage}"
+
+        first_line = help.split("\n")[0]
         formatted = first_line.format(usage=self.get_command_signature(command))
 
         if len(formatted) > 100:
@@ -88,7 +92,9 @@ class NecrobotHelp(cmd.HelpCommand):
         await self.get_destination().send(help_msg)
 
     async def base_command_help(self, command):
-        help_msg = f":information_source: **`{command}` command** :information_source:\n{command.help}"
+        help_msg = (
+            f":information_source: **`{command}` command** :information_source:\n{command.help}"
+        )
         signature = f"__Usage__\n{self.get_command_signature(command)}"
 
         perms_check = discord.utils.find(
@@ -96,7 +102,9 @@ class NecrobotHelp(cmd.HelpCommand):
         )
         if perms_check is not None:
             name = self.context.bot.perms_name[perms_check.level]
-            signature = f"**Permission level required: {name} ({perms_check.level}+)**\n\n{signature}"
+            signature = (
+                f"**Permission level required: {name} ({perms_check.level}+)**\n\n{signature}"
+            )
 
         help_msg = help_msg.format(usage=signature, pre=self.context.clean_prefix)
 

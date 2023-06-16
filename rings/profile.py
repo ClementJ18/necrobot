@@ -25,18 +25,10 @@ from typing import Union
 class Profile(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.font17 = ImageFont.truetype(
-            "rings/utils/profile/fonts/Ringbearer Medium.ttf", 17
-        )
-        self.font20 = ImageFont.truetype(
-            "rings/utils/profile/fonts/Ringbearer Medium.ttf", 20
-        )
-        self.font21 = ImageFont.truetype(
-            "rings/utils/profile/fonts/Ringbearer Medium.ttf", 21
-        )
-        self.font30 = ImageFont.truetype(
-            "rings/utils/profile/fonts/Ringbearer Medium.ttf", 30
-        )
+        self.font17 = ImageFont.truetype("rings/utils/profile/fonts/Ringbearer Medium.ttf", 17)
+        self.font20 = ImageFont.truetype("rings/utils/profile/fonts/Ringbearer Medium.ttf", 20)
+        self.font21 = ImageFont.truetype("rings/utils/profile/fonts/Ringbearer Medium.ttf", 21)
+        self.font30 = ImageFont.truetype("rings/utils/profile/fonts/Ringbearer Medium.ttf", 30)
         self.overlay = Image.open("rings/utils/profile/overlay.png").convert("RGBA")
         self.badges_coords = [
             (580, 295, 680, 395),
@@ -54,7 +46,7 @@ class Profile(commands.Cog):
     #######################################################################
 
     @commands.group(invoke_without_command=True)
-    async def balance(self, ctx : commands.Context, *, user: MemberConverter = None):
+    async def balance(self, ctx: commands.Context, *, user: MemberConverter = None):
         """Prints the given user's NecroBot balance, if no user is supplied then it will print your own NecroBot balance.
 
         {usage}
@@ -74,7 +66,7 @@ class Profile(commands.Cog):
             )
 
     @balance.command(name="server")
-    async def balance_server(self, ctx : commands.Context):
+    async def balance_server(self, ctx: commands.Context):
         """See the ranking of users with the most money within the server
 
         {usage}
@@ -108,7 +100,7 @@ class Profile(commands.Cog):
         await paginate(ctx, monies, 10, embed_maker)
 
     @balance.command(name="global")
-    async def balance_global(self, ctx : commands.Context):
+    async def balance_global(self, ctx: commands.Context):
         """See the ranking of users with the most money throughout discord
 
         {usage}
@@ -143,7 +135,7 @@ class Profile(commands.Cog):
 
     @commands.command(name="daily", cooldown_after_parsing=True)
     @commands.cooldown(1, 60, BucketType.user)
-    async def daily(self, ctx : commands.Context, *, member: MemberConverter = None):
+    async def daily(self, ctx: commands.Context, *, member: MemberConverter = None):
         """Adds your daily 200 :euro: to your NecroBot balance. This can be used at anytime once every GMT day. Can
         also be gifted to a user for some extra cash.
 
@@ -180,7 +172,7 @@ class Profile(commands.Cog):
         await ctx.send(f":m: | {message}")
 
     @commands.command()
-    async def pay(self, ctx : commands.Context, payee: MemberConverter, amount: MoneyConverter):
+    async def pay(self, ctx: commands.Context, payee: MemberConverter, amount: MoneyConverter):
         """Transfers the given amount of money to the given user's NecroBot bank account.
 
         {usage}
@@ -215,7 +207,7 @@ class Profile(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def info(self, ctx : commands.Context, *, user: MemberConverter = None):
+    async def info(self, ctx: commands.Context, *, user: MemberConverter = None):
         """Returns a rich embed of the given user's info. If no user is provided it will return your own info.
 
         {usage}
@@ -244,12 +236,8 @@ class Profile(commands.Cog):
             inline=False,
         )
 
-        embed.add_field(
-            name="Date Created", value=user.created_at.strftime("%d - %B - %Y %H:%M")
-        )
-        embed.add_field(
-            name="Date Joined", value=user.joined_at.strftime("%d - %B - %Y %H:%M")
-        )
+        embed.add_field(name="Date Created", value=user.created_at.strftime("%d - %B - %Y %H:%M"))
+        embed.add_field(name="Date Joined", value=user.joined_at.strftime("%d - %B - %Y %H:%M"))
 
         badges = await self.bot.db.get_badges(user.id)
         string = " - ".join([x["name"] for x in badges])
@@ -259,7 +247,7 @@ class Profile(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def profile(self, ctx : commands.Context, *, user: MemberConverter = None):
+    async def profile(self, ctx: commands.Context, *, user: MemberConverter = None):
         """Shows your profile information in a picture
 
         {usage}
@@ -270,9 +258,7 @@ class Profile(commands.Cog):
 
         def profile_maker():
             im = (
-                Image.open(
-                    f"rings/utils/profile/backgrounds/{random.randint(1,22)}.jpg"
-                )
+                Image.open(f"rings/utils/profile/backgrounds/{random.randint(1,22)}.jpg")
                 .resize((1024, 512))
                 .convert("RGBA")
             )
@@ -332,7 +318,7 @@ class Profile(commands.Cog):
             await ctx.send(file=ifile)
 
     @commands.command()
-    async def title(self, ctx : commands.Context, *, text: str = ""):
+    async def title(self, ctx: commands.Context, *, text: str = ""):
         """Sets your NecroBot title to [text]. If no text is provided it will reset it. Limited to max 32 characters.
 
         {usage}
@@ -352,7 +338,7 @@ class Profile(commands.Cog):
             await ctx.send(f":white_check_mark: | Great, your title is now **{text}**")
 
     @commands.group(aliases=["badge"], invoke_without_command=True)
-    async def badges(self, ctx : commands.Context):
+    async def badges(self, ctx: commands.Context):
         """The badge system allows you to buy badges and place them on profiles. Show the world what your favorite
         games/movies/books/things are. You can see all the badges from the badge shop.
 
@@ -366,7 +352,10 @@ class Profile(commands.Cog):
 
     @badges.command(name="place")
     async def badges_place(
-        self, ctx : commands.Context, spot: RangeConverter(1, 8), badge: BadgeConverter = None
+        self,
+        ctx: commands.Context,
+        spot: RangeConverter(1, 8),
+        badge: BadgeConverter = None,
     ):
         """Opens the grid menu to allow you to place a badge or reset a badge. Simply supply a badge name to the command to
         place a badge or supply "none" to reset the grid location.
@@ -387,13 +376,14 @@ class Profile(commands.Cog):
 
             badge = badge[0]
             await self.bot.db.update_spot_badge(ctx.author.id, spot, badge["name"])
-            await ctx.send(
-                f":white_check_mark: | **{badge['name']}** set on spot **{spot}**"
-            )
+            await ctx.send(f":white_check_mark: | **{badge['name']}** set on spot **{spot}**")
 
     @badges.command(name="buy")
     async def badges_buy(
-        self, ctx : commands.Context, badge: BadgeConverter, spot: RangeConverter(1, 8) = 0
+        self,
+        ctx: commands.Context,
+        badge: BadgeConverter,
+        spot: RangeConverter(1, 8) = 0,
     ):
         """Allows to buy the given badge and place it on a specific spot
 
@@ -421,7 +411,7 @@ class Profile(commands.Cog):
             await ctx.send(f":white_check_mark: | Bought badge **{badge['name']}**")
 
     @badges.group(name="shop", invoke_without_command=True)
-    async def badge_shop(self, ctx : commands.Context):
+    async def badge_shop(self, ctx: commands.Context):
         """Open the badge show to browse and preview all the badges. To buy a badge simply pass the name
         to `{pre}badge buy`.
 
@@ -442,7 +432,7 @@ class Profile(commands.Cog):
 
     @badge_shop.command(name="generate")
     @has_perms(6)
-    async def badge_shop_generate(self, ctx : commands.Context):
+    async def badge_shop_generate(self, ctx: commands.Context):
         """Generate images used by the bage shop react menu, needs to be updated every so often.
 
         {usage}
@@ -464,14 +454,12 @@ class Profile(commands.Cog):
                 W_modif = 183 * (counter % 3)
                 H_modif = 183 * (counter // 3)
 
-                badge = Image.open(
-                    f"rings/utils/profile/badges/{entry['file_name']}"
-                ).resize((101, 101))
+                badge = Image.open(f"rings/utils/profile/badges/{entry['file_name']}").resize(
+                    (101, 101)
+                )
                 im.paste(badge, (41 + W_modif, 43 + H_modif), mask=badge)
 
-                draw_centered_text(
-                    draw, entry["name"], 91 + W_modif, 29 + H_modif, self.font20
-                )
+                draw_centered_text(draw, entry["name"], 91 + W_modif, 29 + H_modif, self.font20)
 
                 price = "Special" if entry["special"] else "{:,}$".format(entry["cost"])
                 font = self.font17 if entry["special"] else self.font20
@@ -507,7 +495,10 @@ class Profile(commands.Cog):
 
     @commands.group(invoke_without_command=True, aliases=["star"])
     async def stars(
-        self, ctx : commands.Context, user: Union[MemberConverter, str] = None, key: str = "date"
+        self,
+        ctx: commands.Context,
+        user: Union[MemberConverter, str] = None,
+        key: str = "date",
     ):
         """
         See all the starred messages of a user or all the ones on the server. Order by most recent first,
@@ -558,7 +549,7 @@ class Profile(commands.Cog):
         await paginate(ctx, stars, 15, embed_maker)
 
     @stars.group(invoke_without_command=True, name="ranking")
-    async def stars_ranking(self, ctx : commands.Context, order: str = "messages"):
+    async def stars_ranking(self, ctx: commands.Context, order: str = "messages"):
         """Server ranking for amount of starred messages and amount of stars. By default
         ordered by number of starred message, other order keywords can be passed to change this:
             - stars : order users based on their number of stars descending
@@ -592,7 +583,7 @@ class Profile(commands.Cog):
         await paginate(ctx, results, 15, embed_maker)
 
     @stars_ranking.command(name="old")
-    async def stars_ranking_old(self, ctx : commands.Context):
+    async def stars_ranking_old(self, ctx: commands.Context):
         results = await self.bot.db.query(
             """SELECT user_id, COUNT(message_id) FROM necrobot.Starred 
             WHERE guild_id = $1 AND user_id IS NOT null 
@@ -605,7 +596,9 @@ class Profile(commands.Cog):
             description = ""
             for row in entries:
                 member = ctx.guild.get_member(row[0])
-                description += f"- {member.mention if member else 'User Left'}: {row[1]} starred messages \n"
+                description += (
+                    f"- {member.mention if member else 'User Left'}: {row[1]} starred messages \n"
+                )
 
             embed = discord.Embed(
                 title=f"Starboard Leaderboard ({view.page_number}/{view.page_count})",

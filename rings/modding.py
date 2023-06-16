@@ -21,7 +21,7 @@ class Modding(commands.Cog):
     #######################################################################
 
     @commands.command()
-    async def game(self, ctx : commands.Context, *, game: str):
+    async def game(self, ctx: commands.Context, *, game: str):
         """This command takes in a game name from ModDB and returns a rich embed of it. Due to the high variety of
         game formats, embed appearances will vary but it should always return one as long as it is given the name of
         an existing game
@@ -61,9 +61,7 @@ class Modding(commands.Cog):
             elif page == 2:
                 embed.add_field(
                     name="\u200b",
-                    value=" ".join(
-                        [f"[#{tag}]({url})" for tag, url in game.tags.items()]
-                    ),
+                    value=" ".join([f"[#{tag}]({url})" for tag, url in game.tags.items()]),
                     inline=False,
                 )
                 embed.add_field(
@@ -78,8 +76,7 @@ class Modding(commands.Cog):
                 )
             elif page == 3:
                 suggestion_list = [
-                    f"[{suggestion.name}]({suggestion.url})"
-                    for suggestion in game.suggestions
+                    f"[{suggestion.name}]({suggestion.url})" for suggestion in game.suggestions
                 ]
                 embed.add_field(
                     name="You may also like",
@@ -112,7 +109,7 @@ class Modding(commands.Cog):
         await paginate(ctx, [1, 2, 3], 1, embed_maker)
 
     @commands.command()
-    async def mod(self, ctx : commands.Context, *, mod: str):
+    async def mod(self, ctx: commands.Context, *, mod: str):
         """This command takes in a mod name from ModDB and returns a rich embed of it. Due to the high variety of
         mod formats, embed appearances will vary but it should always return one as long as it is given the name of
         an existing mod
@@ -152,9 +149,7 @@ class Modding(commands.Cog):
             elif page == 2:
                 embed.add_field(
                     name="\u200b",
-                    value=" ".join(
-                        [f"[#{tag}]({url})" for tag, url in mod.tags.items()]
-                    ),
+                    value=" ".join([f"[#{tag}]({url})" for tag, url in mod.tags.items()]),
                     inline=False,
                 )
                 embed.add_field(
@@ -169,8 +164,7 @@ class Modding(commands.Cog):
                 )
             elif page == 3:
                 suggestion_list = [
-                    f"[{suggestion.name}]({suggestion.url})"
-                    for suggestion in mod.suggestions
+                    f"[{suggestion.name}]({suggestion.url})" for suggestion in mod.suggestions
                 ]
                 embed.add_field(
                     name="You may also like",

@@ -63,20 +63,19 @@ class Wiki(commands.Cog):
         if (
             self.RATE_LIMIT
             and self.RATE_LIMIT_LAST_CALL
-            and self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT > datetime.now(datetime.timezone.utc)
+            and self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT
+            > datetime.now(datetime.timezone.utc)
         ):
 
             # it hasn't been long enough since the last API call
             # so wait until we're in the clear to make the request
 
-            wait_time = (
-                self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT
-            ) - datetime.now(datetime.timezone.utc)
+            wait_time = (self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT) - datetime.now(
+                datetime.timezone.utc
+            )
             await asyncio.sleep(int(wait_time.total_seconds()))
 
-        async with self.bot.session.get(
-            api_url, params=params, headers=headers
-        ) as resp:
+        async with self.bot.session.get(api_url, params=params, headers=headers) as resp:
             r = await resp.json()
 
         if self.RATE_LIMIT:
@@ -138,7 +137,7 @@ class Wiki(commands.Cog):
         _check_error_response(request, page_id)
         return request
 
-    async def mediawiki_handler(self, ctx : commands.Context, article, fandom=None):
+    async def mediawiki_handler(self, ctx: commands.Context, article, fandom=None):
 
         if fandom is not None:
             base = f"https://{fandom}.wikia.com"
@@ -171,9 +170,7 @@ class Wiki(commands.Cog):
         parsed = await self.parse(page_id, fandom)
 
         soup = BeautifulSoup(parsed["parse"]["text"]["*"], "html.parser")
-        description = [
-            x for x in soup.find_all("p") if "aside" not in str(x) and x.text.strip()
-        ]
+        description = [x for x in soup.find_all("p") if "aside" not in str(x) and x.text.strip()]
         if not description:
             description = "No description found"
         else:
@@ -206,7 +203,7 @@ class Wiki(commands.Cog):
     #######################################################################
 
     @commands.command()
-    async def edain(self, ctx : commands.Context, *, article: str = None):
+    async def edain(self, ctx: commands.Context, *, article: str = None):
         """Performs a search on the Edain Mod Wiki for the give article name. If an article is found then it will
         return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
@@ -219,7 +216,7 @@ class Wiki(commands.Cog):
             await self.mediawiki_handler(ctx, article, "edain")
 
     @commands.command()
-    async def faq(self, ctx : commands.Context, *, question: str = None):
+    async def faq(self, ctx: commands.Context, *, question: str = None):
         """Replies with up to 5 links from the Edain FAQ that have matched close to the initial question.
         {usage}
         __Example__
@@ -246,15 +243,11 @@ class Wiki(commands.Cog):
                 continue
 
             section = section[0]
-            url = urllib.parse.quote(section.replace(" ", "_"), safe="/:").replace(
-                "%", "."
-            )
+            url = urllib.parse.quote(section.replace(" ", "_"), safe="/:").replace("%", ".")
             message.append(f"[{section}]({base}#{url})")
 
         if not message:
-            return await ctx.send(
-                ":negative_squared_cross_mark: | Sorry, didn't find anything"
-            )
+            return await ctx.send(":negative_squared_cross_mark: | Sorry, didn't find anything")
 
         embed = discord.Embed(
             title="Frequently Asked Questions",
@@ -268,7 +261,7 @@ class Wiki(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def aotr(self, ctx : commands.Context, *, article: str = None):
+    async def aotr(self, ctx: commands.Context, *, article: str = None):
         """Performs a search on the Age of the Ring Wiki for the give article name. If an article is found then it will
         return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
@@ -281,7 +274,7 @@ class Wiki(commands.Cog):
             await self.mediawiki_handler(ctx, article, "aotr")
 
     @commands.command()
-    async def wiki(self, ctx : commands.Context, sub_wiki, *, article: str = None):
+    async def wiki(self, ctx: commands.Context, sub_wiki, *, article: str = None):
         """Performs a search on the given wiki (if valid) for the given article name. If an article is found then it
         will return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
@@ -295,7 +288,7 @@ class Wiki(commands.Cog):
             await self.mediawiki_handler(ctx, article, sub_wiki)
 
     @commands.command()
-    async def lotr(self, ctx : commands.Context, *, article_name: str = None):
+    async def lotr(self, ctx: commands.Context, *, article_name: str = None):
         """Performs a search on the Tolkien Gateway for the give article name. If an article is found then it
         will return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
         {usage}

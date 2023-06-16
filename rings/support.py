@@ -24,15 +24,13 @@ class Support(commands.Cog):
     #######################################################################
 
     @commands.command(aliases=["support"])
-    async def about(self, ctx : commands.Context):
+    async def about(self, ctx: commands.Context):
         """Creates a rich embed of the bot's details Also contains link for inviting and support server.
 
         {usage}"""
 
         bot_desc = "Hello! :wave: I'm NecroBot, a moderation bot with many commands for a wide variety of server and a high modularity which means you can enable/disable just about every part of me as you wish."
-        embed = discord.Embed(
-            title="NecroBot", colour=self.bot.bot_color, description=bot_desc
-        )
+        embed = discord.Embed(title="NecroBot", colour=self.bot.bot_color, description=bot_desc)
         embed.set_footer(**self.bot.bot_footer)
         embed.add_field(
             name="About",
@@ -45,9 +43,7 @@ class Support(commands.Cog):
             .partition(".")[0]
             .replace(":", "{}")
         )
-        embed.add_field(
-            name="Uptime", value=uptime.format("hours, ", "minutes and ") + "seconds"
-        )
+        embed.add_field(name="Uptime", value=uptime.format("hours, ", "minutes and ") + "seconds")
         embed.add_field(
             name="Links",
             value=f"[Invite bot to your server]({discord.utils.oauth_url(self.bot.user.id, permissions=discord.Permissions(permissions=403172599))}) - [Get help with the bot](https://discord.gg/fPJANsE)",
@@ -56,7 +52,7 @@ class Support(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def report(self, ctx : commands.Context, *, message):
+    async def report(self, ctx: commands.Context, *, message):
         """Report a bug with the bot or send a suggestion . Please be a specific as you can. Any abusive use will result in
         blacklisting.
 
@@ -98,7 +94,7 @@ class Support(commands.Cog):
             await self.bot.get_channel(398894681901236236).send(embed=embed)
 
     @commands.group(invoke_without_command=True)
-    async def news(self, ctx : commands.Context):
+    async def news(self, ctx: commands.Context):
         """See the latest necrobot news
 
         {usage}
@@ -119,7 +115,7 @@ class Support(commands.Cog):
 
     @news.command("add")
     @has_perms(6)
-    async def news_add(self, ctx : commands.Context, *, news: str):
+    async def news_add(self, ctx: commands.Context, *, news: str):
         """Add a new news item
 
         {usage}"""
@@ -152,7 +148,7 @@ class Support(commands.Cog):
 
     @news.command("delete")
     @has_perms(6)
-    async def news_delete(self, ctx : commands.Context, index: int):
+    async def news_delete(self, ctx: commands.Context, index: int):
         """Remove a news item
 
         {usage}"""
@@ -171,7 +167,7 @@ class Support(commands.Cog):
 
     @news.command("raw")
     @has_perms(6)
-    async def news_raw(self, ctx : commands.Context, index: int):
+    async def news_raw(self, ctx: commands.Context, index: int):
         """Get the raw dict form of the news
 
         {usage}"""
@@ -179,7 +175,7 @@ class Support(commands.Cog):
 
     @news.command("template")
     @has_perms(6)
-    async def news_template(self, ctx : commands.Context):
+    async def news_template(self, ctx: commands.Context):
         """Prints the template for news
 
         {usage}"""
@@ -188,7 +184,7 @@ class Support(commands.Cog):
         )
 
     @commands.command()
-    async def tutorial(self, ctx : commands.Context):
+    async def tutorial(self, ctx: commands.Context):
         """Sends an embed with helpful information on Necrobot's features, be warned, it is quite a dense text blob
 
         {usage}"""
@@ -198,7 +194,7 @@ class Support(commands.Cog):
             raise BotError("Looks like you have private messages disabled") from e
 
     @commands.command()
-    async def privacy(self, ctx : commands.Context):
+    async def privacy(self, ctx: commands.Context):
         """Get information on the data necrobot keeps about you and what steps you can do about it.
 
         {usage}"""

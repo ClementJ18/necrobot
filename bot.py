@@ -57,7 +57,9 @@ class NecroBot(commands.Bot):
             "Bot Dev",
         ]
         self.bot_color = discord.Colour(0x277B0)
-        self.url_pattern = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+        self.url_pattern = (
+            r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+        )
         self.extension_names = exts
 
         self.session = None
@@ -153,12 +155,8 @@ class NecroBot(commands.Bot):
         self.loop.create_task(self.meta.load_cache())
         self.queued_posts = asyncio.Queue()
 
-    async def invoke(self, ctx : commands.Context):
-        if (
-            self.maintenance
-            and ctx.command is not None
-            and ctx.author.id != self.OWNER_ID
-        ):
+    async def invoke(self, ctx: commands.Context):
+        if self.maintenance and ctx.command is not None and ctx.author.id != self.OWNER_ID:
             return await ctx.channel.send(
                 ":negative_squared_cross_mark: | Maintenance mode engaged, the bot is not currently accepting commands",
                 delete_after=30,
@@ -166,9 +164,7 @@ class NecroBot(commands.Bot):
 
         await super().invoke(ctx)
 
-    async def wait_for(
-        self, event, *, check=None, timeout=None, handler=None, propagate=True
-    ):
+    async def wait_for(self, event, *, check=None, timeout=None, handler=None, propagate=True):
         """
         handler : callable
             Function that performs clean up in the case that the timeout is reached
@@ -198,9 +194,7 @@ class NecroBot(commands.Bot):
 
         if isinstance(event, Exception):
             error_traceback = " ".join(
-                traceback.format_exception(
-                    type(event), event, event.__traceback__, chain=True
-                )
+                traceback.format_exception(type(event), event, event.__traceback__, chain=True)
             )
         else:
             error_traceback = traceback.format_exc()
@@ -313,9 +307,7 @@ async def allowed_summon(ctx):
             for x in ctx.author.roles
             if x.id in ctx.bot.guild_data[guild_id]["ignore-command"]
         ]
-        raise commands.CheckFailure(
-            f"Roles {', '.join(roles)} aren't allowed to use commands."
-        )
+        raise commands.CheckFailure(f"Roles {', '.join(roles)} aren't allowed to use commands.")
 
     return True
 
@@ -394,9 +386,7 @@ async def off(ctx):
         if task in tasks_hourly:
             tasks_hourly.remove(task)
 
-        await bot.change_presence(
-            activity=discord.Game(name="Going down for maintenance soon")
-        )
+        await bot.change_presence(activity=discord.Game(name="Going down for maintenance soon"))
 
         await asyncio.sleep(300)
         if not bot.maintenance:
@@ -405,9 +395,7 @@ async def off(ctx):
             return await ctx.send("Shut down aborted.")
 
     await asyncio.sleep(5)
-    await bot.change_presence(
-        activity=discord.Game(name="Bot shutting down...", type=0)
-    )
+    await bot.change_presence(activity=discord.Game(name="Bot shutting down...", type=0))
 
     with open("rings/utils/data/settings.json", "w") as file:
         json.dump(bot.settings, file)

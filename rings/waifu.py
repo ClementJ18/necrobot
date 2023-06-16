@@ -8,9 +8,14 @@ from discord.ext.commands.cooldowns import BucketType
 from rings.db import DatabaseError
 
 from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm, paginate
-from rings.utils.utils import check_channel, BotError 
-from rings.utils.converters import FlowerConverter, GachaBannerConverter, GachaCharacterConverter, TimeConverter
+from rings.utils.ui import Confirm, MultiInputEmbedView, paginate
+from rings.utils.utils import check_channel, BotError
+from rings.utils.converters import (
+    FlowerConverter,
+    GachaBannerConverter,
+    GachaCharacterConverter,
+    TimeConverter,
+)
 
 from typing import Literal, Union
 
@@ -49,7 +54,7 @@ DUD_TEMPLATES = [
     {
         "name": "Broken Hourglass",
         "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116718269496299520/desktop-wallpaper-fantasy-artistic-video-game-sand-clock.png",
-        "description": "This hourglass used to be able to tell the time with no equal but evert since the glass was shattered it has been abandoned.",
+        "description": "This hourglass used to be able to tell the time with no equal but ever since the glass was shattered it has been abandoned.",
         "tier": 0,
         "universe": "Nexus",
         "title": "*Poof*",
@@ -142,7 +147,7 @@ class Flowers(commands.Cog):
     ## Cog Functions
     #######################################################################
 
-    def cog_check(self, ctx : commands.Context):
+    def cog_check(self, ctx: commands.Context):
         if ctx.guild:
             return True
 
@@ -197,29 +202,42 @@ class Flowers(commands.Cog):
         await ctx.send(f":atm: | {user.name} has **{flowers}** {symbol}")
 
     async def add_characters_to_user(self, guild_id, user_id, char_id):
-        query = await self.bot.db.query("""
+        query = await self.bot.db.query(
+            """
             INSERT INTO necrobot.RolledCharacters(guild_id, user_id, char_id) VALUES($1, $2, $3)
             ON CONFLICT (guild_id, user_id, char_id)
             DO UPDATE SET level = RolledCharacters.level + 1 RETURNING RolledCharacters.level;
-        """, guild_id, user_id, char_id, fetchval=True)
-        
+        """,
+            guild_id,
+            user_id,
+            char_id,
+            fetchval=True,
+        )
+
         return query
-    
+
     async def remove_character_from_user(self, guild_id, user_id, char_id, amount):
         conn = await self.bot.db.get_conn()
         async with conn.transaction():
             level = await self.bot.db.query(
                 "UPDATE necrobot.RolledCharacters SET level = level - $4 WHERE guild_id = $1 AND user_id=$2 AND char_id=$3 RETURNING level;",
-                guild_id, user_id, char_id, amount, fetchval=True
+                guild_id,
+                user_id,
+                char_id,
+                amount,
+                fetchval=True,
             )
 
             deleted = await self.bot.db.query(
                 "DELETE FROM necrobot.RolledCharacters WHERE guild_id = $1 AND user_id=$2 AND char_id=$3 AND level < 1 RETURNING char_id;",
-                guild_id, user_id, char_id, fetchval=True
+                guild_id,
+                user_id,
+                char_id,
+                fetchval=True,
             )
 
         return level, deleted
-    
+
     def convert_exp_to_level(self, exp, tier):
         level = 0
         thresholds = [
@@ -231,7 +249,7 @@ class Flowers(commands.Cog):
         ]
 
         for threshold in thresholds:
-            true_threshold = (5 - threshold) * tier // 2
+            true_threshold = (6 - tier) * threshold
             if exp >= true_threshold:
                 level += 1
                 exp -= true_threshold
@@ -241,24 +259,24 @@ class Flowers(commands.Cog):
             true_threshold = 0
 
         return level, exp, true_threshold
-    
+
     def calculate_weight(self, tier, modifier, pity):
-        weight = ( 2 ** ( 1 + ( 5 - tier ) ) ) * modifier
+        weight = (2 ** (1 + (5 - tier))) * modifier
 
         if tier != 5:
             return weight
-        
+
         pity_pass = random.choices([False, True], [60, pity])
         if pity_pass[0]:
             weight = weight + max(0, pity - 30)
 
         return weight
-    
+
     def embed_character(self, character, admin=False):
         embed = discord.Embed(
             title=character["name"],
             colour=self.bot.bot_color,
-            description=character['description'],
+            description=character["description"],
         )
 
         if character.get("image_url"):
@@ -268,13 +286,18 @@ class Flowers(commands.Cog):
 
         if character.get("id"):
             embed.add_field(name="ID", value=character["id"])
-    
+
         embed.add_field(name="Title", value=character["title"])
-        embed.add_field(name="Tier", value=f"{character['tier']*':star:' if character['tier'] else ':fleur_de_lis:'}")
+        embed.add_field(
+            name="Tier",
+            value=f"{character['tier']*':star:' if character['tier'] else ':fleur_de_lis:'}",
+        )
         embed.add_field(name="Universe", value=character["universe"])
-    
+
         if character.get("level"):
-            level, exp, next_threshold = self.convert_exp_to_level(character["level"], character["tier"])
+            level, exp, next_threshold = self.convert_exp_to_level(
+                character["level"], character["tier"]
+            )
             embed.add_field(name="Level", value=f"{level} ({exp}/{next_threshold})")
 
         if admin and character.get("obtainable"):
@@ -284,49 +307,60 @@ class Flowers(commands.Cog):
             embed.add_field(name="Count", value=character["total"])
 
         return embed
-    
+
     def embed_banner(self, banner, admin=False):
         embed = discord.Embed(
             title=f"{banner['name']}",
             colour=self.bot.bot_color,
-            description=banner['description'],
+            description=banner["description"],
         )
 
         if banner.get("image_url"):
             embed.set_image(url=banner["image_url"])
 
         embed.set_footer(**self.bot.bot_footer)
-        
+
         if admin and banner.get("ongoing"):
             embed.add_field(name="Ongoing", value=banner["ongoing"])
-    
+
         embed.add_field(name="Characters", value="\n".join(banner["characters"]))
 
         if banner.get("id"):
             embed.add_field(name="ID", value=banner["id"])
 
         if banner.get("max_rolls") is not None:
-            embed.add_field(name="Max Rolls", value=banner["max_rolls"] if banner["max_rolls"] > 0 else "No max")
+            embed.add_field(
+                name="Max Rolls",
+                value=banner["max_rolls"] if banner["max_rolls"] > 0 else "No max",
+            )
 
         return embed
-    
+
     async def pay_for_roll(self, guild_id, user_id, cost):
-        await self.bot.db.query("""
-            UPDATE necrobot.Flowers SET flowers = flowers - $3 WHERE user_id = $2 AND guild_id = $1""", 
-            guild_id, user_id, cost
+        await self.bot.db.query(
+            """
+            UPDATE necrobot.Flowers SET flowers = flowers - $3 WHERE user_id = $2 AND guild_id = $1""",
+            guild_id,
+            user_id,
+            cost,
         )
 
     async def get_characters(self):
-        return await self.bot.db.query("""
+        return await self.bot.db.query(
+            """
             SELECT id, name, title, tier, universe, description, image_url, obtainable, count(rolled.char_id) as total 
             FROM necrobot.Characters as chars
             LEFT JOIN necrobot.RolledCharacters as rolled on chars.id = rolled.char_id
             GROUP BY chars.id
             ORDER BY tier DESC, universe ASC, name ASC
-        """)
-    
-    def pull(self, characters, pity = 0, guarantee = False):
-        duds = [random.choice(DUD_TEMPLATES) for _ in range(math.ceil(len(characters) * self.DUD_PERCENT))]
+        """
+        )
+
+    def pull(self, characters, pity=0, guarantee=False):
+        duds = [
+            random.choice(DUD_TEMPLATES)
+            for _ in range(math.ceil(len(characters) * self.DUD_PERCENT))
+        ]
         pool = [*characters, *duds]
         weights = [self.calculate_weight(char["tier"], char["modifier"], pity) for char in pool]
 
@@ -336,7 +370,7 @@ class Flowers(commands.Cog):
             tier_4_list = [char for char in characters if char["tier"] == 4]
             if tier_4_list:
                 return dict(random.choice(tier_4_list)), True
-            
+
             tier_3_list = [char for char in characters if char["tier"] == 3]
             if tier_3_list:
                 return dict(random.choice(tier_3_list)), True
@@ -350,7 +384,12 @@ class Flowers(commands.Cog):
     @commands.group(invoke_without_command=True, aliases=["flower"])
     @has_perms(3)
     async def flowers(
-        self, ctx : commands.Context, member: discord.Member, amount: int, *, reason: str = None
+        self,
+        ctx: commands.Context,
+        member: discord.Member,
+        amount: int,
+        *,
+        reason: str = None,
     ):
         """Award flowers to a user, can be a negative value to take away flowers.
 
@@ -381,7 +420,7 @@ class Flowers(commands.Cog):
 
     @flowers.command(name="symbol")
     @has_perms(4)
-    async def flowers_symbol(self, ctx : commands.Context, symbol: str):
+    async def flowers_symbol(self, ctx: commands.Context, symbol: str):
         """Change the symbol for the flowers for your server. Max 50 char.
 
         {usage}
@@ -397,7 +436,7 @@ class Flowers(commands.Cog):
 
     @flowers.command(name="balance")
     @commands.guild_only()
-    async def flowers_balance(self, ctx : commands.Context, user: discord.Member = None):
+    async def flowers_balance(self, ctx: commands.Context, user: discord.Member = None):
         """Check your or a user's balance of flowers
 
         {usage}
@@ -447,7 +486,7 @@ class Flowers(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def give(self, ctx : commands.Context, member: discord.Member, amount: FlowerConverter):
+    async def give(self, ctx: commands.Context, member: discord.Member, amount: FlowerConverter):
         """Transfer flowers from one user to another.
 
         {usage}
@@ -461,14 +500,13 @@ class Flowers(commands.Cog):
             f":white_check_mark: | **{ctx.author.display_name}** has gifted **{amount}** {symbol} to **{member.display_name}**"
         )
 
-
     ###GACHA
     @commands.group(invoke_without_command=True, aliases=["char", "character"])
     async def characters(self, ctx, for_banner: bool = False):
         """List all possible characters
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}characters` - List all characters
         `{pre}characters true` - List all characters that can be added to a banner
@@ -488,16 +526,21 @@ class Flowers(commands.Cog):
     @characters.command(name="list")
     async def characters_list(self, ctx):
         """Compact list of characters
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}characters list` - list characters
         """
         characters = await self.get_characters()
 
         def embed_maker(view, entries):
-            description = "\n".join([f"- {entry['id']} - {entry['name']} ({entry['universe']}): **{entry['tier']}**:star:" for entry in entries])
+            description = "\n".join(
+                [
+                    f"- {entry['id']} - {entry['name']} ({entry['universe']}): **{entry['tier']}**:star:"
+                    for entry in entries
+                ]
+            )
             embed = discord.Embed(
                 title=f"Character List ({view.page_number}/{view.page_count})",
                 colour=self.bot.bot_color,
@@ -512,9 +555,9 @@ class Flowers(commands.Cog):
     @characters.command(name="get")
     async def characters_get(self, ctx, character: GachaCharacterConverter):
         """Get info on a specific character.
-        
+
         {usage}
-        
+
         __Example__
         `{pre}characters get Amelan` - get info on the character called Amelan.
         """
@@ -522,176 +565,309 @@ class Flowers(commands.Cog):
 
     @characters.command(name="create")
     @has_perms(6)
-    async def characters_create(self, ctx, name: str, title: str, universe: str, tier: int):
-        """Add a new character 
-        
+    async def characters_create(self, ctx, *, name: str):
+        """Add a new character
+
         {usage}
-        
+
         __Examples__
-        `{pre}characters create "John" "The Destroyer" "Rift" "2"` - Start the creation process.
+        `{pre}characters create John` - Start the creation process.
         """
-        description = None
-        image = None
         char_id = None
+        defaults = {
+            "description": None,
+            "image": None,
+            "title": None,
+            "tier": None,
+            "universe": None,
+        }
 
-        def general_check(m):
-            if not m.author == ctx.author or not m.channel == ctx.channel:
-                return False
+        def embed_maker(values):
+            tier = values["tier"]
+            if isinstance(tier, str):
+                tier = int(tier)
 
-            if m.content.lower() == "exit":
-                raise BotError("Exited setup")
+            return self.embed_character(
+                {
+                    "name": name,
+                    "description": values["description"],
+                    "image_url": values["image"],
+                    "title": values["title"],
+                    "tier": tier,
+                    "universe": values["universe"],
+                    "obtainable": False,
+                    "id": char_id,
+                }
+            )
+
+        def confirm_check(values):
+            missing = [
+                key
+                for key, value in values.items()
+                if key != "image" and (value is None or value == "")
+            ]
+            if missing:
+                raise BotError(f"Missing values required: {', '.join(missing)}")
 
             return True
 
-        def embed_maker():
-            return self.embed_character({
-                "name": name,
-                "description": description,
-                "image_url": image,
-                "title": title,
-                "tier": tier,
-                "universe": universe,
-                "obtainable": False,
-                "id": char_id
-            })
-
-        msg = await ctx.send("Let's get started", embed=embed_maker())
-
-        await ctx.send("Post a description of the character. Type exit to cancel.")
-        start_m = await self.bot.wait_for("message", check=general_check, timeout=300)
-        description = start_m.content.strip()
-        await msg.edit(embed=embed_maker())
-
-        await ctx.send("Post a image url or upload an image of the character. If you upload the image do not delete it after. Type exit to cancel.")
-        start_m = await self.bot.wait_for("message", check=general_check, timeout=300)
-        if start_m.attachments:
-            image = start_m.attachments[0].url
-        else:
-            image = start_m.content.strip()
-    
-        try:
-            await msg.edit(embed=embed_maker())
-        except Exception as e:
-            raise BotError(f"Something went wrong while adding the image: {e}") from e
-
-        view = Confirm(confirm_msg=":white_check_mark: | Character created, toggle it to make it obtainable.")
-        view.message = await ctx.send(
-            f"Are you satifised with your character?",
+        view = MultiInputEmbedView(
+            embed_maker, confirm_check, defaults, "Character Edit", ["image"]
+        )
+        msg = await ctx.send(
+            "You can submit the edit form anytime. Missing field will only be checked on confirmation.",
+            embed=embed_maker(defaults),
             view=view,
         )
+
         await view.wait()
         if not view.value:
             return
-        
+
         char_id = await self.bot.db.query(
             "INSERT INTO necrobot.Characters(name, title, description, image_url, tier, obtainable, universe) VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id",
-            name, title, description, image, tier, False, universe, fetchval=True
+            name,
+            view.values["title"],
+            view.values["description"],
+            view.values["image"],
+            int(view.values["tier"]),
+            False,
+            view.values["universe"],
+            fetchval=True,
         )
 
-        await msg.edit(embed=embed_maker())
+        await msg.edit(content="Character creation done!", embed=embed_maker(view.values))
 
     @characters.command(name="edit")
     @has_perms(6)
-    async def characters_edit(self, ctx, char: GachaCharacterConverter, field: Literal["name", "description", "title", "image_url", "universe", "tier"], *, value: str):
+    async def characters_edit(
+        self,
+        ctx,
+        char: GachaCharacterConverter,
+    ):
         """Edit a character's value
-        
+
         {usage}
-        
+
         __Example__
         `{pre}characters edit Amelan title Big Boy` - Edit Amelan's title to "Big Boy"
         """
-        await self.bot.db.query(f"UPDATE necrobot.Characters SET {field} = $1 WHERE id = $2", value, char["id"])
-        await ctx.send(f":white_check_mark: | Field {field} for character **{char['name']}** updated")
+        char_id = char["id"]
+        defaults = {
+            "description": char["description"],
+            "image": char["image_url"],
+            "title": char["title"],
+            "tier": char["tier"],
+            "universe": char["universe"],
+        }
+
+        def embed_maker(values):
+            tier = values["tier"]
+            if isinstance(tier, str):
+                tier = int(tier)
+
+            return self.embed_character(
+                {
+                    "name": char["name"],
+                    "description": values["description"],
+                    "image_url": values["image"],
+                    "title": values["title"],
+                    "tier": tier,
+                    "universe": values["universe"],
+                    "obtainable": char["obtainable"],
+                    "id": char_id,
+                }
+            )
+
+        def confirm_check(values):
+            missing = [
+                key
+                for key, value in values.items()
+                if key != "image" and (value is None or value == "")
+            ]
+            if missing:
+                raise BotError(f"Missing values required: {', '.join(missing)}")
+
+            return True
+
+        view = MultiInputEmbedView(
+            embed_maker, confirm_check, defaults, "Character Edit", ["image"]
+        )
+        msg = await ctx.send(
+            "You can submit the edit form anytime. Missing field will only be checked on confirmation.",
+            embed=embed_maker(defaults),
+            view=view,
+        )
+
+        await view.wait()
+        if not view.value:
+            return
+
+        await self.bot.db.query(
+            "UPDATE necrobot.Characters SET title = $1, description = $2, image_url = $3, tier = $4, universe = $5 WHERE id = $6;",
+            view.values["title"],
+            view.values["description"],
+            view.values["image"],
+            int(view.values["tier"]),
+            view.values["universe"],
+            char["id"],
+            fetchval=True,
+        )
+
+        await msg.edit(content="Character edition done!", embed=embed_maker(view.values))
 
     @characters.command(name="delete")
     @has_perms(6)
     async def characters_delete(self, ctx, char: GachaCharacterConverter):
         """Delete a character and remove them from all player's accounts
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}characters delete 12141` - Delete the character
         """
-        query = await self.bot.db.query("DELETE FROM necrobot.Characters WHERE id=$1 RETURNING name;", char["id"], fetchval=True)
-        await ctx.send(f":white_check_mark: | Character **{query[0]}** deleted and removed.")
+        view = Confirm()
+        view.message = await ctx.send(
+            "Are you sure you want to delete this character?",
+            view=view,
+            embed=self.embed_character(char),
+        )
+        await view.wait()
+        if not view.value:
+            return
+
+        query = await self.bot.db.query(
+            "DELETE FROM necrobot.Characters WHERE id=$1 RETURNING name;",
+            char["id"],
+            fetchval=True,
+        )
+
+        await view.message.send(
+            content=f":white_check_mark: | Character **{query[0]}** deleted and removed.",
+            embed=None,
+        )
 
     @characters.command(name="toggle")
     @has_perms(6)
     async def characters_toggle(self, ctx, char: GachaCharacterConverter):
         """Toggle whether or not a character can be obtained as part of a banner
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}characters toggle 12141` - Toggle a character
         """
-        query = await self.bot.db.query("UPDATE necrobot.Characters SET obtainable=not obtainable WHERE id=$1 RETURNING (name, obtainable);", char["id"], fetchval=True)
-        await ctx.send(f":white_check_mark: | Character **{query[0]}** is now {'not ' if not query[1] else ''}obtainable.")
+        query = await self.bot.db.query(
+            "UPDATE necrobot.Characters SET obtainable=not obtainable WHERE id=$1 RETURNING (name, obtainable);",
+            char["id"],
+            fetchval=True,
+        )
+        await ctx.send(
+            f":white_check_mark: | Character **{query[0]}** is now {'not ' if not query[1] else ''}obtainable."
+        )
 
     @characters.command(name="give")
     @has_perms(4)
     async def characters_give(self, ctx, user: discord.Member, char: GachaCharacterConverter):
-        """Add a level of characte to a player's account
-        
+        """Add a level of character to a player's account
+
         {usage}
-        
+
         __Examples__
         `{pre}characters give @Necro 12141` - Give one level of character 12141 to Necro
         """
+        view = Confirm()
+        view.message = await ctx.send(
+            f"Are you sure you want to give this character to {user.display_name}?",
+            view=view,
+            embed=self.embed_character(char),
+        )
+        await view.wait()
+        if not view.value:
+            return
+
         level = await self.add_characters_to_user(ctx.guild.id, user.id, char["id"])
-        await ctx.send(f":white_check_mark: | Added character to user's rolled characters (New: {level == 1})")
+        await view.message.edit(
+            content=f":white_check_mark: | Added **{char['id']}** to user's rolled characters (New: {level == 1})",
+            embed=None,
+        )
 
     @characters.command(name="take")
     @has_perms(4)
-    async def characters_take(self, ctx, user: discord.Member, char: GachaCharacterConverter, amount: int = 1):
-        """Remove a level of characte to a player's account
-        
+    async def characters_take(
+        self, ctx, user: discord.Member, char: GachaCharacterConverter, amount: int = 1
+    ):
+        """Remove a level of character to a player's account
+
         {usage}
-        
+
         __Examples__
         `{pre}characters take @Necro 12141` - Remove one level of character 12141 from Necro
         """
-        level, is_deleted = await self.remove_character_from_user(ctx.guild.id, user.id, char["id"], amount)
-        if not level and not is_deleted:
-            await ctx.send(":negative_squared_cross_mark: | User does not have that character")
-        else:
-            await ctx.send(f":white_check_mark: | Amount taken from user's rolled characters (Deleted: {bool(is_deleted)})")
+        view = Confirm()
+        view.message = await ctx.send(
+            f"Are you sure you want to remove this character from {user.display_name}?",
+            view=view,
+            embed=self.embed_character(char),
+        )
+        await view.wait()
+        if not view.value:
+            return
 
-    
+        level, is_deleted = await self.remove_character_from_user(
+            ctx.guild.id, user.id, char["id"], amount
+        )
+        if not level and not is_deleted:
+            await view.message.edit(
+                content=":negative_squared_cross_mark: | User does not have that character",
+                embed=None,
+            )
+        else:
+            await view.message.edit(
+                content=f":white_check_mark: | Amount taken from user's rolled characters (Deleted: {bool(is_deleted)})",
+                embed=None,
+            )
+
     @commands.group(invoke_without_command=True, aliases=["banner"])
     @commands.guild_only()
     async def banners(self, ctx, archive: bool = False):
         """List ongoing banners
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}characters` - List ongoing banners
         `{pre}characters true` - List all ongoing and ended banners
         """
         if archive:
-            banners = await self.bot.db.query("""
+            banners = await self.bot.db.query(
+                """
                 SELECT b.*, json_agg(json_build_array(c.name, c.tier)) as characters FROM necrobot.Banners AS b 
                     JOIN necrobot.BannerCharacters AS bc ON b.id=bc.banner_id 
                     JOIN necrobot.Characters as c ON bc.char_id=c.id
                 WHERE guild_id=$1
-                group by b.id
-            """, ctx.guild.id)
+                GROUP BY b.id
+            """,
+                ctx.guild.id,
+            )
         else:
-            banners = await self.bot.db.query("""
+            banners = await self.bot.db.query(
+                """
                 SELECT b.*, json_agg(json_build_array(c.name, c.tier)) as characters FROM necrobot.Banners AS b 
                     JOIN necrobot.BannerCharacters AS bc ON b.id=bc.banner_id 
                     JOIN necrobot.Characters as c ON bc.char_id=c.id
-                WHERE guild_id=$1 AND ongoing=true
-                group by b.id
-            """, ctx.guild.id)
-
+                WHERE guild_id=$1 AND ongoing=$2
+                GROUP BY b.id
+            """,
+                ctx.guild.id,
+            )
 
         def embed_maker(view, entry):
             mutable_entry = dict(entry)
             mutable_entry["name"] = f"{entry['name']} ({view.page_number}/{view.page_count})"
-            mutable_entry["characters"] = [f"{char[0]} ({char[1]} :star:)" for char in json.loads(entry["characters"])]
+            mutable_entry["characters"] = [
+                f"{char[0]} ({char[1]} :star:)" for char in json.loads(entry["characters"])
+            ]
             return self.embed_banner(mutable_entry, archive)
 
         await paginate(ctx, banners, 1, embed_maker)
@@ -699,174 +875,200 @@ class Flowers(commands.Cog):
     @banners.command(name="create")
     @has_perms(4)
     async def banners_create(self, ctx, *, name):
-        """Add a new banner in the guild. 
-        
+        """Add a new banner in the guild.
+
         {usage}
-        
+
         __Examples__
         `{pre}banner create Rose Lily Banner` - Start the creation for a banner
         """
-        description = None
-        image = None
-        characters = []
         banner_id = None
-        max_rolls = 0
 
-        def general_check(m):
-            if not m.author == ctx.author or not m.channel == ctx.channel:
-                return False
-
-            if m.content.lower() == "exit":
-                raise BotError("Exited setup")
-
-            return True
-        
-        def number_check(m):
-            if not general_check(m):
-                return False
-            
-            argument = m.content.strip()
+        def number_check(v):
+            argument = v.strip()
             if not argument.isdigit():
                 return False
-            
+
             argument = int(argument)
             if not argument >= 0:
                 return False
-            
+
             return True
 
-        def embed_maker():
-            return self.embed_banner({
-                "id": banner_id,
-                "image_url": image,
-                "description": description,
-                "characters":  [f"{char['name']} ({char['tier']} :star:)" for char in characters],
-                "name": name,
-                "max_rolls": max_rolls
-            })
+        async def embed_maker(values: dict):
+            chars = []
+            if values.get("characters") is not None:
+                chars = [
+                    await GachaCharacterConverter(True).convert(ctx, x.strip())
+                    for x in values.get("characters").split(",")
+                ]
 
-        msg = await ctx.send("Let's get started", embed=embed_maker())
+            max_rolls = values["max_rolls"]
+            if isinstance(max_rolls, str):
+                max_rolls = int(max_rolls)
 
-        await ctx.send("Post a description of the banner. Type exit to cancel.")
-        start_m = await self.bot.wait_for("message", check=general_check, timeout=300)
-        description = start_m.content.strip()
-        await msg.edit(embed=embed_maker())
+            return self.embed_banner(
+                {
+                    "id": banner_id,
+                    "image_url": values["image"],
+                    "description": values["description"],
+                    "characters": [f"{char['name']} ({char['tier']} :star:)" for char in chars],
+                    "name": name,
+                    "max_rolls": max_rolls,
+                }
+            )
 
-        await ctx.send("Post a url for the image of the banner. Type exit to cancel or `NULL` to not have an image.")
-        start_m = await self.bot.wait_for("message", check=general_check, timeout=300)
-        image = start_m.content.strip()
-        if image.lower() == "null":
-            image = None
-        
-        try:
-            await msg.edit(embed=embed_maker())
-        except Exception as e:
-            raise BotError(f"Not a valid image: {e}") from e
+        defaults = {"description": None, "image": None, "characters": None, "max_rolls": "0"}
 
-        await ctx.send("Post a positive number for the max amount of times a player can roll on this banner. Type exit to cancel or `0` to not have a max roll.")
-        start_m = await self.bot.wait_for("message", check=number_check, timeout=300)
-        max_rolls = int(start_m.content.strip())
-        await msg.edit(embed=embed_maker())
+        def confirm_check(values):
+            missing = [
+                key
+                for key, value in values.items()
+                if key != "image" and (value is None or value == "")
+            ]
+            if missing:
+                raise BotError(f"Missing values required: {', '.join(missing)}")
 
-        await ctx.send("Post a comma separated list of characters for the banner. Type exit to cancel.")
-        start_m = await self.bot.wait_for("message", check=general_check, timeout=300)
-        characters = [await GachaCharacterConverter(True).convert(ctx, x.strip()) for x in start_m.content.split(",")]
-        await msg.edit(embed=embed_maker())
+            m = values.get("max_rolls")
+            if isinstance(m, str):
+                if not number_check(m):
+                    raise BotError("Please submit max rolls as a positive number")
 
-        view = Confirm(confirm_msg=":white_check_mark: | Banner created, toggle it to make it ongoing")
-        view.message = await ctx.send(
-            f"Are you satifised with your banner?",
+            return True
+
+        view = MultiInputEmbedView(embed_maker, confirm_check, defaults, "Banner Edit", ["image"])
+        msg = await ctx.send(
+            "You can submit the edit form anytime. Missing field will only be checked on confirmation.",
+            embed=await embed_maker(defaults),
             view=view,
         )
+
         await view.wait()
         if not view.value:
             return
-        
+
         banner_id = await self.bot.db.query(
             "INSERT INTO necrobot.Banners(guild_id, name, description, image_url, max_rolls) VALUES($1, $2, $3, $4, $5) RETURNING id",
-            ctx.guild.id, name, description, image, max_rolls, fetchval=True
+            ctx.guild.id,
+            name,
+            view.values["description"],
+            view.values["image"],
+            int(view.values["max_rolls"]) if view.values is not None else 0,
+            fetchval=True,
         )
 
         await self.bot.db.query(
-            "INSERT INTO necrobot.BannerCharacters VALUES($1, $2, $3)", 
-            [(banner_id, x["id"], 1) for x in characters], many=True
+            "INSERT INTO necrobot.BannerCharacters VALUES($1, $2, $3)",
+            [(banner_id, x["id"], 1) for x in cached_characters],
+            many=True,
         )
-        
-        await msg.edit(embed=embed_maker())
+
+        await msg.edit(embed=await embed_maker(defaults))
 
     @banners.command(name="toggle")
     @has_perms(4)
-    async def banners_toggle(self, ctx, banner : GachaBannerConverter(False)):
+    async def banners_toggle(self, ctx, banner: GachaBannerConverter(False)):
         """Toggle whether or not a banner is currently running
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}banner toggle 12141` - Toggle a banner
         """
-        query = await self.bot.db.query("UPDATE necrobot.Banners SET ongoing=not ongoing WHERE id=$1 RETURNING (name, ongoing);", banner["id"], fetchval=True)
-        await ctx.send(f":white_check_mark: | Banner **{query[0]}** is now {'not ' if not query[1] else ''}ongoing.")
+        query = await self.bot.db.query(
+            "UPDATE necrobot.Banners SET ongoing=not ongoing WHERE id=$1 RETURNING (name, ongoing);",
+            banner["id"],
+            fetchval=True,
+        )
+        await ctx.send(
+            f":white_check_mark: | Banner **{query[0]}** is now {'not ' if not query[1] else ''}ongoing."
+        )
 
     @banners.command(name="add")
     @has_perms(4)
-    async def banners_add(self, ctx, banner: GachaBannerConverter(False), *, char : GachaCharacterConverter):
+    async def banners_add(
+        self, ctx, banner: GachaBannerConverter(False), *, char: GachaCharacterConverter
+    ):
         """Add characters to a banner
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}banners add 12141 John the Smith` - add character John to the banner
         """
         try:
-            await self.bot.db.query("""
+            await self.bot.db.query(
+                """
                 INSERT INTO necrobot.BannerCharacters(banner_id, char_id) VALUES($1, $2)
-                """, banner["id"], char["id"]
+                """,
+                banner["id"],
+                char["id"],
             )
-            await ctx.send(f":white_check_mark: | Character **{char['name']}** added to banner **{banner['name']}**.")
+            await ctx.send(
+                f":white_check_mark: | Character **{char['name']}** added to banner **{banner['name']}**."
+            )
         except DatabaseError:
-            await ctx.send(f":negative_squared_cross_mark: | Character **{char['name']}** already in banner **{banner['name']}**.")
+            await ctx.send(
+                f":negative_squared_cross_mark: | Character **{char['name']}** already in banner **{banner['name']}**."
+            )
 
     @banners.command(name="remove")
     @has_perms(4)
-    async def banners_remove(self, ctx, banner: GachaBannerConverter(False), *, char : GachaCharacterConverter):
+    async def banners_remove(
+        self, ctx, banner: GachaBannerConverter(False), *, char: GachaCharacterConverter
+    ):
         """Remove characters from a banner
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}banners remove 12141 John the Smith` - remove character John from the banner
         """
-        is_deleted = await self.bot.db.query("""
+        is_deleted = await self.bot.db.query(
+            """
             DELETE FROM necrobot.BannerCharacters WHERE banner_id = $1 AND char_id = $2 RETURNING char_id
-            """, banner["id"], char["id"]
+            """,
+            banner["id"],
+            char["id"],
         )
 
         if is_deleted:
-            await ctx.send(f":white_check_mark: | Characters **{char['name']}** removed from banner **{banner['name']}**.")
+            await ctx.send(
+                f":white_check_mark: | Characters **{char['name']}** removed from banner **{banner['name']}**."
+            )
         else:
-            await ctx.send(f":negative_squared_cross_mark: | Characters **{char['name']}** not present on banner **{banner['name']}**.")
+            await ctx.send(
+                f":negative_squared_cross_mark: | Characters **{char['name']}** not present on banner **{banner['name']}**."
+            )
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     async def gacha(self, ctx):
         """Get information on the gacha on this server
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}gacha` - get information on the gacha in this server
         """
-        guild = await self.bot.db.query("SELECT roll_cost, symbol, guaranteed FROM necrobot.FlowersGuild WHERE guild_id = $1", ctx.guild.id)
+        guild = await self.bot.db.query(
+            "SELECT roll_cost, symbol, guaranteed FROM necrobot.FlowersGuild WHERE guild_id = $1",
+            ctx.guild.id,
+        )
         if guild[0]["guaranteed"] >= 0:
-            guarantee = f"You are guaranteed a character after **{guild[0]['guaranteed'] + 1}** rolls."
+            guarantee = (
+                f"You are guaranteed a character after **{guild[0]['guaranteed'] + 1}** rolls."
+            )
         else:
             guarantee = "You are not guaranteed a character after any amount of rolls."
 
-        await ctx.send(f":game_die: | A roll on this server costs **{guild[0]['roll_cost']}** {guild[0]['symbol']}.\n:star2: | {guarantee}")
+        await ctx.send(
+            f":game_die: | A roll on this server costs **{guild[0]['roll_cost']}** {guild[0]['symbol']}.\n:star2: | {guarantee}"
+        )
 
     @gacha.command(name="balance")
     @commands.guild_only()
-    async def gacha_balance(self, ctx : commands.Context, user : discord.Member = None):
+    async def gacha_balance(self, ctx: commands.Context, user: discord.Member = None):
         """Check your or a user's balance of flowers
 
         {usage}
@@ -881,17 +1083,19 @@ class Flowers(commands.Cog):
     @commands.guild_only()
     async def gacha_characters(self, ctx):
         """List all your characters and their info.
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}gacha char` - List your characters"""
-        characters = await self.bot.db.query("""
+        characters = await self.bot.db.query(
+            """
             SELECT c.*, rc.level FROM necrobot.RolledCharacters as rc 
                 JOIN necrobot.Characters as c ON rc.char_id = c.id 
             WHERE rc.guild_id = $1 AND rc.user_id = $2
-            ORDER BY c.universe, c.name""", 
-            ctx.guild.id, ctx.author.id
+            ORDER BY c.universe, c.name""",
+            ctx.guild.id,
+            ctx.author.id,
         )
 
         def embed_maker(view, entry):
@@ -904,36 +1108,51 @@ class Flowers(commands.Cog):
     @gacha.group(name="roll", invoke_without_command=True, aliases=["pull"])
     @commands.guild_only()
     @commands.max_concurrency(1, per=BucketType.user, wait=True)
-    async def gacha_roll(self, ctx, *, banner : GachaBannerConverter):
+    async def gacha_roll(self, ctx, *, banner: GachaBannerConverter):
         pity = 0
         guarantee = False
         roll_count = 0
 
-        query = await self.bot.db.query("SELECT tier_5_pity, tier_4_pity, roll_count FROM necrobot.Pity WHERE user_id = $1 AND banner_id = $2", ctx.author.id, banner["id"])
-        data = await self.bot.db.query("SELECT symbol, roll_cost, guaranteed FROM necrobot.FlowersGuild WHERE guild_id = $1", ctx.guild.id)
-        
+        query = await self.bot.db.query(
+            "SELECT tier_5_pity, tier_4_pity, roll_count FROM necrobot.Pity WHERE user_id = $1 AND banner_id = $2",
+            ctx.author.id,
+            banner["id"],
+        )
+        data = await self.bot.db.query(
+            "SELECT symbol, roll_cost, guaranteed FROM necrobot.FlowersGuild WHERE guild_id = $1",
+            ctx.guild.id,
+        )
+
         if query:
             pity = query[0]["tier_5_pity"]
-            guarantee = query[0]["tier_4_pity"] >= data[0]["guaranteed"] and data[0]["guaranteed"] >= 0
-            roll_count = query[0]["roll_count"]            
+            guarantee = (
+                query[0]["tier_4_pity"] >= data[0]["guaranteed"] and data[0]["guaranteed"] >= 0
+            )
+            roll_count = query[0]["roll_count"]
 
         if banner["max_rolls"] > 0 and roll_count >= banner["max_rolls"]:
             raise BotError("You've hit the max amount of rolls on this banner.")
 
-
-        characters = await self.bot.db.query("""
+        characters = await self.bot.db.query(
+            """
             SELECT c.*, bc.modifier FROM necrobot.BannerCharacters as bc 
                 JOIN necrobot.Characters as c ON bc.char_id = c.id 
             WHERE bc.banner_id = $1
-            ORDER BY c.universe, c.name""", 
-            banner["id"]
+            ORDER BY c.universe, c.name""",
+            banner["id"],
         )
 
         mutable_banner = dict(banner)
-        mutable_banner["characters"] = [f"{char['name']} ({char['tier']} :star:)" for char in characters]
+        mutable_banner["characters"] = [
+            f"{char['name']} ({char['tier']} :star:)" for char in characters
+        ]
 
         view = Confirm(confirm_msg=None)
-        view.message = await ctx.send(f"Roll on this banner for **{data[0]['roll_cost']}** {data[0]['symbol']}?", embed=self.embed_banner(mutable_banner), view=view)
+        view.message = await ctx.send(
+            f"Roll on this banner for **{data[0]['roll_cost']}** {data[0]['symbol']}?",
+            embed=self.embed_banner(mutable_banner),
+            view=view,
+        )
         await view.wait()
         if not view.value:
             return
@@ -951,14 +1170,18 @@ class Flowers(commands.Cog):
             pull_animation = "https://media.tenor.com/rOuL0G1uRpMAAAAd/genshin-impact-pull.gif"
         elif pulled_char["tier"] == 4:
             pity_increase = 3
-            pull_animation = "https://media.tenor.com/pVzBgcp1RPQAAAAd/genshin-impact-animation.gif"
+            pull_animation = (
+                "https://media.tenor.com/pVzBgcp1RPQAAAAd/genshin-impact-animation.gif"
+            )
         else:
             sleep = 2
             pity_increase = 2
             pull_animation = "https://media.tenor.com/-0gPdn6GMVAAAAAC/genshin3star-wish.gif"
 
-        if pulled_char.get("id"): #not a dud
-            level = await self.add_characters_to_user(ctx.guild.id, ctx.author.id, pulled_char["id"])
+        if pulled_char.get("id"):  # not a dud
+            level = await self.add_characters_to_user(
+                ctx.guild.id, ctx.author.id, pulled_char["id"]
+            )
             pulled_char["level"] = level
         else:
             pity = 1
@@ -966,30 +1189,38 @@ class Flowers(commands.Cog):
         await asyncio.sleep(0.5)
         await view.message.edit(embed=discord.Embed().set_image(url=pull_animation))
         await asyncio.sleep(sleep)
-        await view.message.edit(content=f":game_die: | You payed **{data[0]['roll_cost']}** {data[0]['symbol']} and got the following reward:", embed=self.embed_character(pulled_char))
+        await view.message.edit(
+            content=f":game_die: | You paid **{data[0]['roll_cost']}** {data[0]['symbol']} and got the following reward:",
+            embed=self.embed_character(pulled_char),
+        )
 
         if guaranteed:
             guarantee_change = -query[0]["tier_4_pity"]
-        elif pulled_char["tier"] == 3 or data[0]["guaranteed"] < 0:
+        elif data[0]["guaranteed"] < 0:
             guarantee_change = 0
         else:
             guarantee_change = 1
-        
+
         if pity_increase == 0:
             pity_increase = -query[0]["tier_5_pity"]
 
         counted_roll = 0
         if banner["max_rolls"] > 0:
             counted_roll = 1
-        
-        await self.bot.db.query("""
+
+        await self.bot.db.query(
+            """
             INSERT INTO necrobot.Pity(user_id, banner_id, tier_5_pity) VALUES($1, $2, $3) 
             ON CONFLICT (user_id, banner_id) DO
             UPDATE SET 
                 tier_5_pity = necrobot.Pity.tier_5_pity + $3, 
                 tier_4_pity = necrobot.Pity.tier_4_pity + $4,
-                roll_count = necrobot.Pity.roll_count + $5""", 
-            ctx.author.id, banner["id"], pity_increase, guarantee_change, counted_roll
+                roll_count = necrobot.Pity.roll_count + $5""",
+            ctx.author.id,
+            banner["id"],
+            pity_increase,
+            guarantee_change,
+            counted_roll,
         )
 
     @gacha_roll.command(name="cost")
@@ -997,32 +1228,40 @@ class Flowers(commands.Cog):
     async def gacha_roll_cost(self, ctx, amount: int):
         """Change the cost of rolling for a single character, must be at least 1. Default
         is 50.
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}gacha roll cost 200` - change the cost of rolling to 200 per roll.
         """
         if amount < 1:
             raise BotError("Please specify a value of at least 1")
 
-        await self.bot.db.query("UPDATE necrobot.FlowersGuild SET roll_cost = $1 WHERE guild_id = $2", amount, ctx.guild.id)
+        await self.bot.db.query(
+            "UPDATE necrobot.FlowersGuild SET roll_cost = $1 WHERE guild_id = $2",
+            amount,
+            ctx.guild.id,
+        )
         await ctx.send(f":white_check_mark: | Updated roll cost to **{amount}**")
 
     @gacha_roll.command(name="guarantee")
     @has_perms(4)
     async def gacha_roll_guarantee(self, ctx, amount: int):
         """Change the number of rolls it takes to guarantee a 4 or 3 star characters. Set to 0 to never guarantee.
-        
+
         {usage}
-        
+
         __Examples__
         `{pre}gacha roll guarantee 5` - On the 5th roll, the roller will be guaranteed a characters.
         """
         if amount < 0:
             raise BotError("Please specify a value of at least 0")
 
-        await self.bot.db.query("UPDATE necrobot.FlowersGuild SET guaranteed = $1 WHERE guild_id = $2", amount-1, ctx.guild.id)
+        await self.bot.db.query(
+            "UPDATE necrobot.FlowersGuild SET guaranteed = $1 WHERE guild_id = $2",
+            amount - 1,
+            ctx.guild.id,
+        )
         await ctx.send(f":white_check_mark: | Updated guaranteed to **{amount}**")
 
     #######################################################################
@@ -1034,10 +1273,7 @@ class Flowers(commands.Cog):
         if payload.user_id in self.bot.settings["blacklist"]:
             return
 
-        if (
-            payload.emoji.name == "\N{CHERRY BLOSSOM}"
-            and payload.message_id in self.bot.events
-        ):
+        if payload.emoji.name == "\N{CHERRY BLOSSOM}" and payload.message_id in self.bot.events:
             if payload.user_id in self.bot.events[payload.message_id]["users"]:
                 return
 

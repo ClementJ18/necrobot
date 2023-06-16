@@ -17,7 +17,7 @@ class Literature(commands.Cog):
         self.bot = bot
 
     @commands.command(name="ud", aliases=["urbandictionary"])
-    async def udict(self, ctx : commands.Context, *, word: str):
+    async def udict(self, ctx: commands.Context, *, word: str):
         """Searches for the given word on urban dictionnary
 
         {usage}
@@ -62,7 +62,7 @@ class Literature(commands.Cog):
 
     @commands.command()
     @commands.cooldown(3, 60, BucketType.user)
-    async def define(self, ctx : commands.Context, *, word: str):
+    async def define(self, ctx: commands.Context, *, word: str):
         """Defines the given word, a high cooldown command so use carefully.
 
         {usage}
@@ -81,9 +81,7 @@ class Literature(commands.Cog):
             raise BotError("Could not find the word or any similar matches.")
 
         if isinstance(definitions[0], str):
-            raise BotError(
-                f"Could not find the word, similar matches: {', '.join(definitions)}"
-            )
+            raise BotError(f"Could not find the word, similar matches: {', '.join(definitions)}")
 
         def embed_maker(view, entry):
             description = "\n -".join(entry["shortdef"])
@@ -100,7 +98,7 @@ class Literature(commands.Cog):
         await paginate(ctx, definitions, 1, embed_maker)
 
     @commands.command()
-    async def shuffle(self, ctx : commands.Context, *, sentence):
+    async def shuffle(self, ctx: commands.Context, *, sentence):
         """Shuffles every word in a sentence
 
         {usage}

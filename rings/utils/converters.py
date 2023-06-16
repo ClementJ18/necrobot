@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands.converter import _get_from_guilds
+from rings.db import DatabaseError
 
 from rings.utils.utils import time_converter, BotError
 
@@ -72,7 +73,7 @@ class MemberConverter(commands.IDConverter):
 
     ctx_attr = "author"
 
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         bot = ctx.bot
         match = self._get_id_match(argument) or re.match(r"<@!?([0-9]+)>$", argument)
         guild = ctx.guild
@@ -86,9 +87,7 @@ class MemberConverter(commands.IDConverter):
         else:
             user_id = int(match.group(1))
             if guild:
-                result = guild.get_member(user_id) or _utils_get(
-                    ctx.message.mentions, id=user_id
-                )
+                result = guild.get_member(user_id) or _utils_get(ctx.message.mentions, id=user_id)
             else:
                 result = _get_from_guilds(bot, "get_member", user_id)
 
@@ -103,16 +102,14 @@ class UserConverter(commands.IDConverter):
 
     ctx_attr = "author"
 
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         match = self._get_id_match(argument) or re.match(r"<@!?([0-9]+)>$", argument)
         result = None
         state = ctx._state
 
         if match is not None:
             user_id = int(match.group(1))
-            result = ctx.bot.get_user(user_id) or _utils_get(
-                ctx.message.mentions, id=user_id
-            )
+            result = ctx.bot.get_user(user_id) or _utils_get(ctx.message.mentions, id=user_id)
         else:
             arg = argument
 
@@ -125,10 +122,7 @@ class UserConverter(commands.IDConverter):
             if len(arg) > 5 and arg[-5] == "#":
                 discrim = arg[-4:]
                 name = arg[:-5]
-                predicate = (
-                    lambda u: u.name.lower() == name.lower()
-                    and u.discriminator == discrim
-                )
+                predicate = lambda u: u.name.lower() == name.lower() and u.discriminator == discrim
                 result = discord.utils.find(predicate, state._users.values())
                 if result is not None:
                     return result
@@ -145,7 +139,7 @@ class UserConverter(commands.IDConverter):
 class RoleConverter(commands.IDConverter):
     """Converts to a role but case insensitive"""
 
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         guild = ctx.guild
         if not guild:
             raise commands.NoPrivateMessage()
@@ -162,13 +156,13 @@ class RoleConverter(commands.IDConverter):
             raise commands.BadArgument(f'Role "{argument}" not found.')
 
         if result.managed:
-            raise commands.BadArgument(f'Cannot use a managed role.')
+            raise commands.BadArgument(f"Cannot use a managed role.")
 
         return result
 
 
 class GuildConverter(commands.IDConverter):
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         result = None
         bot = ctx.bot
         guilds = bot.guilds
@@ -188,7 +182,7 @@ class GuildConverter(commands.IDConverter):
 
 
 class BadgeConverter(commands.Converter):
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         badge = await ctx.bot.db.get_badge_from_shop(name=argument)
 
         if not badge:
@@ -198,12 +192,12 @@ class BadgeConverter(commands.Converter):
 
 
 class TimeConverter(commands.Converter):
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         return time_converter(argument)
 
 
 class MoneyConverter(commands.Converter):
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         if not argument.isdigit():
             raise commands.BadArgument("Not a valid integer")
 
@@ -220,7 +214,7 @@ class MoneyConverter(commands.Converter):
 
 
 class FlowerConverter(commands.Converter):
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         if not argument.isdigit():
             raise commands.BadArgument("Not a valid integer")
 
@@ -229,9 +223,7 @@ class FlowerConverter(commands.Converter):
         if argument < 0:
             raise commands.BadArgument("Amount must be a positive integer")
 
-        money = await ctx.bot.get_cog("Flowers").get_flowers(
-            ctx.guild.id, ctx.author.id
-        )
+        money = await ctx.bot.get_cog("Flowers").get_flowers(ctx.guild.id, ctx.author.id)
         if money >= argument:
             return argument
 
@@ -255,7 +247,7 @@ def RangeConverter(min_v, max_v):
 
 
 class Grudge(commands.Converter):
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         if not argument.isdigit():
             raise commands.BadArgument("Please supply a valid id")
 
@@ -270,7 +262,7 @@ class Grudge(commands.Converter):
 
 
 class MUConverter(commands.Converter):
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         try:
             return await MemberConverter().convert(ctx, argument)
         except commands.BadArgument:
@@ -295,7 +287,7 @@ class MUConverter(commands.Converter):
 
 
 class CoinConverter(commands.Converter):
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         if argument.lower() in ["h", "head"]:
             return "h"
         if argument.lower() in ["t", "tail"]:
@@ -305,7 +297,7 @@ class CoinConverter(commands.Converter):
 
 
 class Tag(commands.Converter):
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         argument = argument.lower()
         tag = await ctx.bot.db.query(
             """
@@ -323,53 +315,79 @@ class Tag(commands.Converter):
 
 
 class WritableChannelConverter(commands.TextChannelConverter):
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         result = await super().convert(ctx, argument)
         if not result.permissions_for(result.guild.me).send_messages:
             raise BotError(f"I cannot send messages in {result.mention}")
 
         return result
-    
+
+
 class GachaCharacterConverter(commands.Converter):
     def __init__(self, respect_obtainable=False):
         self.respect_obtainable = respect_obtainable
 
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         char_id = 0
         if argument.isdigit():
             char_id = int(argument)
 
-        query = await ctx.bot.db.query("SELECT * FROM necrobot.Characters WHERE LOWER(name)=$1 OR id=$2", argument.lower(), char_id)
+        query = await ctx.bot.db.query(
+            "SELECT * FROM necrobot.Characters WHERE LOWER(name)=$1 OR id=$2",
+            argument.lower(),
+            char_id,
+        )
 
         if not query:
-            query = await ctx.bot.db.query("SELECT * FROM necrobot.Characters WHERE LOWER(name) LIKE $1;", f"%{argument.lower()}%")
+            try:
+                query = await ctx.bot.db.query(
+                    "SELECT * FROM necrobot.Characters WHERE LOWER(name) LIKE $1;",
+                    f"%{argument.lower()}%",
+                )
+            except DatabaseError:
+                query = None
 
         if not query:
             raise commands.BadArgument(f"Character **{argument}** could not be found.")
-        
+
         if self.respect_obtainable and not query[0]["obtainable"]:
-            raise commands.BadArgument(f"Characters **{query[0]['name']}** cannot currently be added to a banner")
-        
+            raise commands.BadArgument(
+                f"Characters **{query[0]['name']}** cannot currently be added to a banner"
+            )
+
         return query[0]
-    
+
+
 class GachaBannerConverter(commands.Converter):
     def __init__(self, respect_ongoing=True):
         self.respect_ongoing = respect_ongoing
 
-    async def convert(self, ctx : commands.Context, argument):
+    async def convert(self, ctx: commands.Context, argument):
         banner_id = 0
         if argument.isdigit():
             banner_id = int(argument)
 
-        query = await ctx.bot.db.query("SELECT * FROM necrobot.Banners WHERE (LOWER(name)=$1 OR id=$2) AND guild_id = $3", argument.lower(), banner_id, ctx.guild.id)
+        query = await ctx.bot.db.query(
+            "SELECT * FROM necrobot.Banners WHERE (LOWER(name)=$1 OR id=$2) AND guild_id = $3",
+            argument.lower(),
+            banner_id,
+            ctx.guild.id,
+        )
 
         if not query:
-            query = await ctx.bot.db.query("SELECT * FROM necrobot.Banners WHERE WHERE LOWER(name) LIKE $1 AND guild_id = $2;", f"%{argument.lower()}%", ctx.guild.id)
+            try:
+                query = await ctx.bot.db.query(
+                    "SELECT * FROM necrobot.Banners WHERE LOWER(name) LIKE $1 AND guild_id = $2;",
+                    f"%{argument.lower()}%",
+                    ctx.guild.id,
+                )
+            except DatabaseError:
+                query = None
 
         if not query:
             raise commands.BadArgument(f"Banner **{argument}** could not be found.")
-        
+
         if self.respect_ongoing and not query[0]["ongoing"]:
             raise commands.BadArgument(f"Banner **{query[0]['name']}** is not ongoing")
-        
+
         return query[0]

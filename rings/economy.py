@@ -85,7 +85,7 @@ class Hand(common.Hand):
 
 
 class BlackJack(discord.ui.View):
-    def __init__(self, ctx : commands.Context, bet, *, timeout = 180):
+    def __init__(self, ctx: commands.Context, bet, *, timeout=180):
         super().__init__(timeout=timeout)
 
         self.deck = Deck()
@@ -118,41 +118,35 @@ class BlackJack(discord.ui.View):
             colour=self.ctx.bot.bot_color,
         )
         embed.set_footer(**self.ctx.bot.bot_footer)
-        embed.add_field(name=f"Actions ({self.index + 1} / {self.max_index})", value="\n".join(self.actions[self.index*5:(self.index+1)*5]), inline=False)
+        embed.add_field(
+            name=f"Actions ({self.index + 1} / {self.max_index})",
+            value="\n".join(self.actions[self.index * 5 : (self.index + 1) * 5]),
+            inline=False,
+        )
 
         return embed
 
     @discord.ui.button(label="Pass", style=discord.ButtonStyle.primary, row=1)
-    async def pass_turn(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    async def pass_turn(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.actions.append("**You** pass your turn")
         self.player.passing = True
 
         await self.process_turn()
 
-        await interaction.response.edit_message(
-            embed=self.format_message(), view=self
-        )
+        await interaction.response.edit_message(embed=self.format_message(), view=self)
 
     @discord.ui.button(label="Draw", style=discord.ButtonStyle.primary, row=1)
-    async def draw_card(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    async def draw_card(self, interaction: discord.Interaction, button: discord.ui.Button):
         card = self.deck.draw()
         self.player.add_card(card)
         self.actions.append(f"**You** draw {card}")
 
         await self.process_turn()
-        
-        await interaction.response.edit_message(
-            embed=self.format_message(), view=self
-        )
+
+        await interaction.response.edit_message(embed=self.format_message(), view=self)
 
     @discord.ui.button(label="Double Down and Draw", style=discord.ButtonStyle.secondary, row=2)
-    async def double_down(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    async def double_down(self, interaction: discord.Interaction, button: discord.ui.Button):
 
         try:
             self.bet = await MoneyConverter().convert(self.ctx, str(self.bet * 2))
@@ -161,39 +155,32 @@ class BlackJack(discord.ui.View):
             self.actions.append(f"**You** double your bet and draw {card}")
             self.player.passing = True
         except commands.BadArgument:
-            return await interaction.response.send_message(":negative_squared_cross_mark: | Not enough money to double down", ephemeral=True)
+            return await interaction.response.send_message(
+                ":negative_squared_cross_mark: | Not enough money to double down",
+                ephemeral=True,
+            )
 
         await self.process_turn()
 
-        await interaction.response.edit_message(
-            embed=self.format_message(), view=self
-        )
+        await interaction.response.edit_message(embed=self.format_message(), view=self)
 
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary, row=3)
-    async def previous_page(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    async def previous_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.index - 1 < 0:
             self.index = self.max_index
         else:
             self.index -= 1
 
-        await interaction.response.edit_message(
-            embed=self.format_message(), view=self
-        )
+        await interaction.response.edit_message(embed=self.format_message(), view=self)
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.primary, row=3)
-    async def next_page(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.index + 1 >= self.max_index:
             self.index = 0
         else:
             self.index += 1
 
-        await interaction.response.edit_message(
-            embed=self.format_message(), view=self
-        )
+        await interaction.response.edit_message(embed=self.format_message(), view=self)
 
     async def lose(self):
         await self.ctx.bot.db.update_money(self.ctx.author.id, add=-self.bet)
@@ -202,7 +189,12 @@ class BlackJack(discord.ui.View):
         await self.ctx.bot.db.update_money(self.ctx.author.id, add=self.bet)
 
     def stop_game(self):
-        return self.player.blackjack() or self.player.is_bust() or self.dealer.is_bust() or (self.player.passing and self.dealer.is_passing(self.player))
+        return (
+            self.player.blackjack()
+            or self.player.is_bust()
+            or self.dealer.is_bust()
+            or (self.player.passing and self.dealer.is_passing(self.player))
+        )
 
     async def process_turn(self):
         if not self.stop_game():
@@ -215,14 +207,10 @@ class BlackJack(discord.ui.View):
             self.actions.append("**BLACKJACK!**")
             await self.win()
         elif self.player.beats(self.dealer):
-            self.actions.append(
-                f"**Your** hand beats **the Dealer's** hand. Won {self.bet}"
-            )
+            self.actions.append(f"**Your** hand beats **the Dealer's** hand. Won {self.bet}")
             await self.win()
         elif self.dealer.beats(self.player):
-            self.actions.append(
-                f"**The Dealer's** hand beats **your** hand. Lost {self.bet}"
-            )
+            self.actions.append(f"**The Dealer's** hand beats **your** hand. Lost {self.bet}")
             await self.lose()
         else:
             self.actions.append("Tie, everything is reset")
@@ -241,10 +229,7 @@ class BlackJack(discord.ui.View):
             self.actions.append("**You** timed out")
             await self.lose()
 
-            await self.message.edit(
-                embed=self.format_message(), view=self
-            )
-
+            await self.message.edit(embed=self.format_message(), view=self)
 
     async def dealer_turn(self):
         if self.dealer.is_passing(self.player):
@@ -265,7 +250,7 @@ class Economy(commands.Cog):
     #######################################################################
 
     @commands.command(aliases=["bj"])
-    async def blackjack(self, ctx : commands.Context, bet: MoneyConverter):
+    async def blackjack(self, ctx: commands.Context, bet: MoneyConverter):
         """A simpe game of black jack against NecroBot's dealer. You can either draw a card by click on :black_joker:
         or you can pass your turn by clicking on :stop_button: . If you win you get double the amount of money you
         placed, if you lose you lose it all and if you tie everything is reset. Minimum bet 10 :euro:
@@ -280,6 +265,7 @@ class Economy(commands.Cog):
         bj = BlackJack(ctx, bet)
         bj.message = await ctx.send(embed=bj.format_message(), view=bj)
         await bj.wait()
+
 
 async def setup(bot):
     await bot.add_cog(Economy(bot))

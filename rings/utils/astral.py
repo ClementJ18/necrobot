@@ -62,9 +62,7 @@ from __future__ import unicode_literals
 try:
     import pytz
 except ImportError:
-    raise ImportError(
-        ("The astral module requires the " "pytz module to be available.")
-    )
+    raise ImportError(("The astral module requires the " "pytz module to be available."))
 
 import datetime
 from time import time
@@ -948,9 +946,7 @@ class Location(object):
         if date is None:
             date = datetime.date.today()
 
-        start, end = self.astral.twilight_utc(
-            date, direction, self.latitude, self.longitude
-        )
+        start, end = self.astral.twilight_utc(date, direction, self.latitude, self.longitude)
 
         if local:
             return start.astimezone(self.tz), end.astimezone(self.tz)
@@ -1057,9 +1053,7 @@ class Location(object):
         if date is None:
             date = datetime.date.today()
 
-        start, end = self.astral.golden_hour_utc(
-            direction, date, self.latitude, self.longitude
-        )
+        start, end = self.astral.golden_hour_utc(direction, date, self.latitude, self.longitude)
 
         if local:
             start = start.astimezone(self.tz)
@@ -1094,9 +1088,7 @@ class Location(object):
         if date is None:
             date = datetime.date.today()
 
-        start, end = self.astral.blue_hour_utc(
-            direction, date, self.latitude, self.longitude
-        )
+        start, end = self.astral.blue_hour_utc(direction, date, self.latitude, self.longitude)
 
         if local:
             start = start.astimezone(self.tz)
@@ -1369,7 +1361,9 @@ class GoogleGeocoder(object):
             "http://maps.googleapis.com/maps/api/geocode/json?address=%s&sensor=false"
         )
         self._timezone_query_base = "https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=%d&sensor=false"
-        self._elevation_query_base = "http://maps.googleapis.com/maps/api/elevation/json?locations=%f,%f&sensor=false"
+        self._elevation_query_base = (
+            "http://maps.googleapis.com/maps/api/elevation/json?locations=%f,%f&sensor=false"
+        )
 
     def __getitem__(self, key):
         if self.cache and key in self.geocache:
@@ -1498,9 +1492,7 @@ class Astral(object):
     def solar_depression(self, depression):
         if isinstance(depression, str) or isinstance(depression, ustr):
             try:
-                self._depression = {"civil": 6, "nautical": 12, "astronomical": 18}[
-                    depression
-                ]
+                self._depression = {"civil": 6, "nautical": 12, "astronomical": 18}[depression]
             except:
                 raise KeyError(
                     (
@@ -1588,9 +1580,7 @@ class Astral(object):
         try:
             return self._calc_time(90 + 0.833, SUN_RISING, date, latitude, longitude)
         except:
-            raise AstralError(
-                ("Sun remains below the horizon on this day, " "at this location.")
-            )
+            raise AstralError(("Sun remains below the horizon on this day, " "at this location."))
 
     def solar_noon_utc(self, date, longitude):
         """Calculate solar noon time in the UTC timezone.
@@ -1661,9 +1651,7 @@ class Astral(object):
         try:
             return self._calc_time(90 + 0.833, SUN_SETTING, date, latitude, longitude)
         except:
-            raise AstralError(
-                ("Sun remains above the horizon on this day, " "at this location.")
-            )
+            raise AstralError(("Sun remains above the horizon on this day, " "at this location."))
 
     def dusk_utc(self, date, latitude, longitude, depression=0):
         """Calculate dusk time in the UTC timezone.
@@ -1867,8 +1855,7 @@ class Astral(object):
             return self._calc_time(depression, direction, date, latitude, longitude)
         except Exception:
             raise AstralError(
-                ("Sun never reaches an elevation of %d degrees" "at this location.")
-                % elevation
+                ("Sun never reaches an elevation of %d degrees" "at this location.") % elevation
             )
 
     def solar_azimuth(self, dateandtime, latitude, longitude):
@@ -1902,11 +1889,7 @@ class Astral(object):
             zone = -dateandtime.utcoffset().total_seconds() / 3600.0
             utc_datetime = dateandtime.astimezone(pytz.utc)
 
-        timenow = (
-            utc_datetime.hour
-            + (utc_datetime.minute / 60.0)
-            + (utc_datetime.second / 3600.0)
-        )
+        timenow = utc_datetime.hour + (utc_datetime.minute / 60.0) + (utc_datetime.second / 3600.0)
 
         JD = self._julianday(dateandtime)
         t = self._jday_to_jcentury(JD + timenow / 24.0)
@@ -1916,10 +1899,7 @@ class Astral(object):
 
         solarTimeFix = eqtime - (4.0 * -longitude) + (60 * zone)
         trueSolarTime = (
-            dateandtime.hour * 60.0
-            + dateandtime.minute
-            + dateandtime.second / 60.0
-            + solarTimeFix
+            dateandtime.hour * 60.0 + dateandtime.minute + dateandtime.second / 60.0 + solarTimeFix
         )
         #    in minutes
 
@@ -1933,9 +1913,9 @@ class Astral(object):
 
         harad = radians(hourangle)
 
-        csz = sin(radians(latitude)) * sin(radians(solarDec)) + cos(
-            radians(latitude)
-        ) * cos(radians(solarDec)) * cos(harad)
+        csz = sin(radians(latitude)) * sin(radians(solarDec)) + cos(radians(latitude)) * cos(
+            radians(solarDec)
+        ) * cos(harad)
 
         if csz > 1.0:
             csz = 1.0
@@ -2003,11 +1983,7 @@ class Astral(object):
             zone = -dateandtime.utcoffset().total_seconds() / 3600.0
             utc_datetime = dateandtime.astimezone(pytz.utc)
 
-        timenow = (
-            utc_datetime.hour
-            + (utc_datetime.minute / 60.0)
-            + (utc_datetime.second / 3600)
-        )
+        timenow = utc_datetime.hour + (utc_datetime.minute / 60.0) + (utc_datetime.second / 3600)
 
         JD = self._julianday(dateandtime)
         t = self._jday_to_jcentury(JD + timenow / 24.0)
@@ -2017,10 +1993,7 @@ class Astral(object):
 
         solarTimeFix = eqtime - (4.0 * -longitude) + (60 * zone)
         trueSolarTime = (
-            dateandtime.hour * 60.0
-            + dateandtime.minute
-            + dateandtime.second / 60.0
-            + solarTimeFix
+            dateandtime.hour * 60.0 + dateandtime.minute + dateandtime.second / 60.0 + solarTimeFix
         )
         #    in minutes
 
@@ -2034,9 +2007,9 @@ class Astral(object):
 
         harad = radians(hourangle)
 
-        csz = sin(radians(latitude)) * sin(radians(solarDec)) + cos(
-            radians(latitude)
-        ) * cos(radians(solarDec)) * cos(harad)
+        csz = sin(radians(latitude)) * sin(radians(solarDec)) + cos(radians(latitude)) * cos(
+            radians(solarDec)
+        ) * cos(harad)
 
         if csz > 1.0:
             csz = 1.0
@@ -2079,9 +2052,7 @@ class Astral(object):
             te = tan(radians(exoatmElevation))
             if exoatmElevation > 5.0:
                 refractionCorrection = (
-                    58.1 / te
-                    - 0.07 / (te * te * te)
-                    + 0.000086 / (te * te * te * te * te)
+                    58.1 / te - 0.07 / (te * te * te) + 0.000086 / (te * te * te * te * te)
                 )
             elif exoatmElevation > -0.575:
                 step1 = -12.79 + exoatmElevation * 0.711
@@ -2180,9 +2151,7 @@ class Astral(object):
             sunrise = self.sunrise_utc(date, latitude, longitude)
             sunset = self.sunset_utc(date, latitude, longitude)
         except:
-            raise AstralError(
-                ("Sun remains below the horizon on this day, " "at this location.")
-            )
+            raise AstralError(("Sun remains below the horizon on this day, " "at this location."))
 
         octant_duration = (sunset - sunrise) / 8
 
@@ -2251,9 +2220,7 @@ class Astral(object):
         return l0 % 360.0
 
     def _eccentrilocation_earth_orbit(self, juliancentury):
-        return 0.016708634 - juliancentury * (
-            0.000042037 + 0.0000001267 * juliancentury
-        )
+        return 0.016708634 - juliancentury * (0.000042037 + 0.0000001267 * juliancentury)
 
     def _geom_mean_anomaly_sun(self, juliancentury):
         return 357.52911 + juliancentury * (35999.05029 - 0.0001537 * juliancentury)
