@@ -496,55 +496,6 @@ class Admin(commands.Cog):
         await self.bot.process_commands(ctx.message)
 
     @commands.command()
-    async def stats(self, ctx: commands.Context):
-        """Provides meta data on the bot.
-
-        {usage}"""
-
-        headers = {"Authorization": f"token {github_key}"}
-        emojis = {
-            "dnd": "<:dnd:509069576160542757>",
-            "idle": "<:away:509069596930736129>",
-            "offline": "<:offline:509069561065111554>",
-            "online": "<:online:509069615494725643>",
-        }
-        async with self.bot.session.get(
-            "https://api.github.com/repos/ClementJ18/necrobot/commits", headers=headers
-        ) as r:
-            resp = (await r.json())[:5]
-
-        description = "\n".join(
-            [f"[`{c['sha'][:7]}`]({c['url']}) - {c['commit']['message']}" for c in resp]
-        )
-        embed = discord.Embed(
-            title="Information", colour=self.bot.bot_color, description=description
-        )
-        embed.set_footer(**self.bot.bot_footer)
-
-        members = {x: set() for x in discord.Status if x != discord.Status.invisible}
-        for user in self.bot.get_all_members():
-            if user.status == discord.Status.invisible:
-                continue
-            members[user.status].add(user.id)
-
-        embed.add_field(
-            name="Members",
-            value="\n".join(
-                [f"{emojis[key.name]} {len(value)}" for key, value in members.items()]
-            ),
-            inline=False,
-        )
-        memory_usage = self.process.memory_full_info().uss / 1024**2
-        cpu_usage = self.process.cpu_percent() / psutil.cpu_count()
-        embed.add_field(
-            name="Process",
-            value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU",
-            inline=False,
-        )
-
-        await ctx.send(embed=embed)
-
-    @commands.command()
     @has_perms(6)
     async def gate(
         self,
@@ -558,7 +509,7 @@ class Admin(commands.Cog):
         """
         if channel == ctx.channel:
             raise BotError(
-                "Gate destination cannnot be the same as channel the command is called from"
+                "Gate destination cannot be the same as channel the command is called from"
             )
 
         await channel.send(

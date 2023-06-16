@@ -17,10 +17,20 @@ import traceback
 logging.basicConfig(filename="discord.log", level=logging.ERROR)
 # logging.basicConfig(level=logging.CRITICAL)
 
+intents = discord.Intents.all()
+intents.emojis_and_stickers = False
+intents.integrations = False
+intents.webhooks = False
+intents.voice_states = False
+intents.presences = False
+intents.typing = False
+intents.guild_scheduled_events = False
+intents.auto_moderation = False
+
 
 class NecroBot(commands.Bot):
     def __init__(self, exts):
-        intents = discord.Intents.all()
+        
 
         super().__init__(
             max_messages=50000,
