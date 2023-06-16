@@ -957,13 +957,17 @@ class Flowers(commands.Cog):
             fetchval=True,
         )
 
+        chars = [
+            await GachaCharacterConverter(True).convert(ctx, x.strip())
+            for x in view.values["characters"].split(",")
+        ]
         await self.bot.db.query(
             "INSERT INTO necrobot.BannerCharacters VALUES($1, $2, $3)",
-            [(banner_id, x["id"], 1) for x in cached_characters],
+            [(banner_id, x["id"], 1) for x in chars],
             many=True,
         )
 
-        await msg.edit(embed=await embed_maker(defaults))
+        await msg.edit(content="Banner creation done!", embed=await embed_maker(defaults))
 
     @banners.command(name="toggle")
     @has_perms(4)

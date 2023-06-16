@@ -11,7 +11,7 @@ from rings.utils.converters import (
     WritableChannelConverter,
 )
 from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm, paginate, SelectView
+from rings.utils.ui import Confirm, MultiInputEmbedView, paginate, SelectView
 
 from typing import Union
 import re
@@ -798,19 +798,75 @@ class Server(commands.Cog):
 
         await paginate(ctx, broadcasts, 1, embed_maker)
 
+    async def broadcast_editor(self, defaults, channel, ctx):
+        def embed_maker(values):
+            embed = discord.Embed(
+                title="New Broadcast!", description=values["message"], colour=self.bot.bot_color
+            )
+
+            embed.add_field(name="Channel", value=channel.mention)
+            embed.add_field(
+                name="Start Time", value=f"{values['start']}h (Current hour: {self.bot.counter})"
+            )
+            embed.add_field(name="Interval", value=f"Every {values['interval']} hours")
+
+            embed.set_footer(**self.bot.bot_footer)
+            return embed
+
+        def start_check(m):
+            if not m.isdigit():
+                return False
+
+            return 0 <= int(m) <= 23
+
+        def interval_check(m):
+            if not m.isdigit():
+                return False
+
+            return 1 <= int(m) <= 24
+
+        def confirm_check(values):
+            missing = [key for key, value in values.items() if value is None or value == ""]
+            if missing:
+                raise BotError(f"Missing values required: {', '.join(missing)}")
+
+            m = values.get("start")
+            if isinstance(m, str):
+                if not start_check(m):
+                    raise BotError(
+                        f"Please submit start as a positive number between 0 and 23. Current hour is {self.bot.counter}"
+                    )
+
+            m = values.get("interval")
+            if isinstance(m, str):
+                if not interval_check(m):
+                    raise BotError(
+                        f"Please submit interval as a positive number between 1 and 24."
+                    )
+
+            return True
+
+        view = MultiInputEmbedView(embed_maker, confirm_check, defaults, "Broadcast Edit")
+        await ctx.send(
+            f"You can submit the edit form anytime. Missing field will only be checked on confirmation. Current bot hour is {self.bot.counter}\n- interval should be between 1 and 24\n- start should be between 0 and 23",
+            embed=embed_maker(defaults),
+            view=view,
+        )
+
+        await view.wait()
+        if not view.value:
+            return
+
+        return view
+
     @broadcast.command(name="add")
     @has_perms(4)
     async def broadcast_add(
         self,
         ctx,
         channel: discord.TextChannel,
-        start: RangeConverter(0, 23) = None,
-        interval: RangeConverter(1, 24) = None,
-        *,
-        message: str = None,
     ):
-        """Start the process for adding a new broadcast, you can do this all in one go or have the bot help you through. You
-        must however provide a channel to start the process.
+        """Start the process for adding a new broadcast.
 
         **Disclaimer**: The start parameter does not actually dictate when the first broadcast will occur, it simply insures
         that the broadcast happens on the hour specified and uses it as a benchmark to determine whether the broadcast should
@@ -818,82 +874,20 @@ class Server(commands.Cog):
 
         {usage}
 
+        __Examples__
+        `{pre}broadcast add #lounge` - start the process of adding a broadcast to lounge
         """
-
-        def embed_maker():
-            embed = discord.Embed(
-                title="New Broadcast!", description=message, colour=self.bot.bot_color
-            )
-
-            embed.add_field(name="Channel", value=channel.mention)
-            embed.add_field(name="Start Time", value=f"{start}h")
-            embed.add_field(name="Interval", value=f"Every {interval} hours")
-
-            embed.set_footer(**self.bot.bot_footer)
-            return embed
-
-        def general_check(m):
-            if not m.author == ctx.author or not m.channel == ctx.channel:
-                return False
-
-            if m.content.lower() == "exit":
-                raise BotError("Exited setup")
-
-            return True
-
-        def start_check(m):
-            if not general_check(m):
-                return False
-
-            if not m.content.isdigit():
-                return False
-
-            return 0 <= int(m.content) <= 23
-
-        def interval_check(m):
-            if not general_check(m):
-                return False
-
-            if not m.content.isdigit():
-                return False
-
-            return 1 <= int(m.content) <= 24
-
-        def message_check(m):
-            return general_check(m)
-
         check_channel(channel)
-        msg = await ctx.send(embed=embed_maker())
-
-        if start is None:
-            await ctx.send(
-                f"What hour of the day (0-23) you want the broadcast to start? The next hour for the bot is hour {self.bot.counter}. Type exit to cancel."
-            )
-            start_m = await self.bot.wait_for("message", check=start_check, timeout=300)
-            start = int(start_m.content)
-            await msg.edit(embed=embed_maker())
-
-        if interval is None:
-            await ctx.send(
-                "How often do you want the message to be posted? It can be every hour (1) up to once every 24 hours (24). Type exit to cancel."
-            )
-            interval_m = await self.bot.wait_for("message", check=interval_check, timeout=300)
-            interval = int(interval_m.content)
-            await msg.edit(embed=embed_maker())
-
-        if message is None:
-            await ctx.send("What do you want the message to be?. Type exit to cancel.")
-            message_m = await self.bot.wait_for("message", check=message_check, timeout=300)
-            message = message_m.content
-            await msg.edit(embed=embed_maker())
+        defaults = {"message": None, "start": "0", "interval": "0"}
+        view = await self.broadcast_editor(defaults, channel, ctx)
 
         broadcast_id = await self.bot.db.query(
             "INSERT INTO necrobot.Broadcasts(guild_id, channel_id, start_time, interval, message) VALUES ($1, $2, $3, $4, $5) RETURNING broadcast_id",
             ctx.guild.id,
             channel.id,
-            start,
-            interval,
-            message,
+            int(view.values["start"]),
+            int(view.values["interval"]),
+            view.values["message"],
             fetchval=True,
         )
 
@@ -907,56 +901,41 @@ class Server(commands.Cog):
         self,
         ctx,
         broadcast_id: int,
-        key: str,
-        *,
-        value: Union[discord.TextChannel, RangeConverter(0, 24), str],
     ):
         """Edit a broadcast's settings
-
-        Possible settings:
-            - channel
-            - start
-            - interval
-            - message
 
         {usage}
 
         __Examples__
-        `{pre}broadcast edit 2 channel #other-channel` - change the channel broadcast 2 sends
+        `{pre}broadcast edit 2` - Edit the settings of broadcast with ID 2
         """
-        key = key.lower()
-        if key not in ("channel", "start", "interval", "message"):
-            raise BotError("Not a valid parameter.")
-
-        if key == "channel":
-            key = "channel_id"
-            if not isinstance(value, discord.TextChannel):
-                raise BotError("Parameter was not a channel")
-
-            check_channel(value)
-            value = value.id
-        elif key == "message":
-            pass
-        elif key == "start":
-            key = "start_time"
-            if value > 23:
-                raise BotError("Please specifiy a number between 0 and 23")
-        elif key == "interval":
-            if value < 1:
-                raise BotError("Please specific a number between 1 and 24")
-
-        check = await self.bot.db.query(
-            f"UPDATE necrobot.Broadcasts SET {key}=$1 WHERE broadcast_id=$2 AND guild_id=$3 RETURNING broadcast_id",
-            value,
+        query = await self.bot.db.query(
+            "SELECT * FROM necrobot.Broadcasts WHERE broadcast_id = $1 AND guild_id = $2",
             broadcast_id,
             ctx.guild.id,
-            fetchval=True,
+        )
+        if not query:
+            raise BotError("No broadcast found with that ID")
+
+        defaults = {
+            "message": query[0]["message"],
+            "start": query[0]["start_time"],
+            "interval": query[0]["interval"],
+        }
+        view = await self.broadcast_editor(
+            defaults, ctx.guild.get_channel(query[0]["channel_id"]), ctx
         )
 
-        if check:
-            await ctx.send(":white_check_mark: | Updated!")
-        else:
-            raise BotError("No broadcast found with that ID")
+        broadcast_id = await self.bot.db.query(
+            "UPDATE necrobot.Broadcasts SET start_time = $3, interval = $4, message = $5 WHERE broadcast_id = $1 AND guild_id = $2",
+            broadcast_id,
+            ctx.guild.id,
+            int(view.values["start"]),
+            int(view.values["interval"]),
+            view.values["message"],
+        )
+
+        await ctx.send(f":white_check_mark: | Broadcast edited!")
 
     @broadcast.command(name="delete")
     @has_perms(4)
