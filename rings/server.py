@@ -1,21 +1,17 @@
+import re
+from typing import Union
+
 import discord
+import emoji
 from discord.ext import commands
 
-from rings.utils.utils import BotError, build_format_dict, check_channel
 from rings.db import DatabaseError
-from rings.utils.converters import (
-    TimeConverter,
-    RangeConverter,
-    MemberConverter,
-    RoleConverter,
-    WritableChannelConverter,
-)
 from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm, MultiInputEmbedView, paginate, SelectView
-
-from typing import Union
-import re
-import emoji
+from rings.utils.converters import (MemberConverter, RangeConverter,
+                                    RoleConverter, TimeConverter,
+                                    WritableChannelConverter)
+from rings.utils.ui import Confirm, MultiInputEmbedView, SelectView, paginate
+from rings.utils.utils import BotError, build_format_dict, check_channel
 
 
 class Server(commands.Cog):

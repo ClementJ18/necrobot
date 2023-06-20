@@ -1,13 +1,13 @@
-import discord
-from discord.ext import commands
-
-from rings.utils.config import dbpass, dbusername
-
-import asyncpg
-import psycopg2
 import traceback
 from datetime import datetime
+
+import asyncpg
+import discord
+import psycopg2
+from discord.ext import commands
 from psycopg2.extras import RealDictCursor
+
+from rings.utils.config import dbpass, dbusername
 
 
 class DatabaseError(Exception):

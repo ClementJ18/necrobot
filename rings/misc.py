@@ -1,19 +1,19 @@
+import asyncio
+import itertools
+import random
+import re
+from io import BytesIO
+
+import aiohttp
 import discord
+from bs4 import BeautifulSoup
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
-from rings.utils.utils import BotError
-from rings.utils.checks import has_perms, guild_only
+from rings.utils.checks import guild_only, has_perms
 from rings.utils.converters import UserConverter
-from rings.utils.ui import Confirm, paginate, HungerGames
-
-import re
-import random
-import asyncio
-import aiohttp
-import itertools
-from io import BytesIO
-from bs4 import BeautifulSoup
+from rings.utils.ui import Confirm, HungerGames, paginate
+from rings.utils.utils import BotError
 
 
 class Misc(commands.Cog):

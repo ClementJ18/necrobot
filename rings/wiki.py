@@ -1,14 +1,14 @@
-import discord
-from discord.ext import commands
-
-from rings.utils.utils import BotError
-
+import asyncio
 import re
 import urllib
-import asyncio
 from datetime import datetime
+
+import discord
 from bs4 import BeautifulSoup
+from discord.ext import commands
 from fuzzywuzzy import process
+
+from rings.utils.utils import BotError
 
 
 def _check_error_response(response, query):

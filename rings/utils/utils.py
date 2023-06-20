@@ -1,9 +1,9 @@
-import discord
-from discord.ext import commands
-
-import re
 import datetime
 import itertools
+import re
+
+import discord
+from discord.ext import commands
 
 
 class BotError(Exception):

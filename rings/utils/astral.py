@@ -65,10 +65,10 @@ except ImportError:
     raise ImportError(("The astral module requires the " "pytz module to be available."))
 
 import datetime
-from time import time
-from math import cos, sin, tan, acos, asin, atan2, floor, ceil
-from math import radians, degrees, pow
 import sys
+from math import (acos, asin, atan2, ceil, cos, degrees, floor, pow, radians,
+                  sin, tan)
+from time import time
 
 try:
     from urllib import quote_plus
@@ -76,9 +76,9 @@ except ImportError:
     from urllib.parse import quote_plus
 
 try:
-    from urllib2 import urlopen, URLError
+    from urllib2 import URLError, urlopen
 except ImportError:
-    from urllib.request import urlopen, URLError
+    from urllib.request import URLError, urlopen
 
 try:
     import simplejson as json

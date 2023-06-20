@@ -1,23 +1,32 @@
 import asyncio
+import copy
+import itertools
 import json
 import math
 import random
+from collections import namedtuple
+from typing import List, Union
+
 import discord
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
+
 from rings.db import DatabaseError
-
 from rings.utils.checks import has_perms
+from rings.utils.converters import (FlowerConverter, GachaBannerConverter,
+                                    GachaCharacterConverter, TimeConverter)
 from rings.utils.ui import Confirm, MultiInputEmbedView, paginate
-from rings.utils.utils import check_channel, BotError
-from rings.utils.converters import (
-    FlowerConverter,
-    GachaBannerConverter,
-    GachaCharacterConverter,
-    TimeConverter,
-)
+from rings.utils.utils import BotError, check_channel
+from rings.waifu.ui import CombatView
 
-from typing import Literal, Union
+from .battle import (POSITION_EMOJIS, Battle, Battlefield, Character,
+                     StatBlock, StatedEntity, is_wakable)
+from .enemies import POTENTIAL_ENEMIES
+from .fields import POTENTIAL_FIELDS
+
+LOG_SIZE = 7
+
+
 
 """
 {
@@ -31,6 +40,7 @@ from typing import Literal, Union
     },
 """
 
+EquipmentSet = namedtuple("EquipmentSet", "character weapon artefact")
 
 DUD_TEMPLATES = [
     {
@@ -768,7 +778,7 @@ class Flowers(commands.Cog):
 
     @characters.command(name="give")
     @has_perms(4)
-    async def characters_give(self, ctx, user: discord.Member, char: GachaCharacterConverter):
+    async def characters_give(self, ctx, user: discord.Member, char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))):
         """Add a level of character to a player's account
 
         {usage}
@@ -795,7 +805,7 @@ class Flowers(commands.Cog):
     @characters.command(name="take")
     @has_perms(4)
     async def characters_take(
-        self, ctx, user: discord.Member, char: GachaCharacterConverter, amount: int = 1
+        self, ctx, user: discord.Member, char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon")), amount: int = 1
     ):
         """Remove a level of character to a player's account
 
@@ -899,7 +909,7 @@ class Flowers(commands.Cog):
             chars = []
             if values.get("characters") is not None:
                 chars = [
-                    await GachaCharacterConverter(True).convert(ctx, x.strip())
+                    await GachaCharacterConverter(respect_obtainable=True, allowed_types=("character", "artefact", "weapon")).convert(ctx, x.strip())
                     for x in values.get("characters").split(",")
                 ]
 
@@ -958,7 +968,7 @@ class Flowers(commands.Cog):
         )
 
         chars = [
-            await GachaCharacterConverter(True).convert(ctx, x.strip())
+            await GachaCharacterConverter(respect_obtainable=True, allowed_types=("character", "artefact", "weapon")).convert(ctx, x.strip())
             for x in view.values["characters"].split(",")
         ]
         await self.bot.db.query(
@@ -991,7 +1001,7 @@ class Flowers(commands.Cog):
     @banners.command(name="add")
     @has_perms(4)
     async def banners_add(
-        self, ctx, banner: GachaBannerConverter(False), *, char: GachaCharacterConverter
+        self, ctx, banner: GachaBannerConverter(False), *, char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
     ):
         """Add characters to a banner
 
@@ -1019,7 +1029,7 @@ class Flowers(commands.Cog):
     @banners.command(name="remove")
     @has_perms(4)
     async def banners_remove(
-        self, ctx, banner: GachaBannerConverter(False), *, char: GachaCharacterConverter
+        self, ctx, banner: GachaBannerConverter(False), *, char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
     ):
         """Remove characters from a banner
 
@@ -1113,6 +1123,13 @@ class Flowers(commands.Cog):
     @commands.guild_only()
     @commands.max_concurrency(1, per=BucketType.user, wait=True)
     async def gacha_roll(self, ctx, *, banner: GachaBannerConverter):
+        """Roll for a banner.
+
+        {usage}
+
+        __Examples__
+        `{pre}gacha roll 1` - roll on banner with id 1
+        """
         pity = 0
         guarantee = False
         roll_count = 0
@@ -1268,6 +1285,157 @@ class Flowers(commands.Cog):
         )
         await ctx.send(f":white_check_mark: | Updated guaranteed to **{amount}**")
 
+    @commands.group()
+    async def equipment(self, ctx):
+        pass
+
+    @equipment.command(name="equip")
+    async def equipment_equip(self, 
+        ctx, 
+        character: GachaCharacterConverter(allowed_types=("character",), is_owned=True), 
+        equipment: GachaCharacterConverter(allowed_types=("weapon", "artefact"), is_owned=True)
+    ):
+        """Equip a character you own with weapons or artefacts.
+
+        {usage}
+
+        __Examples__
+        `{pre}equipment equip Amelan Sword` - Equip Amelan with the weapon Sword.
+        """
+        changed = "art_id" if equipment["type"] == "artefact" else "weapon_id"
+        await self.bot.db.query(f"""
+            INSERT INTO necrobot.EquipmentSet(guild_id, user_id, char_id, {changed}) VALUES($1, $2, $3, $4) 
+            ON CONFLICT (guild_id, user_id, char_id)
+            DO UPDATE SET {changed} = $4""",
+            ctx.guild.id,
+            ctx.user.id,
+            character["id"],
+            equipment["id"]    
+        )
+        await ctx.send(f":white_check_mark: | Equipped **{character['id']}** with {equipment['type']} **{equipment['name']}")
+
+    def format_character_stats(self, character):
+        return f"- Name: {character['name']}\n- Tier: {character['tier'] * ':star:'}\n\n__Stats__\nComing soon..."
+    
+    async def get_equipment_set(self, guild_id, user_id, character_ids = ()) -> List[EquipmentSet]:
+        string = f"""
+            SELECT c1.*, ':', c2.*, ':', c3.* as artefact
+            FROM necrobot.EquipmentSet as es
+                JOIN necrobot.Characters as c1 ON es.char_id = c1.id 
+                JOIN necrobot.Characters as c2 ON es.weapon_id = c2.id 
+                JOIN necrobot.Characters as c3 ON es.art_id = c3.id
+            WHERE guild_id = $1 AND user_id = $2{' AND c1.id = ANY($3)' if character_ids else ''};"""
+        
+        if character_ids:
+            query = await self.bot.db.query(string, guild_id, user_id, character_ids)
+        else:
+            query = await self.bot.db.query(string, guild_id, user_id)
+
+        return [EquipmentSet(*[{key: value for key, value in y} for x, y in itertools.groupby(entry.items(), lambda z: z[1] == ':') if not x]) for entry in query]
+
+    @equipment.command(name="list")
+    async def equipment_list(self, ctx):
+        """List your characters and their equipment.
+        
+        {usage}
+        
+        __Examples
+        `{pre}equipment list` - list all your equipped characters"""
+        entries = await self.get_equipment_set(ctx.guild.id, ctx.author.id)
+        def embed_maker(view, entry: EquipmentSet):
+            embed = discord.Embed(
+                title=f"{entry.character['name']} ({view.page_number}/{view.page_count})",
+                colour=self.bot.bot_color,
+                description=self.format_character_stats(entry.character)
+            )
+            embed.set_footer(**self.bot.bot_footer)
+            embed.add_field(name="Weapon", value=self.format_character_stats(entry.weapon), inline=False)
+            embed.add_field(name="Artefact", value=self.format_character_stats(entry.artefact), inline=False)
+
+            return embed
+
+        await paginate(ctx, entries, 1, embed_maker)
+
+    def convert_battlefield_to_str(self, field: Battlefield, characters: List[Character]):
+        empty_board = []
+        for row in field.tiles:
+            empty_row = []
+            for cell in row:
+                if is_wakable(cell):
+                    empty_row.append(":black_large_square:")
+                else:
+                    empty_row.append(":red_square:")
+            empty_board.append(empty_row)
+
+        for character, emoji in zip(characters, POSITION_EMOJIS):
+            empty_board[character.position[1]][character.position[0]] = emoji
+
+        return '\n'.join([''.join(row) for row in empty_board])
+
+
+    def convert_battle_log(self, battle: Battle, size: int = 5):
+        string = ""
+        for entry in battle.action_log[-size:]:
+            string += f"- {entry[0].name} {entry[1].value}"
+            if len(entry) > 2:
+                string += f' {entry[2].name}\n'
+            else:
+                string += '\n'
+
+        return string
+
+    def embed_battle(self, battle: Battle):
+        embed = discord.Embed(
+            title="A Great Battle",
+            colour=self.bot.bot_color,
+            description=self.convert_battlefield_to_str(battle.battlefield, battle.players + battle.enemies),
+        )
+
+        embed.set_footer(**self.bot.bot_footer)
+
+        for entity_name, entities in (("Players", battle.players), ("Enemies", battle.enemies)):
+            embed.add_field(name=entity_name, value="\n".join(
+                f"{POSITION_EMOJIS[index]} - **{character.name}**: {character.stats.current_primary_health}/{character.stats.max_primary_health} ({character.stats.current_secondary_health}/{character.stats.max_secondary_health})" 
+                for index, character in enumerate(entities)
+            ))
+
+        embed.add_field(name="Actions", value="\n".join(map(str, battle.action_log[:LOG_SIZE])), inline=False)
+
+        return embed
+
+    @gacha.command(name="battle")
+    async def gacha_battle(self, ctx, *chars: GachaCharacterConverter(allowed_types=('character',), is_owned=True)):
+        if len(chars) != 3:
+            raise BotError("Please submit exactly three characters for the battle.")
+
+        equipment_sets = await self.get_equipment_set(ctx.guild.id, ctx.author.id, [char["id"] for char in chars])
+        if len(equipment_sets) != 3:
+            raise BotError("Please submit characters with valid equipment sets.")
+        
+        characters = [
+            Character(
+                es.character["name"], 
+                StatBlock.from_dict(es.character),
+                None,
+                None, 
+                StatedEntity(
+                    es.weapon["name"], 
+                    StatBlock.from_dict(es.weapon)
+                ),
+                StatedEntity(
+                    es.artefact["name"], 
+                    StatBlock.from_dict(es.artefact)
+                )
+            ) for es in equipment_sets
+        ]
+
+        field = copy.deepcopy(random.choice(POTENTIAL_FIELDS))
+        battle = Battle(characters, [copy.deepcopy(random.choice(POTENTIAL_ENEMIES)) for _ in range(field.enemy_count)], field)
+        battle.initialise()
+
+        cmd = CombatView(battle, self.embed_battle, ctx.author)
+        cmd.message = await ctx.send(embed=self.embed_battle(battle), view=cmd)
+
     #######################################################################
     ## Events
     #######################################################################
@@ -1287,7 +1455,3 @@ class Flowers(commands.Cog):
                 payload.user_id,
                 self.bot.events[payload.message_id]["amount"],
             )
-
-
-async def setup(bot):
-    await bot.add_cog(Flowers(bot))

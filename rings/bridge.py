@@ -1,13 +1,13 @@
-import discord
-from discord.ext import commands
-
-from rings.utils.config import MU_Username, MU_Password
-
 import asyncio
 import logging
 import traceback
+
+import discord
 from bs4 import BeautifulSoup
+from discord.ext import commands
 from robobrowser.forms.form import Form
+
+from rings.utils.config import MU_Password, MU_Username
 
 
 class Bridge(commands.Cog):

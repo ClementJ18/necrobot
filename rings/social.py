@@ -1,19 +1,13 @@
+import random
+
 import discord
+from bs4 import BeautifulSoup
 from discord.ext import commands
 
-from rings.utils.var import (
-    tarot_list,
-    lotr_list,
-    dad_joke,
-    dex,
-    riddle_list,
-    got_quotes,
-)
-from rings.utils.utils import BotError
 from rings.utils.ui import RiddleView
-
-import random
-from bs4 import BeautifulSoup
+from rings.utils.utils import BotError
+from rings.utils.var import (dad_joke, dex, got_quotes, lotr_list, riddle_list,
+                             tarot_list)
 
 
 class Social(commands.Cog):

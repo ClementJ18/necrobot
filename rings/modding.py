@@ -1,11 +1,11 @@
 import discord
-from discord.ext import commands
-from rings.utils.utils import BotError
-from rings.utils.ui import paginate
-
-from bs4 import BeautifulSoup
-from fuzzywuzzy import process
 import moddb
+from bs4 import BeautifulSoup
+from discord.ext import commands
+from fuzzywuzzy import process
+
+from rings.utils.ui import paginate
+from rings.utils.utils import BotError
 
 
 class Modding(commands.Cog):

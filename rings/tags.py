@@ -1,13 +1,13 @@
+import copy
+import re
+
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, build_format_dict
-from rings.utils.converters import Tag
 from rings.db import DatabaseError
+from rings.utils.converters import Tag
 from rings.utils.ui import paginate
-
-import re
-import copy
+from rings.utils.utils import BotError, build_format_dict
 
 
 class Tags(commands.Cog):

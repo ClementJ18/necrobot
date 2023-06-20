@@ -1,20 +1,21 @@
+import asyncio
+import datetime
+import io
+import random
+from collections import defaultdict
+
+import aiohttp
 import discord
 from discord.ext import commands
-
-from rings.utils.utils import BotError, format_dt, time_string_parser, time_converter
-from rings.utils.BIG import pack_file
-from rings.utils.converters import MemberConverter
-from rings.utils.checks import leaderboard_enabled, has_perms
-from rings.utils.astral import Astral
-from rings.utils.ui import paginate
-
-import io
-import asyncio
-import random
-import aiohttp
-import datetime
 from simpleeval import simple_eval
-from collections import defaultdict
+
+from rings.utils.astral import Astral
+from rings.utils.BIG import pack_file
+from rings.utils.checks import has_perms, leaderboard_enabled
+from rings.utils.converters import MemberConverter
+from rings.utils.ui import paginate
+from rings.utils.utils import (BotError, format_dt, time_converter,
+                               time_string_parser)
 
 
 class Utilities(commands.Cog):

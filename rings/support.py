@@ -1,14 +1,14 @@
-import discord
-from discord.ext import commands
-
-from rings.utils.utils import BotError
-from rings.utils.var import tutorial_e, gdpr_e
-from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm, paginate
-
 import ast
 import time
 from datetime import timedelta
+
+import discord
+from discord.ext import commands
+
+from rings.utils.checks import has_perms
+from rings.utils.ui import Confirm, paginate
+from rings.utils.utils import BotError
+from rings.utils.var import gdpr_e, tutorial_e
 
 
 class Support(commands.Cog):

@@ -1,12 +1,12 @@
 import asyncio
+import random
+import traceback
 from typing import Callable, Dict, List
+
 import discord
 
 from rings.utils.hunger_game import events
 from rings.utils.utils import BotError
-
-import random
-import traceback
 
 
 class TextInput(discord.ui.TextInput):

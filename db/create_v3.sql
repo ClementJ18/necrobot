@@ -269,15 +269,25 @@ CREATE TABLE necrobot.Characters(
     obtainable boolean DEFAULT false,
     universe text NOT NULL,
     type character_type NOT NULL,
-    primary_health int NOT NULL,
-    secondary_health int DEFAULT 0
-    physical_defense int DEFAULT 0,
-    physical_attack int DEFAULT 0,
-    magical_defense int DEFAULT 0,
-    magical_attack int DEFAULT 0,
+    primary_health character_stat DEFAULT (false, 100),
+    secondary_health character_stat DEFAULT (false, 0),
+    physical_defense character_stat DEFAULT (false, 0),
+    physical_attack character_stat DEFAULT (false, 0),
+    magical_defense character_stat DEFAULT (false, 0),
+    magical_attack character_stat DEFAULT (false, 0),
     active_ability text,
     passive_ability text
 );
+
+-- ALTER TABLE necrobot.Characters ADD COLUMN type text NOT NULL DEFAULT 'character';
+-- ALTER TABLE necrobot.Characters ADD COLUMN primary_health character_stat DEFAULT (false, 100);
+-- ALTER TABLE necrobot.Characters ADD COLUMN secondary_health character_stat DEFAULT (false, 0);
+-- ALTER TABLE necrobot.Characters ADD COLUMN physical_defense character_stat DEFAULT (false, 0);
+-- ALTER TABLE necrobot.Characters ADD COLUMN physical_attack character_stat DEFAULT (false, 0);
+-- ALTER TABLE necrobot.Characters ADD COLUMN magical_defense character_stat DEFAULT (false, 0);
+-- ALTER TABLE necrobot.Characters ADD COLUMN magical_attack character_stat DEFAULT (false, 0);
+-- ALTER TABLE necrobot.Characters ADD COLUMN active_ability text;
+-- ALTER TABLE necrobot.Characters ADD COLUMN passive_ability text;
 
 CREATE TABLE necrobot.Banners(
     id SERIAL PRIMARY KEY,
@@ -323,8 +333,6 @@ CREATE TYPE emote_count_hybrid as (
     count int
 );
 
-CREATE TYPE character_type AS ENUM ('character', 'weapon', 'artefact', 'enemy');
-
 CREATE TABLE necrobot.EquipmentSet(
     guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
     user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
@@ -332,5 +340,7 @@ CREATE TABLE necrobot.EquipmentSet(
     weapon_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
     art_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
     PRIMARY KEY (guild_id, user_id, char_id)
-)
+);
+
+CREATE TYPE character_stat AS (is_percent boolean, stat int)
 

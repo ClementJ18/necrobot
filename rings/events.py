@@ -1,14 +1,14 @@
 #!/usr/bin/python3.6
+import asyncio
+import logging
+import traceback
+
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, build_format_dict
 from rings.db import DatabaseError
 from rings.utils.ui import FightError
-
-import asyncio
-import traceback
-import logging
+from rings.utils.utils import BotError, build_format_dict
 
 
 class Events(commands.Cog):

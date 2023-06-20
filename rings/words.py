@@ -1,13 +1,13 @@
+import random
+
+import aiohttp
 import discord
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
 from rings.utils.config import dictionnary_key
-from rings.utils.utils import BotError
 from rings.utils.ui import paginate
-
-import random
-import aiohttp
+from rings.utils.utils import BotError
 
 
 class Literature(commands.Cog):

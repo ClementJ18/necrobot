@@ -1,11 +1,11 @@
+import re
+from typing import List, Literal, get_args
+
 import discord
 from discord.ext import commands
 from discord.ext.commands.converter import _get_from_guilds
-from rings.db import DatabaseError
 
-from rings.utils.utils import time_converter, BotError
-
-import re
+from rings.utils.utils import BotError, time_converter
 
 utils = discord.utils
 _utils_get = utils.get
@@ -323,29 +323,43 @@ class WritableChannelConverter(commands.TextChannelConverter):
         return result
 
 
+CharacterType = Literal["character", "weapon", "artefact", "enemy"]
+
 class GachaCharacterConverter(commands.Converter):
-    def __init__(self, respect_obtainable=False):
+    def __init__(self, *, respect_obtainable=False, allowed_types: List[CharacterType]=(), is_owned=False):
+        """
+        Params
+        ------
+        respect_obtainable: bool
+            Only search in the list of characters currently toggled on
+        allowed_types: List[CharacterType]
+            Types of entities that are valid
+        is_owned: bool
+            Only consider characters that are owned by the author
+        """
         self.respect_obtainable = respect_obtainable
+        self.allowed_types = allowed_types
+        self.is_owned = is_owned
 
     async def convert(self, ctx: commands.Context, argument):
+        allowed_types = self.allowed_types if self.allowed_types else get_args(CharacterType)
         char_id = 0
         if argument.isdigit():
             char_id = int(argument)
 
         query = await ctx.bot.db.query(
-            "SELECT * FROM necrobot.Characters WHERE LOWER(name)=$1 OR id=$2",
+            "SELECT * FROM necrobot.Characters WHERE (LOWER(name)=$1 OR id=$2) AND type = ANY($3)",
             argument.lower(),
             char_id,
+            allowed_types
         )
 
         if not query:
-            try:
-                query = await ctx.bot.db.query(
-                    "SELECT * FROM necrobot.Characters WHERE LOWER(name) LIKE $1;",
-                    f"%{argument.lower()}%",
-                )
-            except DatabaseError:
-                query = None
+            query = await ctx.bot.db.query(
+                "SELECT * FROM necrobot.Characters WHERE LOWER(name) LIKE $1 AND type = ANY($2);",
+                f"%{argument.lower()}%",
+                allowed_types,
+            )
 
         if not query:
             raise commands.BadArgument(f"Character **{argument}** could not be found.")
@@ -354,6 +368,11 @@ class GachaCharacterConverter(commands.Converter):
             raise commands.BadArgument(
                 f"Characters **{query[0]['name']}** cannot currently be added to a banner"
             )
+        
+        if self.is_owned:
+            owned = await ctx.bot.db.query("SELECT char_id FROM necrobot.RolledCharacters WHERE char_id = $1 LIMIT 1;", query[0]["id"])
+            if not owned:
+                raise BotError(f"You do not own this {query[0]['type']}.")
 
         return query[0]
 
@@ -375,14 +394,11 @@ class GachaBannerConverter(commands.Converter):
         )
 
         if not query:
-            try:
-                query = await ctx.bot.db.query(
-                    "SELECT * FROM necrobot.Banners WHERE LOWER(name) LIKE $1 AND guild_id = $2;",
-                    f"%{argument.lower()}%",
-                    ctx.guild.id,
-                )
-            except DatabaseError:
-                query = None
+            query = await ctx.bot.db.query(
+                "SELECT * FROM necrobot.Banners WHERE LOWER(name) LIKE $1 AND guild_id = $2;",
+                f"%{argument.lower()}%",
+                ctx.guild.id,
+            )
 
         if not query:
             raise commands.BadArgument(f"Banner **{argument}** could not be found.")

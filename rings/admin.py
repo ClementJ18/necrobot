@@ -1,25 +1,20 @@
-import discord
-from discord.ext import commands
-
-from rings.utils.utils import BotError
-from rings.utils.config import github_key
-from rings.utils.converters import (
-    GuildConverter,
-    BadgeConverter,
-    RangeConverter,
-    UserConverter,
-    Grudge,
-    MemberConverter,
-)
-from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm, paginate
-
 import ast
-import psutil
-import traceback
-from typing import Union, Literal
-from simpleeval import simple_eval
 import datetime
+import traceback
+from typing import Literal, Union
+
+import discord
+import psutil
+from discord.ext import commands
+from simpleeval import simple_eval
+
+from rings.utils.checks import has_perms
+from rings.utils.config import github_key
+from rings.utils.converters import (BadgeConverter, Grudge, GuildConverter,
+                                    MemberConverter, RangeConverter,
+                                    UserConverter)
+from rings.utils.ui import Confirm, paginate
+from rings.utils.utils import BotError
 
 
 class Admin(commands.Cog):

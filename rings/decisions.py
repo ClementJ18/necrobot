@@ -1,12 +1,12 @@
+import random
+
+import dice
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
-from rings.utils.converters import MoneyConverter, CoinConverter
-from rings.utils.var import ball8_list
+from rings.utils.converters import CoinConverter, MoneyConverter
 from rings.utils.utils import BotError
-
-import random
-import dice
+from rings.utils.var import ball8_list
 
 
 class Decisions(commands.Cog):

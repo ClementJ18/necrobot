@@ -1,19 +1,15 @@
+import asyncio
+import datetime
+from typing import Literal, Optional, Union
+
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, format_dt
-from rings.utils.converters import (
-    TimeConverter,
-    MemberConverter,
-    RoleConverter,
-    RangeConverter,
-)
 from rings.utils.checks import has_perms, requires_mute_role
+from rings.utils.converters import (MemberConverter, RangeConverter,
+                                    RoleConverter, TimeConverter)
 from rings.utils.ui import paginate
-
-import asyncio
-import datetime
-from typing import Literal, Union, Optional
+from rings.utils.utils import BotError, format_dt
 
 
 class Moderation(commands.Cog):

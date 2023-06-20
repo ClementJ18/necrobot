@@ -1,18 +1,18 @@
+import asyncio
+import datetime
+import json
+import logging
+import time
+import traceback
+
 import discord
 from discord.ext import commands
 
 from rings.db import SyncDatabase
 from rings.utils.config import token
-from rings.utils.utils import get_pre, default_settings
 from rings.utils.help import NecrobotHelp
 from rings.utils.ui import Confirm
-
-import json
-import time
-import asyncio
-import logging
-import datetime
-import traceback
+from rings.utils.utils import default_settings, get_pre
 
 logging.basicConfig(filename="discord.log", level=logging.ERROR)
 # logging.basicConfig(level=logging.CRITICAL)
@@ -30,8 +30,6 @@ intents.auto_moderation = False
 
 class NecroBot(commands.Bot):
     def __init__(self, exts):
-        
-
         super().__init__(
             max_messages=50000,
             fetch_offline_members=True,

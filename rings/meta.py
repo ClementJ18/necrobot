@@ -1,16 +1,16 @@
-import discord
-from discord.ext import commands
-
-from rings.utils.converters import time_converter
-from rings.utils.config import twitch_id, twitch_secret
-
+import asyncio
+import datetime
 import io
 import re
 import time
+
 import aiohttp
-import asyncio
-import datetime
+import discord
+from discord.ext import commands
 from PIL import Image
+
+from rings.utils.config import twitch_id, twitch_secret
+from rings.utils.converters import time_converter
 
 
 class Meta(commands.Cog):
