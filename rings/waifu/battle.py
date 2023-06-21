@@ -76,39 +76,42 @@ class StatBlock(DataClass):
         return self.current_primary_health > 0 or self.current_secondary_health > 0
 
     def __post_init__(self):
-        for field in fields(self):
-            if not field.type is Stat:
+        for f in fields(self):
+            if not f.type is Stat:
                 continue
 
-            value = getattr(self, field.name)
-            if not isinstance(value, field.type):
-                setattr(self, field.name, field.type(*value))
+            value = getattr(self, f.name)
+            if not isinstance(value, f.type):
+                setattr(self, f.name, f.type(*value))
 
     def calculate_raw(self, stat_name):
         stat: Stat = getattr(self, stat_name)
         if stat is None:
             raise AttributeError(f"{stat_name} not a valid stat")
-        
-        return stat.raw
-    
+
+        return stat.raw 
+
     def calculate_modifier(self, stat_name):
         stat: Stat = getattr(self, stat_name)
         if stat is None:
             raise AttributeError(f"{stat_name} not a valid stat")
-        
-        return stat.modifier
 
-@dataclass
+        return stat.modifier / 100
+
+
+@dataclass(kw_only=True)
 class StatedEntity(DataClass):
     name: str
     stats: StatBlock
     active_skill: ActiveSkillType = None
     passive_skill: PassiveSkillType = None
 
+    movement_range: int  = 1
+
     @property
     def is_physical(self):
         return self.stats.calculate_raw("physical_attack") > 0
-    
+
     def calculate_stat(self, stat_name):
         base = self.stats.calculate_raw(stat_name)
         return int(base + (base * self.stats.tier_modifier))
@@ -164,8 +167,8 @@ class StatedEntity(DataClass):
 
 @dataclass
 class Character(StatedEntity):
-    weapon: "Character" = None
-    artefact: "Character" = None
+    weapon: StatedEntity = None
+    artefact: StatedEntity = None
 
     position: Coords = None
 
@@ -178,6 +181,9 @@ class Character(StatedEntity):
         modifier = self.stats.tier_modifier
 
         for source in (self, self.weapon, self.artefact):
+            if source is None:
+                continue
+
             base += source.stats.calculate_raw(stat_name)
             modifier += source.stats.calculate_modifier(stat_name)
 
@@ -225,6 +231,11 @@ def is_wakable(tile_type: Union[TileType, int]):
 
     return tile_type > 0
 
+def get_distance(origin: Coords, destination: Coords):
+    dx = destination[0] - origin[0]
+    dy = destination[1] - origin[1]
+    return ((dx * dx) + (dy * dy)) ** .5
+
 @dataclass
 class Battlefield:
     tiles: List[List[TileType]]
@@ -267,7 +278,7 @@ class ActionEntry:
 @dataclass
 class Battle:
     _players: List[Character]
-    _enemies: List[Character]
+    _enemies: List[Enemy]
     # terrain: Terrain
     # event: Event
     battlefield: Battlefield

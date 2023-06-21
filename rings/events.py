@@ -163,7 +163,7 @@ class Events(commands.Cog):
         elif isinstance(error, commands.BadLiteralArgument):
             msg = f"`{error.param}` must be any of **{', '.join(error.literals)}"
         elif isinstance(error, discord.Forbidden):
-            msg = "Looks like I don't have permission to do this."
+            msg = f"Looks like I don't have permission to do this. {error}"
         elif isinstance(error, discord.HTTPException) and getattr(error, "status", 0) >= 500:
             msg = "An error occured with Discord's servers. Unable to complete action, the Discord servers might be struggling, please try again later"
         else:

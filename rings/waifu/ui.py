@@ -51,9 +51,10 @@ class ActionButton(discord.ui.Button):
 
 
 class CharacterUI(discord.ui.Select):
-    def __init__(self, characters : List[Character], battle: Battle):
+    def __init__(self, characters : List[Character], battle: Battle, embed_maker):
         self.characters = characters
         self.battle = battle
+        self.embed_maker = embed_maker
 
         options = [
             discord.SelectOption(label=character.name, value=index, emoji=get_symbol(index)) 
@@ -93,15 +94,16 @@ class CharacterUI(discord.ui.Select):
         return buttons
 
     async def callback(self, interaction: discord.Interaction):
+        character = self.characters[int(self.values[0])]
         self.view.clear_items()
         for option in self.options:
             option.default = int(self.values[0]) == option.value
 
         self.view.add_item(self)
-        for button in self.generate_buttons(self.characters[int(self.values[0])]):
+        for button in self.generate_buttons(character):
             self.view.add_item(button)
 
-        await interaction.response.edit_message(view=self.view)
+        await interaction.response.edit_message(view=self.view, embed=self.embed_maker(self.battle, character))
 
 
 class CombatView(discord.ui.View):
@@ -109,10 +111,11 @@ class CombatView(discord.ui.View):
         super().__init__()
 
         self.battle = battle
-        self.add_item(CharacterUI(battle.players, battle))
-        self.message = None
+        self.add_item(CharacterUI(battle.players, battle, embed_maker))
+        self.message : discord.Message = None
         self.embed_maker = embed_maker
         self.author = author
+        self.victory = False
 
     async def interaction_check(self, interaction: discord.Interaction):
         return interaction.user.id == self.author.id
@@ -133,5 +136,5 @@ class CombatView(discord.ui.View):
         # self.battle.do_ai_turn()
 
         self.clear_items()
-        self.add_item(CharacterUI(self.battle.players, self.battle))
+        self.add_item(CharacterUI(self.battle.players, self.battle, self.embed_maker))
         await interaction.response.edit_message(embed=self.embed_maker(self.battle), view=self)

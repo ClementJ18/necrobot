@@ -1,7 +1,7 @@
 import asyncio
 import random
 import traceback
-from typing import Callable, Dict, List
+from typing import Callable, Dict, Iterable, List
 
 import discord
 
@@ -404,7 +404,76 @@ class HungerGames(discord.ui.View):
 
         self.phase = "victory"
         return self.phase
+    
+def convert_key_to_label(key: str):
+        return key.title().replace("_", " ")
 
+def generate_edit_modal(title, values: dict, keys: List[str], optionals: List[str], embed_maker):
+    class EditModal(discord.ui.Modal, title=title):
+        async def on_submit(modal, interaction: discord.Interaction):
+            for key in keys:
+                text_input = discord.utils.get(
+                    modal.children, label=convert_key_to_label(key)
+                )
+                if text_input.value.lower() == "null" and key in optionals:
+                    values[key] = None
+                elif text_input.value != "":
+                    values[key] = text_input.value.strip()
+
+            await interaction.response.defer()
+            try:
+                await interaction.followup.edit_message(
+                    interaction.message.id, embed=await embed_maker()
+                )
+            except Exception as e:
+                await interaction.followup.send(
+                    f"Something went wrong with the embed: {e}", ephemeral=True
+                )
+
+    modal = EditModal()
+    for key in keys:
+        converted_default = None
+        if isinstance(values[key], Iterable):
+            converted_default = ", ".join(str(x) for x in values[key])
+
+        modal.add_item(
+            discord.ui.TextInput(
+                label=convert_key_to_label(key),
+                placeholder=key
+                if key not in optionals
+                else "Type NULL to reset the field",
+                required=False,
+                default=converted_default,
+                max_length=2000,
+            )
+        )
+
+    return modal
+
+def chunker(seq, size):
+    return [seq[pos:pos + size] for pos in range(0, len(seq), size)]
+
+class EditModalSelect(discord.ui.Select):
+    def __init__(self, values, title, optionals, embed_maker):
+        self.attributes = values
+        self.chunks = chunker(list(values.keys()), 5)
+        self.title = title
+        self.optionals = optionals
+        self.embed_maker = embed_maker
+
+        options = [
+            discord.SelectOption(
+                label=f"Edit - {', '.join(convert_key_to_label(key) for key in chunk)}",
+                value=index 
+            )
+            for index, chunk in enumerate(self.chunks)
+        ]
+
+        super().__init__(options=options, row=1, placeholder="Pick a set of attributes to edit")
+
+    async def callback(self, interaction: discord.Interaction):
+        modal = generate_edit_modal(self.title, self.attributes, self.chunks[int(self.values[0])], self.optionals, self.embed_maker)
+        await interaction.response.send_modal(modal)
 
 class MultiInputEmbedView(discord.ui.View):
     def __init__(
@@ -424,57 +493,13 @@ class MultiInputEmbedView(discord.ui.View):
         self.modal_title = modal_title
         self.value = False
         self.optionals = optionals
+        self.add_item(EditModalSelect(defaults, modal_title, optionals, self.generate_embed))
 
     async def generate_embed(self):
         if asyncio.iscoroutinefunction(self.embed_maker):
             return await self.embed_maker(self.values)
 
         return self.embed_maker(self.values)
-
-    def convert_key_to_label(self, key):
-        return key.title().replace("_", " ")
-
-    def construct_modal(self):
-        class Modal(discord.ui.Modal, title=self.modal_title):
-            async def on_submit(modal, interaction: discord.Interaction):
-                for key in self.values.keys():
-                    text_input = discord.utils.get(
-                        modal.children, label=self.convert_key_to_label(key)
-                    )
-                    if text_input.value.lower() == "null" and key in self.optionals:
-                        self.values[key] = None
-                    elif text_input.value != "":
-                        self.values[key] = text_input.value.strip()
-
-                await interaction.response.defer()
-                try:
-                    await interaction.followup.edit_message(
-                        interaction.message.id, embed=await self.generate_embed()
-                    )
-                except Exception as e:
-                    await interaction.followup.send(
-                        f"Something went wrong with the embed: {e}", ephemeral=True
-                    )
-
-        modal = Modal()
-        for key, value in self.values.items():
-            modal.add_item(
-                discord.ui.TextInput(
-                    label=self.convert_key_to_label(key),
-                    placeholder=key
-                    if key not in self.optionals
-                    else "Type NULL to reset the field",
-                    required=False,
-                    default=value,
-                    max_length=2000,
-                )
-            )
-
-        return modal
-
-    @discord.ui.button(label="Edit", style=discord.ButtonStyle.blurple)
-    async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(self.construct_modal())
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):

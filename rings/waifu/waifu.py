@@ -20,7 +20,7 @@ from rings.utils.utils import BotError, check_channel
 from rings.waifu.ui import CombatView
 
 from .battle import (POSITION_EMOJIS, Battle, Battlefield, Character,
-                     StatBlock, StatedEntity, is_wakable)
+                     StatBlock, StatedEntity, get_distance, is_wakable)
 from .enemies import POTENTIAL_ENEMIES
 from .fields import POTENTIAL_FIELDS
 
@@ -282,20 +282,20 @@ class Flowers(commands.Cog):
 
         return weight
 
-    def embed_character(self, character, admin=False):
+    def embed_character(self, character: dict, admin=False):
         embed = discord.Embed(
             title=character["name"],
             colour=self.bot.bot_color,
             description=character["description"],
         )
 
-        if character.get("image_url"):
-            embed.set_image(url=character["image_url"])
+        if url := character.get("image_url"):
+            embed.set_image(url=url)
 
         embed.set_footer(**self.bot.bot_footer)
 
-        if character.get("id"):
-            embed.add_field(name="ID", value=character["id"])
+        if char_id := character.get("id"):
+            embed.add_field(name="ID", value=char_id)
 
         embed.add_field(name="Title", value=character["title"])
         embed.add_field(
@@ -304,18 +304,29 @@ class Flowers(commands.Cog):
         )
         embed.add_field(name="Universe", value=character["universe"])
 
-        if character.get("level"):
+        if level := character.get("level"):
             level, exp, next_threshold = self.convert_exp_to_level(
-                character["level"], character["tier"]
+                level, character["tier"]
             )
             embed.add_field(name="Level", value=f"{level} ({exp}/{next_threshold})")
 
         if admin and character.get("obtainable"):
             embed.add_field(name="Obtainable", value=character["obtainable"])
 
-        if character.get("total"):
-            embed.add_field(name="Count", value=character["total"])
+        if char_type := character.get("type"):
+            embed.add_field(name="Type", value=char_type.title())
 
+        def c(s):
+            if not s:
+                return 0
+
+            if s[0]:
+                return f'+{s[1]}%'
+
+            return s[1]
+
+        stats = f"- Health: {c(character['primary_health'])} ({c(character['secondary_health'])})\n- PA: {c(character['physical_attack'])}\n- MA: {c(character['magical_attack'])}\n- PD: {c(character['physical_defense'])}\n- MD: {c(character['magical_defense'])}"
+        embed.add_field(name="Stats", value=stats, inline=False)
         return embed
 
     def embed_banner(self, banner, admin=False):
@@ -356,15 +367,7 @@ class Flowers(commands.Cog):
         )
 
     async def get_characters(self):
-        return await self.bot.db.query(
-            """
-            SELECT id, name, title, tier, universe, description, image_url, obtainable, count(rolled.char_id) as total 
-            FROM necrobot.Characters as chars
-            LEFT JOIN necrobot.RolledCharacters as rolled on chars.id = rolled.char_id
-            GROUP BY chars.id
-            ORDER BY tier DESC, universe ASC, name ASC
-        """
-        )
+        return await self.bot.db.query("SELECT * FROM necrobot.Characters ORDER BY tier DESC, universe ASC, name ASC")
 
     def pull(self, characters, pity=0, guarantee=False):
         duds = [
@@ -590,12 +593,25 @@ class Flowers(commands.Cog):
             "title": None,
             "tier": None,
             "universe": None,
+            "type": None,
+            "primary_health": None,
+            "secondary_health": None,
+            "physical_attack": None,
+            "magical_attack": None,
+            "physical_defense": None,
+            "magical_defense": None,
         }
 
         def embed_maker(values):
             tier = values["tier"]
             if isinstance(tier, str):
                 tier = int(tier)
+
+            for stat in ("primary_health", "secondary_health", "physical_defense", "physical_attack", "magical_defense", "magical_attack"):
+                v = values.get(stat)
+                if isinstance(v, str):
+                    is_percent, value = v.split(",")
+                    values[stat] = (is_percent.lower() == "true", int(value))
 
             return self.embed_character(
                 {
@@ -607,6 +623,13 @@ class Flowers(commands.Cog):
                     "universe": values["universe"],
                     "obtainable": False,
                     "id": char_id,
+                    "type": values["type"],
+                    "primary_health": values["primary_health"],
+                    "secondary_health": values["secondary_health"],
+                    "physical_attack": values["physical_defense"],
+                    "magical_attack": values["physical_attack"],
+                    "physical_defense": values["magical_defense"],
+                    "magical_defense": values["magical_attack"],
                 }
             )
 
@@ -635,7 +658,7 @@ class Flowers(commands.Cog):
             return
 
         char_id = await self.bot.db.query(
-            "INSERT INTO necrobot.Characters(name, title, description, image_url, tier, obtainable, universe) VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id",
+            "INSERT INTO necrobot.Characters VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id",
             name,
             view.values["title"],
             view.values["description"],
@@ -643,6 +666,13 @@ class Flowers(commands.Cog):
             int(view.values["tier"]),
             False,
             view.values["universe"],
+            view.values["type"],
+            view.values["primary_health"],
+            view.values["secondary_health"],
+            view.values["physical_defense"],
+            view.values["physical_attack"],
+            view.values["magical_defense"],
+            view.values["magical_attack"],
             fetchval=True,
         )
 
@@ -669,6 +699,13 @@ class Flowers(commands.Cog):
             "title": char["title"],
             "tier": char["tier"],
             "universe": char["universe"],
+            "type": char["type"],
+            "primary_health": char["primary_health"],
+            "secondary_health": char["secondary_health"],
+            "physical_attack": char["physical_defense"],
+            "magical_attack": char["physical_attack"],
+            "physical_defense": char["magical_defense"],
+            "magical_defense": char["magical_attack"],
         }
 
         def embed_maker(values):
@@ -686,6 +723,13 @@ class Flowers(commands.Cog):
                     "universe": values["universe"],
                     "obtainable": char["obtainable"],
                     "id": char_id,
+                    "type": values["type"],
+                    "primary_health": values["primary_health"],
+                    "secondary_health": values["secondary_health"],
+                    "physical_attack": values["physical_defense"],
+                    "magical_attack": values["physical_attack"],
+                    "physical_defense": values["magical_defense"],
+                    "magical_defense": values["magical_attack"],
                 }
             )
 
@@ -1356,13 +1400,20 @@ class Flowers(commands.Cog):
 
         await paginate(ctx, entries, 1, embed_maker)
 
-    def convert_battlefield_to_str(self, field: Battlefield, characters: List[Character]):
+    def convert_battlefield_to_str(self, field: Battlefield, characters: List[Character], character_range: Character = None):
         empty_board = []
-        for row in field.tiles:
+        for y, row in enumerate(field.tiles):
             empty_row = []
-            for cell in row:
+            for x, cell in enumerate(row):
                 if is_wakable(cell):
-                    empty_row.append(":black_large_square:")
+                    in_range = False
+                    if character_range is not None:
+                        in_range = get_distance(character_range.position, (x, y)) <= character_range.movement_range
+
+                    if in_range:
+                        empty_row.append(":blue_square:")
+                    else:
+                        empty_row.append(":black_large_square:")
                 else:
                     empty_row.append(":red_square:")
             empty_board.append(empty_row)
@@ -1384,11 +1435,11 @@ class Flowers(commands.Cog):
 
         return string
 
-    def embed_battle(self, battle: Battle):
+    def embed_battle(self, battle: Battle, character_range: Character = None):
         embed = discord.Embed(
             title="A Great Battle",
             colour=self.bot.bot_color,
-            description=self.convert_battlefield_to_str(battle.battlefield, battle.players + battle.enemies),
+            description=self.convert_battlefield_to_str(battle.battlefield, battle.players + battle.enemies, character_range),
         )
 
         embed.set_footer(**self.bot.bot_footer)
@@ -1400,6 +1451,7 @@ class Flowers(commands.Cog):
             ))
 
         embed.add_field(name="Actions", value="\n".join(map(str, battle.action_log[:LOG_SIZE])), inline=False)
+        embed.add_field(name="Key", value=":blue_square: - possible movement\n:black_medium_square: - walkable terrain\n:red_square: - impassable terrain")
 
         return embed
 
@@ -1414,17 +1466,15 @@ class Flowers(commands.Cog):
         
         characters = [
             Character(
-                es.character["name"], 
-                StatBlock.from_dict(es.character),
-                None,
-                None, 
-                StatedEntity(
-                    es.weapon["name"], 
-                    StatBlock.from_dict(es.weapon)
+                name=es.character["name"],
+                stats=StatBlock.from_dict(es.character),
+                weapon=StatedEntity(
+                    name=es.weapon["name"],
+                    stats=StatBlock.from_dict(es.weapon)
                 ),
-                StatedEntity(
-                    es.artefact["name"], 
-                    StatBlock.from_dict(es.artefact)
+                artefact=StatedEntity(
+                    name=es.artefact["name"],
+                    stats=StatBlock.from_dict(es.artefact)
                 )
             ) for es in equipment_sets
         ]
@@ -1434,7 +1484,13 @@ class Flowers(commands.Cog):
         battle.initialise()
 
         cmd = CombatView(battle, self.embed_battle, ctx.author)
-        cmd.message = await ctx.send(embed=self.embed_battle(battle), view=cmd)
+        cmd.message: discord.Message = await ctx.send(embed=self.embed_battle(battle), view=cmd)
+
+        await cmd.wait()
+        if cmd.victory:
+            await cmd.message.edit(content="The battle ended in victory")
+        else:
+            await cmd.message.edit(content="The battle ended in defeat")
 
     #######################################################################
     ## Events
