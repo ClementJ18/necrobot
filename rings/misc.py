@@ -6,23 +6,16 @@ from io import BytesIO
 
 import aiohttp
 import discord
+import matplotlib.pyplot as plt
+import pandas as pds
 from bs4 import BeautifulSoup
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
 from rings.utils.checks import guild_only, has_perms
 from rings.utils.converters import UserConverter
+from rings.utils.ui import Confirm, HungerGames, paginate
 from rings.utils.utils import BotError
-from rings.utils.ui import Confirm, paginate, HungerGames
-import re
-import random
-import asyncio
-import aiohttp
-import itertools
-from io import BytesIO
-from bs4 import BeautifulSoup
-import pandas as pds
-import matplotlib.pyplot as plt
 
 
 class Misc(commands.Cog):
