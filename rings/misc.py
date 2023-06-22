@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import itertools
 import random
 import re
@@ -6,6 +7,7 @@ from io import BytesIO
 
 import aiohttp
 import discord
+import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pds
 from bs4 import BeautifulSoup
@@ -16,6 +18,9 @@ from rings.utils.checks import guild_only, has_perms
 from rings.utils.converters import UserConverter
 from rings.utils.ui import Confirm, HungerGames, paginate
 from rings.utils.utils import BotError
+
+matplotlib.use("agg")
+import matplotlib.pyplot as plt
 
 
 class Misc(commands.Cog):
@@ -363,21 +368,7 @@ class Misc(commands.Cog):
 
         await ctx.send(":white_check_mark: | Log removed, counters adjusted.")
 
-    @matchups.command(name="stats")
-    @guild_only(496617962334060545)
-    async def matchups_stats(self, ctx: commands.Context, *, arguments: str):
-        """Get specific stats over time for a faction W/L
-        
-        {usage}
-        """
-        arguments = arguments.lower()
-        factions = re.findall(self.faction_regex, arguments)
-        if not factions:
-            raise BotError("No faction detected in input string.")
-        
-        faction = factions[0]
-        logs = await self.bot.db.query("SELECT * FROM necrobot.InternalRankedLogs WHERE LOWER(faction) = $1 OR LOWER(enemy) = $1 ORDER BY log_date DESC;", faction)
-        
+    def compile_stats(self, logs, faction):
         title = logs[0]["faction"] if logs[0]["faction"].lower() == faction else logs[0]["enemy"]
         index = self.bot.settings["messages"]["factions"].index(title)
         emoji_id = self.bot.settings["messages"]["emotes"][index]
@@ -400,8 +391,8 @@ class Misc(commands.Cog):
         df = pds.DataFrame.from_records(entries, columns=["Total Matches", "Victories", "Date", "Faction"])
         df = df.reset_index(drop=True).set_index("Date")
         df["percent"] = (df["Victories"] / df["Total Matches"]) * 100
-        df = df.pivot_table(index="Date", columns="Faction", values="percent").resample('M').mean().ffill()
-        df = df.resample("D").interpolate("cubic")
+        df = df.pivot_table(index="Date", columns="Faction", values="percent").resample('M').mean().ffill().fillna(0)
+        df = df.resample("D").interpolate("cubic").clip(upper=100)
 
         df.plot(alpha=0.7)
         plt.ylim(ymin=0)
@@ -414,6 +405,27 @@ class Misc(commands.Cog):
         plt.savefig(figfile, format='png')
         figfile.seek(0)
         ifile = discord.File(filename=f"graph_{faction}.png", fp=figfile)
+
+        return title, intro, ifile
+
+    @matchups.command(name="stats")
+    @guild_only(496617962334060545)
+    async def matchups_stats(self, ctx: commands.Context, *, arguments: str):
+        """Get specific stats over time for a faction W/L
+        
+        {usage}
+        """
+        arguments = arguments.lower()
+        factions = re.findall(self.faction_regex, arguments)
+        if not factions:
+            raise BotError("No faction detected in input string.")
+        
+        async with ctx.typing():
+            faction = factions[0]
+            logs = await self.bot.db.query("SELECT * FROM necrobot.InternalRankedLogs WHERE LOWER(faction) = $1 OR LOWER(enemy) = $1 ORDER BY log_date DESC;", faction)
+            
+            func = functools.partial(self.compile_stats, logs, faction)
+            title, intro, ifile = await self.bot.loop.run_in_executor(None, func)
         
         await ctx.send(f"**__W/L {title}__**\n{intro}", file=ifile)
 
