@@ -14,6 +14,8 @@ import aiohttp
 import itertools
 from io import BytesIO
 from bs4 import BeautifulSoup
+import pandas as pds
+import matplotlib.pyplot as plt
 
 
 class Misc(commands.Cog):
@@ -360,6 +362,60 @@ class Misc(commands.Cog):
         )
 
         await ctx.send(":white_check_mark: | Log removed, counters adjusted.")
+
+    @matchups.command(name="stats")
+    @guild_only(496617962334060545)
+    async def matchups_stats(self, ctx: commands.Context, *, arguments: str):
+        """Get specific stats over time for a faction W/L
+        
+        {usage}
+        """
+        arguments = arguments.lower()
+        factions = re.findall(self.faction_regex, arguments)
+        if not factions:
+            raise BotError("No faction detected in input string.")
+        
+        faction = factions[0]
+        logs = await self.bot.db.query("SELECT * FROM necrobot.InternalRankedLogs WHERE LOWER(faction) = $1 OR LOWER(enemy) = $1 ORDER BY log_date DESC;", faction)
+        
+        title = logs[0]["faction"] if logs[0]["faction"].lower() == faction else logs[0]["enemy"]
+        index = self.bot.settings["messages"]["factions"].index(title)
+        emoji_id = self.bot.settings["messages"]["emotes"][index]
+        emoji = self.bot.get_emoji(emoji_id)
+        intro = f'{emoji} {self.bot.settings["messages"]["msg"][index]} {emoji}\n\n'
+
+        faction_data = {key: [(0, 0, logs[0]["log_date"], key)] for key in self.bot.settings["messages"]["factions"] if key.lower() != faction}
+        for log in logs:
+            if log["faction"].lower() == faction:
+                key = "enemy"
+                victory = int(log["faction_won"])
+            else:
+                key = "faction"
+                victory = int(not log["faction_won"])
+
+            previous = faction_data[log[key]][-1]
+            faction_data[log[key]].append((previous[0] + 1, previous[1] + victory, log["log_date"], log[key]))
+
+        entries = [value for tup in faction_data.values() for value in tup]
+        df = pds.DataFrame.from_records(entries, columns=["Total Matches", "Victories", "Date", "Faction"])
+        df = df.reset_index(drop=True).set_index("Date")
+        df["percent"] = (df["Victories"] / df["Total Matches"]) * 100
+        df = df.pivot_table(index="Date", columns="Faction", values="percent").resample('M').mean().ffill()
+        df = df.resample("D").interpolate("cubic")
+
+        df.plot(alpha=0.7)
+        plt.ylim(ymin=0)
+        plt.ylabel("Win Rate (%)")
+        plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left", mode="expand", borderaxespad=0, ncol=3, fancybox=True, shadow=True)
+        plt.tight_layout()
+        plt.grid(which = 'both', linestyle="dashed")
+
+        figfile = BytesIO()
+        plt.savefig(figfile, format='png')
+        figfile.seek(0)
+        ifile = discord.File(filename=f"graph_{faction}.png", fp=figfile)
+        
+        await ctx.send(f"**__W/L {title}__**\n{intro}", file=ifile)
 
     # @commands.command()
     async def pdf(self, ctx: commands.Context, *, doi):
