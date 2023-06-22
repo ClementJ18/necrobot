@@ -1408,7 +1408,7 @@ class Flowers(commands.Cog):
                 if is_wakable(cell):
                     in_range = False
                     if character_range is not None:
-                        in_range = get_distance(character_range.position, (x, y)) <= character_range.movement_range
+                        in_range = get_distance(character_range.position, (x, y)) <= character_range.current_movement_range
 
                     if in_range:
                         empty_row.append(":blue_square:")

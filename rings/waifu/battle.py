@@ -107,6 +107,7 @@ class StatedEntity(DataClass):
     passive_skill: PassiveSkillType = None
 
     movement_range: int  = 1
+    current_movement_range: int = 0
 
     @property
     def is_physical(self):
@@ -164,6 +165,14 @@ class StatedEntity(DataClass):
         self.stats.current_secondary_health = self.calculate_stat("secondary_health")
         self.stats.max_secondary_health = self.stats.current_secondary_health
 
+        self.current_movement_range = self.movement_range
+
+    def end_turn(self):
+        self.current_movement_range = self.movement_range
+
+    def can_use_ability(self):
+        return True
+
 
 @dataclass
 class Character(StatedEntity):
@@ -188,13 +197,6 @@ class Character(StatedEntity):
             modifier += source.stats.calculate_modifier(stat_name)
 
         return int(base + (base * modifier))
-    
-    def __post_init__(self):
-        self.stats.current_primary_health = self.calculate_stat("primary_health")
-        self.stats.max_primary_health = self.stats.current_primary_health
-        
-        self.stats.current_secondary_health = self.calculate_stat("secondary_health")
-        self.stats.max_secondary_health = self.stats.current_secondary_health
     
 
 @dataclass
@@ -309,7 +311,7 @@ class Battle:
 
         return True
 
-    def _is_valid_movement(self, position: Coords, change: Coords) -> bool:
+    def _is_valid_movement(self, position: Coords, change: Coords, move_range: int) -> bool:
         new_pos = (position[0] + change[0], position[1] + change[1])
         self.is_in_board(new_pos)
         if not self.battlefield.tiles[new_pos[1]][new_pos[0]] > 0:
@@ -318,22 +320,16 @@ class Battle:
         if any(e.position == new_pos for e in self.players + self.enemies):
             raise InvalidPosition("Somebody is already there")
         
+        if get_distance(position, new_pos) > move_range:
+            raise InvalidPosition("Not enough movement range.")
+        
         return True
     
-    def is_valid_movement(self, position: Coords, change: Coords) -> bool:
+    def is_valid_movement(self, position: Coords, change: Coords, move_range: int) -> bool:
         try:
-            return self._is_valid_movement(position, change)
+            return self._is_valid_movement(position, change, move_range)
         except InvalidPosition:
             return False
-    
-    def move_character(self, character: Character, movements: List[MovementType]) -> Coords:
-        for movement in movements:
-            try:
-                self.is_valid_movement(character.position, movement.value)
-            except InvalidPosition:
-                return
-            
-            yield (character.position[0] + movement.value[0], character.position[1] + movement.value[1])
 
     def get_positions(self, value: TileType) ->List[Coords]:
         positions = []
@@ -372,7 +368,9 @@ class Battle:
         self.battlefield.initialise()
 
     def move_character(self, character: Character, direction: MovementType):
+        distance = get_distance(character.position, direction.value)
         character.position = (character.position[0] + direction.value[0], character.position[1] + direction.value[1])
+        character.current_movement_range -= distance
         self.action_log.append(f"{character} {ActionType.moved} {direction}")
 
     def attack_character(self, attacker: Character, attackee: Character):
@@ -406,9 +404,6 @@ class Battle:
         if targets:
             return self.attack_character(character, random.choice(targets))
         
-        
-
-            
-
-
-
+    def end_turn(self):
+        for e in self.players + self.enemies:
+            e.end_turn()

@@ -68,7 +68,7 @@ class CharacterUI(discord.ui.Select):
             ActionButton(
                 style=discord.ButtonStyle.primary, 
                 label=move.name.title(), 
-                disabled=not self.battle.is_valid_movement(character.position, move.value),
+                disabled=not self.battle.is_valid_movement(character.position, move.value, character.current_movement_range),
                 row=1,
                 character=character,
                 action=ActionType.move,
@@ -125,6 +125,11 @@ class CombatView(discord.ui.View):
         self.clear_items()
         await self.message.edit(view=self)
 
+    async def reset_view(self, interaction: discord.Interaction):
+        self.clear_items()
+        self.add_item(CharacterUI(self.battle.players, self.battle, self.embed_maker))
+        await interaction.response.edit_message(embed=self.embed_maker(self.battle), view=self)
+
     async def take_action(self, interaction: discord.Interaction, action: ActionType, **kwargs):
         if action == ActionType.move:
             self.battle.move_character(kwargs.get("character"), kwargs.get("direction"))
@@ -132,9 +137,13 @@ class CombatView(discord.ui.View):
             self.battle.attack_character(kwargs.get("character"), kwargs.get("target"))
         elif action == ActionType.skill:
             self.battle.use_active_skill(kwargs.get("character"))
-        
-        # self.battle.do_ai_turn()
 
-        self.clear_items()
-        self.add_item(CharacterUI(self.battle.players, self.battle, self.embed_maker))
-        await interaction.response.edit_message(embed=self.embed_maker(self.battle), view=self)
+        await self.reset_view(interaction)
+
+    @discord.ui.button(label="End Turn", style=discord.ButtonStyle.red)
+    async def end_turn(self, interaction: discord.Interaction):
+        self.battle.do_ai_turn()
+        self.battle.end_turn()
+
+        await self.reset_view(interaction)
+
