@@ -390,7 +390,7 @@ class Misc(commands.Cog):
         df = df.reset_index(drop=True).set_index("Date")
         df["percent"] = (df["Victories"] / df["Total Matches"]) * 100
         df = df.pivot_table(index="Date", columns="Faction", values="percent").resample('M').mean().ffill().fillna(0)
-        df = df.resample("D").interpolate("cubic").clip(upper=100)
+        df = df.resample("D").interpolate("cubic").clip(upper=100, lower=0)
 
         df.plot(alpha=0.7)
         plt.ylim(ymin=0)
