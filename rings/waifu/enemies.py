@@ -1,4 +1,4 @@
-from .battle import Enemy, StatBlock
+from .entities import Enemy, StatBlock
 
 POTENTIAL_ENEMIES = (
     Enemy(

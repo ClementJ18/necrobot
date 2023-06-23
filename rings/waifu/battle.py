@@ -1,208 +1,17 @@
-import copy
 import enum
-import inspect
 import random
-from collections import namedtuple
-from dataclasses import dataclass, field, fields
-from typing import Dict, List, Tuple, Union
+from dataclasses import dataclass, field
+from typing import Dict, List, Union
 
-Coords = Tuple[int, int] # (x, y)
-Size = namedtuple("Size", "length height")
+from .base import Coords, Size, get_symbol
+from .entities import Character, Enemy
 
-POSITION_EMOJIS = [":zero:", ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:", ":nine:",]
-
+from pathfinding.core.diagonal_movement import DiagonalMovement
+from pathfinding.core.grid import Grid
+from pathfinding.finder.a_star import AStarFinder
 
 class InvalidPosition(Exception):
     pass
-
-
-class PassiveSkillType(enum.Enum):
-    pass
-
-
-class ActiveSkillType(enum.Enum):
-    pass
-
-
-class DataClass:
-    @classmethod
-    def from_dict(cls, env):      
-        return cls(**{
-            k: v for k, v in env.items() 
-            if k in inspect.signature(cls).parameters
-        })
-
-@dataclass
-class Stat:
-    is_percent: bool
-    stat: float
-
-    @property
-    def modifier(self):
-        if not self.is_percent:
-            return 0
-        
-        return self.stat
-    
-    @property
-    def raw(self):
-        if self.is_percent:
-            return 0
-        
-        return self.stat
-        
-
-@dataclass
-class StatBlock(DataClass):
-    primary_health: Stat
-    secondary_health: Stat = (False, 0)
-    physical_defense: Stat = (False, 0)
-    physical_attack: Stat = (False, 0)
-    magical_defense: Stat = (False, 0)
-    magical_attack: Stat = (False, 0)
-
-    tier: int = 0
-
-    current_primary_health: int = 0
-    current_secondary_health: int = 0
-    max_primary_health: int = 0
-    max_secondary_health: int = 0
-
-    @property
-    def tier_modifier(self):
-        return 0.02 * self.tier
-
-    def is_alive(self):
-        return self.current_primary_health > 0 or self.current_secondary_health > 0
-
-    def __post_init__(self):
-        for f in fields(self):
-            if not f.type is Stat:
-                continue
-
-            value = getattr(self, f.name)
-            if not isinstance(value, f.type):
-                setattr(self, f.name, f.type(*value))
-
-    def calculate_raw(self, stat_name):
-        stat: Stat = getattr(self, stat_name)
-        if stat is None:
-            raise AttributeError(f"{stat_name} not a valid stat")
-
-        return stat.raw 
-
-    def calculate_modifier(self, stat_name):
-        stat: Stat = getattr(self, stat_name)
-        if stat is None:
-            raise AttributeError(f"{stat_name} not a valid stat")
-
-        return stat.modifier / 100
-
-
-@dataclass(kw_only=True)
-class StatedEntity(DataClass):
-    name: str
-    stats: StatBlock
-    active_skill: ActiveSkillType = None
-    passive_skill: PassiveSkillType = None
-
-    movement_range: int  = 1
-    current_movement_range: int = 0
-
-    @property
-    def is_physical(self):
-        return self.stats.calculate_raw("physical_attack") > 0
-
-    def calculate_stat(self, stat_name):
-        base = self.stats.calculate_raw(stat_name)
-        return int(base + (base * self.stats.tier_modifier))
-
-    def calculate_physical_attack(self):
-        return self.calculate_stat("physical_attack")
-    
-    def calculate_magical_attack(self):
-        return self.calculate_stat("magical_attack")
-
-    def calculate_physical_defense(self):
-        return self.calculate_stat("physical_defense")
-    
-    def calculate_magical_defense(self):
-        return self.calculate_stat("magical_defense")
-    
-    def calculate_damage(self, attack, defense):
-        return max(1, attack-defense)
-
-    def is_alive(self):
-        return self.stats.is_alive()
-    
-    def attack(self, attackee: 'StatedEntity'):
-        if self.is_physical:
-            damage = self.calculate_damage(self.calculate_physical_attack(), attackee.calculate_physical_defense())
-        else:
-            damage = self.calculate_damage(self.calculate_magical_attack(), attackee.calculate_magical_defense())
-
-        attackee.take_damage(damage)
-
-        return damage
-
-    def take_damage(self, damage):
-        self.stats.current_secondary_health -= damage
-
-        if self.stats.current_secondary_health < 0:
-            self.stats.current_primary_health += self.stats.current_secondary_health
-            self.stats.current_secondary_health = 0
-
-        if self.stats.current_primary_health < 0:
-            self.stats.current_primary_health = 0
-
-    def __str__(self):
-        return self.name
-    
-    def __post_init__(self):
-        self.stats.current_primary_health = self.calculate_stat("primary_health")
-        self.stats.max_primary_health = self.stats.current_primary_health
-        
-        self.stats.current_secondary_health = self.calculate_stat("secondary_health")
-        self.stats.max_secondary_health = self.stats.current_secondary_health
-
-        self.current_movement_range = self.movement_range
-
-    def end_turn(self):
-        self.current_movement_range = self.movement_range
-
-    def can_use_ability(self):
-        return True
-
-
-@dataclass
-class Character(StatedEntity):
-    weapon: StatedEntity = None
-    artefact: StatedEntity = None
-
-    position: Coords = None
-
-    @property
-    def is_physical(self):
-        return self.weapon.stats.calculate_raw("physical_attack") > 0
-    
-    def calculate_stat(self, stat_name):
-        base = 0
-        modifier = self.stats.tier_modifier
-
-        for source in (self, self.weapon, self.artefact):
-            if source is None:
-                continue
-
-            base += source.stats.calculate_raw(stat_name)
-            modifier += source.stats.calculate_modifier(stat_name)
-
-        return int(base + (base * modifier))
-    
-
-@dataclass
-class Enemy(StatedEntity):
-    description: str = None
-    position: Coords = None
 
 
 class Terrain:
@@ -236,7 +45,7 @@ def is_wakable(tile_type: Union[TileType, int]):
 def get_distance(origin: Coords, destination: Coords):
     dx = destination[0] - origin[0]
     dy = destination[1] - origin[1]
-    return ((dx * dx) + (dy * dy)) ** .5
+    return abs(dx) + abs(dy)
 
 @dataclass
 class Battlefield:
@@ -251,8 +60,12 @@ class Battlefield:
         # transform into a matrix for pathfinding
         self.grid = [[max(1, cell) for cell in row] for row in self.tiles]
 
-    def walkable_grid(self, include_entities=False):
-        pass
+    def walkable_grid(self, non_walkable: List = ()):
+        return [
+            [0 if cell < 1 or (x, y) in non_walkable else 1 for x, cell in enumerate(row)] 
+            for y, row in enumerate(self.tiles)
+        ]
+
 
 class ActionType(enum.Enum):
     moved = "moved"
@@ -367,37 +180,70 @@ class Battle:
 
         self.battlefield.initialise()
 
-    def move_character(self, character: Character, direction: MovementType):
-        distance = get_distance(character.position, direction.value)
-        character.position = (character.position[0] + direction.value[0], character.position[1] + direction.value[1])
+        for index, character in enumerate(self.players + self.enemies):
+            character.index = index
+
+    def move_character(self, character: Character, *, new_position: Coords = (), change: Coords = ()):
+        if not new_position and not change:
+            raise ValueError("Specify either change or new_position")
+        
+        if change:
+            new_position = (character.position[0] + change[0], character.position[1] + change[1])
+
+        distance = get_distance(character.position, new_position)
+        character.position = new_position
         character.current_movement_range -= distance
-        self.action_log.append(f"{character} {ActionType.moved} {direction}")
+        self.action_log.append(f"{character} ({get_symbol(character.index)}) {ActionType.moved} {distance} meters")
 
     def attack_character(self, attacker: Character, attackee: Character):
         damage = attacker.attack(attackee)
 
         if attackee.is_alive():
-            self.action_log.append(f"{attacker} {ActionType.attacked} {attackee} for {damage}")
+            self.action_log.append(f"{attacker} ({get_symbol(attacker.index)}) {ActionType.attacked} {attackee} for {damage}")
         else:
-            self.action_log.append(f"{attacker} {ActionType.killed} {attackee} with {damage}")
+            self.action_log.append(f"{attacker} ({get_symbol(attacker.index)}) {ActionType.killed} {attackee} with {damage}")
 
     def use_active_skill(self, character: Character):
-        self.action_log.append(f"{character} {ActionType.skill}")
-
-    def do_turn_move(self, character: Character, direction: MovementType):
-        self.move_character(character, direction)
-        self.do_ai_turn()
+        self.action_log.append(f"{get_symbol(character.index)} - {character} {ActionType.skill}")
 
     def do_ai_turn(self):
-        potential_enemies = [enemy for enemy in self.enemies if enemy not in self.used_last_turn]
-
-        missing_enemies = len(potential_enemies) - self.battlefield.enemy_count // 0.33
-        if missing_enemies > 0:
-            potential_enemies.extend(random.sample([enemy for enemy in self.enemies if enemy not in potential_enemies], missing_enemies))
-
-        enemies = random.sample(potential_enemies, self.battlefield.enemy_count // 0.33)
+        for enemy in self.enemies:
+            self.pick_ai_action(enemy)
 
     def pick_ai_action(self, character: Character):
+        adjacent = self.get_adjacent_positions(character.position)
+        targets = [player for player in self.players if player.position in adjacent.values()]
+
+        if targets:
+            return self.attack_character(character, random.choice(targets))
+        
+        entities = self.players + self.enemies
+        grid = Grid(matrix=self.battlefield.walkable_grid([x.position for x in entities]))
+
+        start = grid.node(*character.position)
+        ends = [grid.node(*x.position) for x in self.players]
+        finder = AStarFinder(diagonal_movement=DiagonalMovement.never)
+
+        current_path = []
+        for end in ends:
+            neighbors = grid.neighbors(end)
+            for neighbor in neighbors:
+                n = (neighbor.x, neighbor.y)
+                if n in adjacent:
+                    current_path = [n]
+                    break
+
+                path, _ = finder.find_path(start, neighbor, grid)
+                if not path:
+                    continue
+
+                path.append(n)
+                if len(path) < len(current_path) or not current_path:
+                    current_path = path
+
+        new_position = current_path[character.movement_range] if character.movement_range <= len(current_path) else current_path[-1]
+        self.move_character(character, new_position=new_position)
+
         adjacent = self.get_adjacent_positions(character.position)
         targets = [player for player in self.players if player.position in adjacent.values()]
 

@@ -19,8 +19,9 @@ from rings.utils.ui import Confirm, MultiInputEmbedView, paginate
 from rings.utils.utils import BotError, check_channel
 from rings.waifu.ui import CombatView
 
-from .battle import (POSITION_EMOJIS, Battle, Battlefield, Character,
-                     StatBlock, StatedEntity, get_distance, is_wakable)
+from .battle import Battle, Battlefield, Character, get_distance, is_wakable
+from .base import POSITION_EMOJIS
+from .entities import StatBlock, StatedEntity
 from .enemies import POTENTIAL_ENEMIES
 from .fields import POTENTIAL_FIELDS
 
@@ -1436,21 +1437,22 @@ class Flowers(commands.Cog):
         return string
 
     def embed_battle(self, battle: Battle, character_range: Character = None):
+        entity_list = battle.players + battle.enemies
         embed = discord.Embed(
             title="A Great Battle",
             colour=self.bot.bot_color,
-            description=self.convert_battlefield_to_str(battle.battlefield, battle.players + battle.enemies, character_range),
+            description=self.convert_battlefield_to_str(battle.battlefield, entity_list, character_range),
         )
 
         embed.set_footer(**self.bot.bot_footer)
 
         for entity_name, entities in (("Players", battle.players), ("Enemies", battle.enemies)):
             embed.add_field(name=entity_name, value="\n".join(
-                f"{POSITION_EMOJIS[index]} - **{character.name}**: {character.stats.current_primary_health}/{character.stats.max_primary_health} ({character.stats.current_secondary_health}/{character.stats.max_secondary_health})" 
-                for index, character in enumerate(entities)
+                f"{POSITION_EMOJIS[entity_list.index(character)]} - **{character.name}**: {character.stats.current_primary_health}/{character.stats.max_primary_health} ({character.stats.current_secondary_health}/{character.stats.max_secondary_health})" 
+                for character in entities
             ))
 
-        embed.add_field(name="Actions", value="\n".join(map(str, battle.action_log[:LOG_SIZE])), inline=False)
+        embed.add_field(name="Actions", value="\n".join(map(str, battle.action_log[-LOG_SIZE:])), inline=False)
         embed.add_field(name="Key", value=":blue_square: - possible movement\n:black_medium_square: - walkable terrain\n:red_square: - impassable terrain")
 
         return embed

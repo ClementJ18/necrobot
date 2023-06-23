@@ -1,14 +1,13 @@
+import asyncio
 import enum
+import time
 from typing import List
 
 import discord
 from discord.interactions import Interaction
 
 from .battle import Battle, Character, MovementType
-
-
-def get_symbol(index):
-    return f"{index}\ufe0f\N{COMBINING ENCLOSING KEYCAP}"
+from .base import get_symbol
 
 class ActionType(enum.Enum):
     move = 0
@@ -103,6 +102,7 @@ class CharacterUI(discord.ui.Select):
         for button in self.generate_buttons(character):
             self.view.add_item(button)
 
+        self.view.add_item(self.view.end_turn)
         await interaction.response.edit_message(view=self.view, embed=self.embed_maker(self.battle, character))
 
 
@@ -125,25 +125,38 @@ class CombatView(discord.ui.View):
         self.clear_items()
         await self.message.edit(view=self)
 
-    async def reset_view(self, interaction: discord.Interaction):
+    def reset_view(self):
         self.clear_items()
         self.add_item(CharacterUI(self.battle.players, self.battle, self.embed_maker))
-        await interaction.response.edit_message(embed=self.embed_maker(self.battle), view=self)
+        self.add_item(self.end_turn)
 
     async def take_action(self, interaction: discord.Interaction, action: ActionType, **kwargs):
         if action == ActionType.move:
-            self.battle.move_character(kwargs.get("character"), kwargs.get("direction"))
+            self.battle.move_character(kwargs.get("character"), change=kwargs.get("direction").value)
         elif action == ActionType.attack:
-            self.battle.attack_character(kwargs.get("character"), kwargs.get("target"))
+            character: Character = kwargs.get("character")
+            self.battle.attack_character(character, kwargs.get("target"))
+            character.current_movement_range = 0
         elif action == ActionType.skill:
             self.battle.use_active_skill(kwargs.get("character"))
 
-        await self.reset_view(interaction)
+        self.reset_view()
+        await interaction.response.edit_message(embed=self.embed_maker(self.battle), view=self)
 
-    @discord.ui.button(label="End Turn", style=discord.ButtonStyle.red)
-    async def end_turn(self, interaction: discord.Interaction):
-        self.battle.do_ai_turn()
+    @discord.ui.button(label="End Turn", style=discord.ButtonStyle.red, row=4)
+    async def end_turn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.clear_items()
+
+        for enemy in self.battle.enemies:
+            start = time.time()
+            self.battle.pick_ai_action(enemy)
+            end = time.time() - start
+
+            await interaction.followup.edit_message(self.message.id, embed=self.embed_maker(self.battle), view=self)
+            await asyncio.sleep(5 - end)
+
         self.battle.end_turn()
-
-        await self.reset_view(interaction)
+        self.reset_view()
+        await interaction.followup.edit_message(self.message.id, embed=self.embed_maker(self.battle), view=self)
 
