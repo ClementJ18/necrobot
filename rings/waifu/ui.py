@@ -6,8 +6,21 @@ from typing import List
 import discord
 from discord.interactions import Interaction
 
-from .battle import Battle, Character, MovementType
+from rings.utils.ui import (EmbedBooleanConverter, EmbedDefaultConverter,
+                            EmbedNumberConverter)
+
 from .base import get_symbol
+from .battle import Battle, Character, MovementType
+from .entities import Stat
+
+
+class EmbedStatConverter(EmbedDefaultConverter):
+    def convert(self, argument):
+        percent, value = argument.split(",")
+        value = EmbedNumberConverter().convert(value)
+        percent = EmbedBooleanConverter().convert(percent)
+
+        return Stat(percent, value)
 
 class ActionType(enum.Enum):
     move = 0

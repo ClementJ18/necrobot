@@ -15,15 +15,18 @@ from rings.db import DatabaseError
 from rings.utils.checks import has_perms
 from rings.utils.converters import (FlowerConverter, GachaBannerConverter,
                                     GachaCharacterConverter, TimeConverter)
-from rings.utils.ui import Confirm, MultiInputEmbedView, paginate
+from rings.utils.ui import (Confirm, EmbedChoiceConverter,
+                            EmbedIterableConverter, EmbedRangeConverter,
+                            EmbedStringConverter, MultiInputEmbedView,
+                            paginate)
 from rings.utils.utils import BotError, check_channel
-from rings.waifu.ui import CombatView
 
-from .battle import Battle, Battlefield, Character, get_distance, is_wakable
 from .base import POSITION_EMOJIS
-from .entities import StatBlock, StatedEntity
+from .battle import Battle, Battlefield, Character, get_distance, is_wakable
 from .enemies import POTENTIAL_ENEMIES
+from .entities import StatBlock, StatedEntity
 from .fields import POTENTIAL_FIELDS
+from .ui import CombatView, EmbedStatConverter
 
 LOG_SIZE = 7
 
@@ -577,50 +580,15 @@ class Flowers(commands.Cog):
         """
         await ctx.send(embed=self.embed_character(character, True))
 
-    @characters.command(name="create")
-    @has_perms(6)
-    async def characters_create(self, ctx, *, name: str):
-        """Add a new character
-
-        {usage}
-
-        __Examples__
-        `{pre}characters create John` - Start the creation process.
-        """
-        char_id = None
-        defaults = {
-            "description": None,
-            "image": None,
-            "title": None,
-            "tier": None,
-            "universe": None,
-            "type": None,
-            "primary_health": None,
-            "secondary_health": None,
-            "physical_attack": None,
-            "magical_attack": None,
-            "physical_defense": None,
-            "magical_defense": None,
-        }
-
+    async def character_editor(self, ctx, name, char_id, defaults):
         def embed_maker(values):
-            tier = values["tier"]
-            if isinstance(tier, str):
-                tier = int(tier)
-
-            for stat in ("primary_health", "secondary_health", "physical_defense", "physical_attack", "magical_defense", "magical_attack"):
-                v = values.get(stat)
-                if isinstance(v, str):
-                    is_percent, value = v.split(",")
-                    values[stat] = (is_percent.lower() == "true", int(value))
-
             return self.embed_character(
                 {
                     "name": name,
                     "description": values["description"],
                     "image_url": values["image"],
                     "title": values["title"],
-                    "tier": tier,
+                    "tier": values["tier"],
                     "universe": values["universe"],
                     "obtainable": False,
                     "id": char_id,
@@ -634,50 +602,67 @@ class Flowers(commands.Cog):
                 }
             )
 
-        def confirm_check(values):
-            missing = [
-                key
-                for key, value in values.items()
-                if key != "image" and (value is None or value == "")
-            ]
-            if missing:
-                raise BotError(f"Missing values required: {', '.join(missing)}")
-
-            return True
-
-        view = MultiInputEmbedView(
-            embed_maker, confirm_check, defaults, "Character Edit", ["image"]
-        )
-        msg = await ctx.send(
+        view = MultiInputEmbedView(embed_maker, defaults, "Character Edit")
+        view.message = await ctx.send(
             "You can submit the edit form anytime. Missing field will only be checked on confirmation.",
             embed=embed_maker(defaults),
             view=view,
         )
 
         await view.wait()
+        return view
+
+    @characters.command(name="create")
+    @has_perms(6)
+    async def characters_create(self, ctx, *, name: str):
+        """Add a new character
+
+        {usage}
+
+        __Examples__
+        `{pre}characters create John` - Start the creation process.
+        """
+        defaults = {
+            "description": EmbedStringConverter(),
+            "image": EmbedStringConverter(optional=True),
+            "title": EmbedStringConverter(),
+            "tier": EmbedRangeConverter(min=1, max=5),
+            "universe": EmbedStringConverter(),
+            "type": EmbedChoiceConverter(["character", "weapon", "artefact"]),
+            "primary_health": EmbedStatConverter(),
+            "secondary_health": EmbedStatConverter(),
+            "physical_attack": EmbedStatConverter(),
+            "magical_attack": EmbedStatConverter(),
+            "physical_defense": EmbedStatConverter(),
+            "magical_defense": EmbedStatConverter(),
+        }
+
+
+        view = await self.character_editor(ctx, name, None, defaults)
         if not view.value:
             return
 
+        final_values = view.convert_values()
         char_id = await self.bot.db.query(
             "INSERT INTO necrobot.Characters VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id",
             name,
-            view.values["title"],
-            view.values["description"],
-            view.values["image"],
-            int(view.values["tier"]),
+            final_values["title"],
+            final_values["description"],
+            final_values["image"],
+            final_values["tier"],
             False,
-            view.values["universe"],
-            view.values["type"],
-            view.values["primary_health"],
-            view.values["secondary_health"],
-            view.values["physical_defense"],
-            view.values["physical_attack"],
-            view.values["magical_defense"],
-            view.values["magical_attack"],
+            final_values["universe"],
+            final_values["type"],
+            final_values["primary_health"],
+            final_values["secondary_health"],
+            final_values["physical_defense"],
+            final_values["physical_attack"],
+            final_values["magical_defense"],
+            final_values["magical_attack"],
             fetchval=True,
         )
 
-        await msg.edit(content="Character creation done!", embed=embed_maker(view.values))
+        await view.message.edit(content=f"Character creation done! ID is {char_id}", embed=await view.generate_embed())
 
     @characters.command(name="edit")
     @has_perms(6)
@@ -695,18 +680,18 @@ class Flowers(commands.Cog):
         """
         char_id = char["id"]
         defaults = {
-            "description": char["description"],
-            "image": char["image_url"],
-            "title": char["title"],
-            "tier": char["tier"],
-            "universe": char["universe"],
-            "type": char["type"],
-            "primary_health": char["primary_health"],
-            "secondary_health": char["secondary_health"],
-            "physical_attack": char["physical_defense"],
-            "magical_attack": char["physical_attack"],
-            "physical_defense": char["magical_defense"],
-            "magical_defense": char["magical_attack"],
+            "description": EmbedStringConverter(default=char["description"]),
+            "image": EmbedStringConverter(default=char["image_url"], optional=True),
+            "title": EmbedStringConverter(default=char["title"]),
+            "tier": EmbedRangeConverter(default=char["tier"], min=1, max=5),
+            "universe": EmbedStringConverter(default=char["universe"]),
+            "type": EmbedChoiceConverter(default=char["type"], choices=["character", "weapon", "artefact"]),
+            "primary_health": EmbedStatConverter(default=char["primary_health"]),
+            "secondary_health": EmbedStatConverter(default=char["secondary_health"]),
+            "physical_attack": EmbedStatConverter(default=char["physical_defense"]),
+            "magical_attack": EmbedStatConverter(default=char["physical_attack"]),
+            "physical_defense": EmbedStatConverter(default=char["magical_defense"]),
+            "magical_defense": EmbedStatConverter(default=char["magical_attack"]),
         }
 
         def embed_maker(values):
@@ -725,51 +710,52 @@ class Flowers(commands.Cog):
                     "obtainable": char["obtainable"],
                     "id": char_id,
                     "type": values["type"],
-                    "primary_health": values["primary_health"],
-                    "secondary_health": values["secondary_health"],
-                    "physical_attack": values["physical_defense"],
-                    "magical_attack": values["physical_attack"],
-                    "physical_defense": values["magical_defense"],
-                    "magical_defense": values["magical_attack"],
+                    "primary_health": values["primary_health"].to_db(),
+                    "secondary_health": values["secondary_health"].to_db(),
+                    "physical_attack": values["physical_defense"].to_db(),
+                    "magical_attack": values["physical_attack"].to_db(),
+                    "physical_defense": values["magical_defense"].to_db(),
+                    "magical_defense": values["magical_attack"].to_db(),
                 }
             )
 
-        def confirm_check(values):
-            missing = [
-                key
-                for key, value in values.items()
-                if key != "image" and (value is None or value == "")
-            ]
-            if missing:
-                raise BotError(f"Missing values required: {', '.join(missing)}")
-
-            return True
-
-        view = MultiInputEmbedView(
-            embed_maker, confirm_check, defaults, "Character Edit", ["image"]
-        )
-        msg = await ctx.send(
-            "You can submit the edit form anytime. Missing field will only be checked on confirmation.",
-            embed=embed_maker(defaults),
-            view=view,
-        )
-
-        await view.wait()
+        view = await self.character_editor(ctx, char["name"], char["id"], defaults)
         if not view.value:
             return
 
+        final_values = view.convert_values()
         await self.bot.db.query(
-            "UPDATE necrobot.Characters SET title = $1, description = $2, image_url = $3, tier = $4, universe = $5 WHERE id = $6;",
-            view.values["title"],
-            view.values["description"],
-            view.values["image"],
-            int(view.values["tier"]),
-            view.values["universe"],
+            """
+                UPDATE necrobot.Characters 
+                SET 
+                    title = $1, 
+                    description = $2, 
+                    image_url = $3, 
+                    tier = $4, 
+                    universe = $5,
+                    primary_health = $6,
+                    secondary_heath = $7,
+                    physical_defense = $8,
+                    physical_attack = $9,
+                    magical_defense = $10,
+                    magical_attack = $11 
+                WHERE id = $12;""",
+            final_values["title"],
+            final_values["description"],
+            final_values["image"],
+            final_values["tier"],
+            final_values["universe"],
+            final_values["type"],
+            final_values["primary_health"].to_db(),
+            final_values["secondary_health"].to_db(),
+            final_values["physical_defense"].to_db(),
+            final_values["physical_attack"].to_db(),
+            final_values["magical_defense"].to_db(),
+            final_values["magical_attack"].to_db(),
             char["id"],
-            fetchval=True,
         )
 
-        await msg.edit(content="Character edition done!", embed=embed_maker(view.values))
+        await view.message.edit(content="Character edition done!", embed=await view.generate_embed())
 
     @characters.command(name="delete")
     @has_perms(6)
@@ -954,13 +940,9 @@ class Flowers(commands.Cog):
             chars = []
             if values.get("characters") is not None:
                 chars = [
-                    await GachaCharacterConverter(respect_obtainable=True, allowed_types=("character", "artefact", "weapon")).convert(ctx, x.strip())
-                    for x in values.get("characters").split(",")
+                    await GachaCharacterConverter(respect_obtainable=True, allowed_types=("character", "artefact", "weapon")).convert(ctx, char)
+                    for char in values["characters"]
                 ]
-
-            max_rolls = values["max_rolls"]
-            if isinstance(max_rolls, str):
-                max_rolls = int(max_rolls)
 
             return self.embed_banner(
                 {
@@ -969,29 +951,18 @@ class Flowers(commands.Cog):
                     "description": values["description"],
                     "characters": [f"{char['name']} ({char['tier']} :star:)" for char in chars],
                     "name": name,
-                    "max_rolls": max_rolls,
+                    "max_rolls": values["max_rolls"],
                 }
             )
 
-        defaults = {"description": None, "image": None, "characters": None, "max_rolls": "0"}
+        defaults = {
+            "description": EmbedStringConverter(), 
+            "image": EmbedStringConverter(optional=True), 
+            "characters": EmbedIterableConverter(), 
+            "max_rolls": EmbedRangeConverter(min=0, default="0")
+        }
 
-        def confirm_check(values):
-            missing = [
-                key
-                for key, value in values.items()
-                if key != "image" and (value is None or value == "")
-            ]
-            if missing:
-                raise BotError(f"Missing values required: {', '.join(missing)}")
-
-            m = values.get("max_rolls")
-            if isinstance(m, str):
-                if not number_check(m):
-                    raise BotError("Please submit max rolls as a positive number")
-
-            return True
-
-        view = MultiInputEmbedView(embed_maker, confirm_check, defaults, "Banner Edit", ["image"])
+        view = MultiInputEmbedView(embed_maker, defaults, "Banner Edit")
         msg = await ctx.send(
             "You can submit the edit form anytime. Missing field will only be checked on confirmation.",
             embed=await embed_maker(defaults),
@@ -1002,27 +973,28 @@ class Flowers(commands.Cog):
         if not view.value:
             return
 
+        final_values = view.convert_values()
         banner_id = await self.bot.db.query(
             "INSERT INTO necrobot.Banners(guild_id, name, description, image_url, max_rolls) VALUES($1, $2, $3, $4, $5) RETURNING id",
             ctx.guild.id,
             name,
-            view.values["description"],
-            view.values["image"],
-            int(view.values["max_rolls"]) if view.values is not None else 0,
+            final_values["description"],
+            final_values["image"],
+            final_values["max_rolls"],
             fetchval=True,
         )
 
         chars = [
-            await GachaCharacterConverter(respect_obtainable=True, allowed_types=("character", "artefact", "weapon")).convert(ctx, x.strip())
-            for x in view.values["characters"].split(",")
+            await GachaCharacterConverter(respect_obtainable=True, allowed_types=("character", "artefact", "weapon")).convert(ctx, char)
+            for char in final_values["characters"]
         ]
         await self.bot.db.query(
             "INSERT INTO necrobot.BannerCharacters VALUES($1, $2, $3)",
-            [(banner_id, x["id"], 1) for x in chars],
+            [(banner_id, char["id"], 1) for char in chars],
             many=True,
         )
 
-        await msg.edit(content="Banner creation done!", embed=await embed_maker(defaults))
+        await msg.edit(content=f"Banner creation done with ID {banner_id}!", embed=await embed_maker(defaults))
 
     @banners.command(name="toggle")
     @has_perms(4)

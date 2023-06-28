@@ -4,10 +4,10 @@ import discord
 from bs4 import BeautifulSoup
 from discord.ext import commands
 
-from rings.utils.ui import RiddleView
 from rings.utils.utils import BotError
-from rings.utils.var import (dad_joke, dex, got_quotes, lotr_list, riddle_list,
-                             tarot_list)
+
+from .ui import RiddleView
+from .var import dad_joke, dex, got_quotes, lotr_list, riddle_list, tarot_list
 
 
 class Social(commands.Cog):
@@ -156,7 +156,3 @@ class Social(commands.Cog):
         embed.set_footer(**self.bot.bot_footer)
 
         await ctx.send(embed=embed)
-
-
-async def setup(bot):
-    await bot.add_cog(Social(bot))

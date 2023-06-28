@@ -16,7 +16,7 @@ from discord.ext.commands.cooldowns import BucketType
 
 from rings.utils.checks import guild_only, has_perms
 from rings.utils.converters import UserConverter
-from rings.utils.ui import Confirm, HungerGames, paginate
+from rings.utils.ui import Confirm, paginate
 from rings.utils.utils import BotError
 
 matplotlib.use("agg")
@@ -528,6 +528,3 @@ class Misc(commands.Cog):
             payload.user_id,
         )
 
-
-async def setup(bot):
-    await bot.add_cog(Misc(bot))

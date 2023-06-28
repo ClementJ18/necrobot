@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 
 from rings.db import DatabaseError
-from rings.utils.ui import FightError
+from rings.misc.ui import FightError
 from rings.utils.utils import BotError, build_format_dict
 
 

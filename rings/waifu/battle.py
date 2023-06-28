@@ -3,12 +3,13 @@ import random
 from dataclasses import dataclass, field
 from typing import Dict, List, Union
 
-from .base import Coords, Size, get_symbol
-from .entities import Character, Enemy
-
 from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
+
+from .base import Coords, Size, get_symbol
+from .entities import Character, Enemy
+
 
 class InvalidPosition(Exception):
     pass

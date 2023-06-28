@@ -1,5 +1,6 @@
 from .entities import StatBlock
 
+
 class Skill:
     pass
 

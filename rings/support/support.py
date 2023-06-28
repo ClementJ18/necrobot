@@ -8,7 +8,9 @@ from discord.ext import commands
 from rings.utils.checks import has_perms
 from rings.utils.ui import Confirm, paginate
 from rings.utils.utils import BotError
-from rings.utils.var import gdpr_e, tutorial_e
+from rings.utils.var import tutorial_e
+
+from .var import gdpr_e
 
 
 class Support(commands.Cog):
@@ -202,7 +204,3 @@ class Support(commands.Cog):
             await ctx.author.send(embed=self.bot.gdpr_embed)
         except discord.Forbidden as e:
             raise BotError("Looks like you have private messages disabled") from e
-
-
-async def setup(bot):
-    await bot.add_cog(Support(bot))

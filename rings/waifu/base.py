@@ -1,7 +1,6 @@
 from collections import namedtuple
 from typing import Tuple
 
-
 Coords = Tuple[int, int] # (x, y)
 Size = namedtuple("Size", "length height")
 

@@ -1,8 +1,9 @@
-from dataclasses import dataclass, fields
 import enum
 import inspect
+from dataclasses import dataclass, fields
 
 from .base import Coords
+
 
 class PassiveSkillType(enum.Enum):
     pass
@@ -38,6 +39,9 @@ class Stat:
             return 0
         
         return self.stat
+    
+    def to_db(self):
+        return f"{self.is_percent},{self.stat}"
         
 
 @dataclass

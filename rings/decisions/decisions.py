@@ -6,7 +6,7 @@ from discord.ext.commands.cooldowns import BucketType
 
 from rings.utils.converters import CoinConverter, MoneyConverter
 from rings.utils.utils import BotError
-from rings.utils.var import ball8_list
+from .var import ball8_list
 
 
 class Decisions(commands.Cog):
@@ -123,7 +123,3 @@ class Decisions(commands.Cog):
             msg = f"{message} \n" + msg
 
         await ctx.send(msg)
-
-
-async def setup(bot):
-    await bot.add_cog(Decisions(bot))
