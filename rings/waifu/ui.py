@@ -6,8 +6,7 @@ from typing import List
 import discord
 from discord.interactions import Interaction
 
-from rings.utils.ui import (EmbedBooleanConverter, EmbedDefaultConverter,
-                            EmbedNumberConverter)
+from rings.utils.ui import EmbedBooleanConverter, EmbedDefaultConverter, EmbedIntegerConverter
 
 from .base import get_symbol
 from .battle import Battle, Character, MovementType
@@ -17,15 +16,17 @@ from .entities import Stat
 class EmbedStatConverter(EmbedDefaultConverter):
     def convert(self, argument):
         percent, value = argument.split(",")
-        value = EmbedNumberConverter().convert(value)
-        percent = EmbedBooleanConverter().convert(percent)
+        value = EmbedIntegerConverter().convert(value.strip())
+        percent = EmbedBooleanConverter().convert(percent.strip())
 
         return Stat(percent, value)
+
 
 class ActionType(enum.Enum):
     move = 0
     attack = 1
     skill = 2
+
 
 class AttackOrder(discord.ui.Select):
     def __init__(self, battle: Battle, character: Character):
@@ -37,17 +38,24 @@ class AttackOrder(discord.ui.Select):
             discord.SelectOption(
                 label=e.name,
                 value=index,
-                description=f'Attack {e.name}',
-                emoji=get_symbol(index+len(battle.players)),
-            ) 
-            for index, e in enumerate(battle.enemies) 
+                description=f"Attack {e.name}",
+                emoji=get_symbol(index + len(battle.players)),
+            )
+            for index, e in enumerate(battle.enemies)
             if e.position in adjacents.values()
         ]
 
-        super().__init__(options=options, row=2, placeholder="Pick which enemy to attack with your weapon")
+        super().__init__(
+            options=options, row=2, placeholder="Pick which enemy to attack with your weapon"
+        )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.take_action(interaction, ActionType.attack, character=self.character, target=self.battle.enemies[int(self.values[0])])
+        await self.view.take_action(
+            interaction,
+            ActionType.attack,
+            character=self.character,
+            target=self.battle.enemies[int(self.values[0])],
+        )
 
 
 class ActionButton(discord.ui.Button):
@@ -59,33 +67,38 @@ class ActionButton(discord.ui.Button):
         super().__init__(**kwargs)
 
     async def callback(self, interaction: Interaction):
-        await self.view.take_action(interaction, self.action, character=self.character, **self.arguments)
+        await self.view.take_action(
+            interaction, self.action, character=self.character, **self.arguments
+        )
 
 
 class CharacterUI(discord.ui.Select):
-    def __init__(self, characters : List[Character], battle: Battle, embed_maker):
+    def __init__(self, characters: List[Character], battle: Battle, embed_maker):
         self.characters = characters
         self.battle = battle
         self.embed_maker = embed_maker
 
         options = [
-            discord.SelectOption(label=character.name, value=index, emoji=get_symbol(index)) 
+            discord.SelectOption(label=character.name, value=index, emoji=get_symbol(index))
             for index, character in enumerate(characters)
         ]
 
         super().__init__(options=options, row=0, placeholder="Pick which character to use")
 
-    def generate_buttons(self, character : Character):
+    def generate_buttons(self, character: Character):
         buttons = [
             ActionButton(
-                style=discord.ButtonStyle.primary, 
-                label=move.name.title(), 
-                disabled=not self.battle.is_valid_movement(character.position, move.value, character.current_movement_range),
+                style=discord.ButtonStyle.primary,
+                label=move.name.title(),
+                disabled=not self.battle.is_valid_movement(
+                    character.position, move.value, character.current_movement_range
+                ),
                 row=1,
                 character=character,
                 action=ActionType.move,
-                arguments={"direction": move}
-            ) for move in MovementType
+                arguments={"direction": move},
+            )
+            for move in MovementType
         ]
 
         attack_order = AttackOrder(self.battle, character)
@@ -95,11 +108,11 @@ class CharacterUI(discord.ui.Select):
         if character.active_skill is not None:
             buttons.append(
                 ActionButton(
-                    style=discord.ButtonStyle.secondary, 
+                    style=discord.ButtonStyle.secondary,
                     label="Activate Skill",
-                    row=2, 
+                    row=2,
                     character=character,
-                    action=ActionType.skill
+                    action=ActionType.skill,
                 )
             )
 
@@ -116,7 +129,9 @@ class CharacterUI(discord.ui.Select):
             self.view.add_item(button)
 
         self.view.add_item(self.view.end_turn)
-        await interaction.response.edit_message(view=self.view, embed=self.embed_maker(self.battle, character))
+        await interaction.response.edit_message(
+            view=self.view, embed=self.embed_maker(self.battle, character)
+        )
 
 
 class CombatView(discord.ui.View):
@@ -125,7 +140,7 @@ class CombatView(discord.ui.View):
 
         self.battle = battle
         self.add_item(CharacterUI(battle.players, battle, embed_maker))
-        self.message : discord.Message = None
+        self.message: discord.Message = None
         self.embed_maker = embed_maker
         self.author = author
         self.victory = False
@@ -145,7 +160,9 @@ class CombatView(discord.ui.View):
 
     async def take_action(self, interaction: discord.Interaction, action: ActionType, **kwargs):
         if action == ActionType.move:
-            self.battle.move_character(kwargs.get("character"), change=kwargs.get("direction").value)
+            self.battle.move_character(
+                kwargs.get("character"), change=kwargs.get("direction").value
+            )
         elif action == ActionType.attack:
             character: Character = kwargs.get("character")
             self.battle.attack_character(character, kwargs.get("target"))
@@ -166,10 +183,13 @@ class CombatView(discord.ui.View):
             self.battle.pick_ai_action(enemy)
             end = time.time() - start
 
-            await interaction.followup.edit_message(self.message.id, embed=self.embed_maker(self.battle), view=self)
+            await interaction.followup.edit_message(
+                self.message.id, embed=self.embed_maker(self.battle), view=self
+            )
             await asyncio.sleep(5 - end)
 
         self.battle.end_turn()
         self.reset_view()
-        await interaction.followup.edit_message(self.message.id, embed=self.embed_maker(self.battle), view=self)
-
+        await interaction.followup.edit_message(
+            self.message.id, embed=self.embed_maker(self.battle), view=self
+        )

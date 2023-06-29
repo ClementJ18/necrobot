@@ -10,9 +10,14 @@ from simpleeval import simple_eval
 
 from rings.utils.checks import has_perms
 from rings.utils.config import github_key
-from rings.utils.converters import (BadgeConverter, Grudge, GuildConverter,
-                                    MemberConverter, RangeConverter,
-                                    UserConverter)
+from rings.utils.converters import (
+    BadgeConverter,
+    Grudge,
+    GuildConverter,
+    MemberConverter,
+    RangeConverter,
+    UserConverter,
+)
 from rings.utils.ui import Confirm, paginate
 from rings.utils.utils import BotError
 

@@ -10,8 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from rings.db import DatabaseError
 from rings.utils.checks import has_perms
-from rings.utils.converters import (BadgeConverter, MemberConverter,
-                                    MoneyConverter, RangeConverter)
+from rings.utils.converters import BadgeConverter, MemberConverter, MoneyConverter, RangeConverter
 from rings.utils.ui import Confirm, paginate
 from rings.utils.utils import BotError, midnight
 

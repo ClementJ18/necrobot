@@ -7,8 +7,8 @@ POTENTIAL_ENEMIES = (
             primary_health=(False, 5),
             physical_defense=(False, 2),
             physical_attack=(False, 3),
-            tier=1
+            tier=1,
         ),
-        description="A simple goblin"
+        description="A simple goblin",
     ),
 )

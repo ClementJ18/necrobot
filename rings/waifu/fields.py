@@ -16,10 +16,10 @@ default_field = [
 
 POTENTIAL_FIELDS = (
     Battlefield(
-        default_field, 
-        Size(len(default_field[0]), len(default_field)), 
-        name="Large Plain", 
+        default_field,
+        Size(len(default_field[0]), len(default_field)),
+        name="Large Plain",
         description="A large plains with some holes",
-        enemy_count=Counter(x for xs in default_field for x in xs)[3]
+        enemy_count=Counter(x for xs in default_field for x in xs)[3],
     ),
 )

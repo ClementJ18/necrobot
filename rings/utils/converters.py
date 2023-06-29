@@ -12,12 +12,19 @@ _utils_get = utils.get
 
 
 def get_member_named(members, name):
-    username, _, discriminator = name.rpartition('#')
-    if discriminator == '0' or (len(discriminator) == 4 and discriminator.isdigit()):
-        return utils.find(lambda m: m.name.lower() == username.lower() and m.discriminator == discriminator, members)
+    username, _, discriminator = name.rpartition("#")
+    if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
+        return utils.find(
+            lambda m: m.name.lower() == username.lower() and m.discriminator == discriminator,
+            members,
+        )
 
     def pred(m) -> bool:
-        return m.nick.lower() == name.lower() or m.global_name.lower() == name.lower() or m.name.lower() == name.lower()
+        return (
+            m.nick.lower() == name.lower()
+            or m.global_name.lower() == name.lower()
+            or m.name.lower() == name.lower()
+        )
 
     return utils.find(pred, members)
 
@@ -55,20 +62,30 @@ class MemberConverter(commands.IDConverter):
 
     ctx_attr = "author"
 
-    async def query_member_named(self, guild: discord.Guild, argument: str) -> Optional[discord.Member]:
+    async def query_member_named(
+        self, guild: discord.Guild, argument: str
+    ) -> Optional[discord.Member]:
         cache = guild._state.member_cache_flags.joined
-        username, _, discriminator = argument.rpartition('#')
-        if discriminator == '0' or (len(discriminator) == 4 and discriminator.isdigit()):
+        username, _, discriminator = argument.rpartition("#")
+        if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
             lookup = username.lower()
-            predicate = lambda m: m.name.lower() == username.lower() and m.discriminator == discriminator
+            predicate = (
+                lambda m: m.name.lower() == username.lower() and m.discriminator == discriminator
+            )
         else:
             lookup = argument.lower()
-            predicate = lambda m: m.nick.lower() == argument.lower() or m.global_name.lower() == argument.lower() or m.name.lower() == argument.lower()
+            predicate = (
+                lambda m: m.nick.lower() == argument.lower()
+                or m.global_name.lower() == argument.lower()
+                or m.name.lower() == argument.lower()
+            )
 
         members = await guild.query_members(lookup, limit=100, cache=cache)
         return discord.utils.find(predicate, members)
 
-    async def query_member_by_id(self, bot, guild: discord.Guild, user_id: int) -> Optional[discord.Member]:
+    async def query_member_by_id(
+        self, bot, guild: discord.Guild, user_id: int
+    ) -> Optional[discord.Member]:
         ws = bot._get_websocket(shard_id=guild.shard_id)
         cache = guild._state.member_cache_flags.joined
         if ws.is_ratelimited():
@@ -91,7 +108,7 @@ class MemberConverter(commands.IDConverter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> discord.Member:
         bot = ctx.bot
-        match = self._get_id_match(argument) or re.match(r'<@!?([0-9]{15,20})>$', argument)
+        match = self._get_id_match(argument) or re.match(r"<@!?([0-9]{15,20})>$", argument)
         guild = ctx.guild
         result = None
         user_id = None
@@ -101,13 +118,13 @@ class MemberConverter(commands.IDConverter):
             if guild:
                 result = get_member_named(guild.members, argument)
             else:
-                result = _get_from_guilds(bot, 'get_member_named', argument)
+                result = _get_from_guilds(bot, "get_member_named", argument)
         else:
             user_id = int(match.group(1))
             if guild:
                 result = guild.get_member(user_id) or _utils_get(ctx.message.mentions, id=user_id)
             else:
-                result = _get_from_guilds(bot, 'get_member', user_id)
+                result = _get_from_guilds(bot, "get_member", user_id)
 
         if not isinstance(result, discord.Member):
             if guild is None:
@@ -130,7 +147,7 @@ class UserConverter(commands.IDConverter):
     ctx_attr = "author"
 
     async def convert(self, ctx: commands.Context, argument: str) -> discord.User:
-        match = self._get_id_match(argument) or re.match(r'<@!?([0-9]{15,20})>$', argument)
+        match = self._get_id_match(argument) or re.match(r"<@!?([0-9]{15,20})>$", argument)
         result = None
         state = ctx._state
 
@@ -145,11 +162,16 @@ class UserConverter(commands.IDConverter):
 
             return result  # type: ignore
 
-        username, _, discriminator = argument.rpartition('#')
-        if discriminator == '0' or (len(discriminator) == 4 and discriminator.isdigit()):
-            predicate = lambda u: u.name.lower() == username.lower() and u.discriminator == discriminator
+        username, _, discriminator = argument.rpartition("#")
+        if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
+            predicate = (
+                lambda u: u.name.lower() == username.lower() and u.discriminator == discriminator
+            )
         else:
-            predicate = lambda u: u.global_name.lower() == argument.lower() or u.name.lower() == argument.lower()
+            predicate = (
+                lambda u: u.global_name.lower() == argument.lower()
+                or u.name.lower() == argument.lower()
+            )
 
         result = discord.utils.find(predicate, state._users.values())
         if result is None:
@@ -347,8 +369,11 @@ class WritableChannelConverter(commands.TextChannelConverter):
 
 CharacterType = Literal["character", "weapon", "artefact", "enemy"]
 
+
 class GachaCharacterConverter(commands.Converter):
-    def __init__(self, *, respect_obtainable=False, allowed_types: List[CharacterType]=(), is_owned=False):
+    def __init__(
+        self, *, respect_obtainable=False, allowed_types: List[CharacterType] = (), is_owned=False
+    ):
         """
         Params
         ------
@@ -373,7 +398,7 @@ class GachaCharacterConverter(commands.Converter):
             "SELECT * FROM necrobot.Characters WHERE (LOWER(name)=$1 OR id=$2) AND type = ANY($3)",
             argument.lower(),
             char_id,
-            allowed_types
+            allowed_types,
         )
 
         if not query:
@@ -390,9 +415,12 @@ class GachaCharacterConverter(commands.Converter):
             raise commands.BadArgument(
                 f"Characters **{query[0]['name']}** cannot currently be added to a banner"
             )
-        
+
         if self.is_owned:
-            owned = await ctx.bot.db.query("SELECT char_id FROM necrobot.RolledCharacters WHERE char_id = $1 LIMIT 1;", query[0]["id"])
+            owned = await ctx.bot.db.query(
+                "SELECT char_id FROM necrobot.RolledCharacters WHERE char_id = $1 LIMIT 1;",
+                query[0]["id"],
+            )
             if not owned:
                 raise BotError(f"You do not own this {query[0]['type']}.")
 

@@ -22,6 +22,7 @@ class Terrain:
 class Event:
     pass
 
+
 class MovementType(enum.Enum):
     up = (0, -1)
     down = (0, 1)
@@ -31,11 +32,13 @@ class MovementType(enum.Enum):
     def __str__(self):
         return self.name
 
+
 class TileType(enum.Enum):
     wall = 0
     walkable = 1
     player_start = 2
     enemy_start = 3
+
 
 def is_wakable(tile_type: Union[TileType, int]):
     if isinstance(tile_type, TileType):
@@ -43,10 +46,12 @@ def is_wakable(tile_type: Union[TileType, int]):
 
     return tile_type > 0
 
+
 def get_distance(origin: Coords, destination: Coords):
     dx = destination[0] - origin[0]
     dy = destination[1] - origin[1]
     return abs(dx) + abs(dy)
+
 
 @dataclass
 class Battlefield:
@@ -63,7 +68,7 @@ class Battlefield:
 
     def walkable_grid(self, non_walkable: List = ()):
         return [
-            [0 if cell < 1 or (x, y) in non_walkable else 1 for x, cell in enumerate(row)] 
+            [0 if cell < 1 or (x, y) in non_walkable else 1 for x, cell in enumerate(row)]
             for y, row in enumerate(self.tiles)
         ]
 
@@ -78,6 +83,7 @@ class ActionType(enum.Enum):
     def __str__(self):
         return str(self.value)
 
+
 @dataclass
 class ActionEntry:
     character: Character
@@ -90,6 +96,7 @@ class ActionEntry:
             string += f" {self.arg}"
 
         return string
+
 
 @dataclass
 class Battle:
@@ -104,7 +111,7 @@ class Battle:
     @property
     def players(self):
         return [p for p in self._players if p.is_alive()]
-    
+
     @property
     def enemies(self):
         return [e for e in self._enemies if e.is_alive()]
@@ -115,11 +122,11 @@ class Battle:
     def pick_enemies(self) -> List[Character]:
         valid_list = [enemy for enemy in self.enemies if enemy not in self.used_last_turn]
         return random.sample(valid_list, len(valid_list) // 3)
-    
+
     def is_in_board(self, position: Coords) -> bool:
         if not 0 <= position[1] < self.battlefield.size.height:
             raise InvalidPosition("Y coordinate out of range")
-        
+
         if not 0 <= position[0] < self.battlefield.size.length:
             raise InvalidPosition("X coordinate out of range")
 
@@ -130,22 +137,22 @@ class Battle:
         self.is_in_board(new_pos)
         if not self.battlefield.tiles[new_pos[1]][new_pos[0]] > 0:
             raise InvalidPosition("Cannot move there")
-        
+
         if any(e.position == new_pos for e in self.players + self.enemies):
             raise InvalidPosition("Somebody is already there")
-        
+
         if get_distance(position, new_pos) > move_range:
             raise InvalidPosition("Not enough movement range.")
-        
+
         return True
-    
+
     def is_valid_movement(self, position: Coords, change: Coords, move_range: int) -> bool:
         try:
             return self._is_valid_movement(position, change, move_range)
         except InvalidPosition:
             return False
 
-    def get_positions(self, value: TileType) ->List[Coords]:
+    def get_positions(self, value: TileType) -> List[Coords]:
         positions = []
         for y, row in enumerate(self.battlefield.tiles):
             if value.value not in row:
@@ -156,7 +163,7 @@ class Battle:
                     positions.append((x, y))
 
         return positions
-    
+
     def get_adjacent_positions(self, position: Coords) -> Dict[MovementType, Coords]:
         adjacents = {}
 
@@ -184,25 +191,33 @@ class Battle:
         for index, character in enumerate(self.players + self.enemies):
             character.index = index
 
-    def move_character(self, character: Character, *, new_position: Coords = (), change: Coords = ()):
+    def move_character(
+        self, character: Character, *, new_position: Coords = (), change: Coords = ()
+    ):
         if not new_position and not change:
             raise ValueError("Specify either change or new_position")
-        
+
         if change:
             new_position = (character.position[0] + change[0], character.position[1] + change[1])
 
         distance = get_distance(character.position, new_position)
         character.position = new_position
         character.current_movement_range -= distance
-        self.action_log.append(f"{character} ({get_symbol(character.index)}) {ActionType.moved} {distance} meters")
+        self.action_log.append(
+            f"{character} ({get_symbol(character.index)}) {ActionType.moved} {distance} meters"
+        )
 
     def attack_character(self, attacker: Character, attackee: Character):
         damage = attacker.attack(attackee)
 
         if attackee.is_alive():
-            self.action_log.append(f"{attacker} ({get_symbol(attacker.index)}) {ActionType.attacked} {attackee} for {damage}")
+            self.action_log.append(
+                f"{attacker} ({get_symbol(attacker.index)}) {ActionType.attacked} {attackee} for {damage}"
+            )
         else:
-            self.action_log.append(f"{attacker} ({get_symbol(attacker.index)}) {ActionType.killed} {attackee} with {damage}")
+            self.action_log.append(
+                f"{attacker} ({get_symbol(attacker.index)}) {ActionType.killed} {attackee} with {damage}"
+            )
 
     def use_active_skill(self, character: Character):
         self.action_log.append(f"{get_symbol(character.index)} - {character} {ActionType.skill}")
@@ -217,7 +232,7 @@ class Battle:
 
         if targets:
             return self.attack_character(character, random.choice(targets))
-        
+
         entities = self.players + self.enemies
         grid = Grid(matrix=self.battlefield.walkable_grid([x.position for x in entities]))
 
@@ -242,7 +257,11 @@ class Battle:
                 if len(path) < len(current_path) or not current_path:
                     current_path = path
 
-        new_position = current_path[character.movement_range] if character.movement_range <= len(current_path) else current_path[-1]
+        new_position = (
+            current_path[character.movement_range]
+            if character.movement_range <= len(current_path)
+            else current_path[-1]
+        )
         self.move_character(character, new_position=new_position)
 
         adjacent = self.get_adjacent_positions(character.position)
@@ -250,7 +269,7 @@ class Battle:
 
         if targets:
             return self.attack_character(character, random.choice(targets))
-        
+
     def end_turn(self):
         for e in self.players + self.enemies:
             e.end_turn()

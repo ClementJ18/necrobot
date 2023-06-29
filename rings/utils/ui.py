@@ -189,7 +189,7 @@ class Paginator(discord.ui.View):
 
 
 def convert_key_to_label(key: str):
-        return key.title().replace("_", " ")
+    return key.title().replace("_", " ")
 
 
 @dataclass
@@ -200,51 +200,57 @@ class EmbedDefaultConverter:
     def return_value(self, argument):
         if argument.lower() in ["null", "", None]:
             return None
-        
+
         return self.convert(argument)
 
     def convert(self, argument):
         raise NotImplementedError
+
 
 @dataclass
 class EmbedNumberConverter(EmbedDefaultConverter):
     def convert(self, argument: str):
         if not argument.isdigit():
             raise commands.BadArgument("Not a valid number")
-        
+
         return float(argument)
-    
+
+
 @dataclass
 class EmbedIntegerConverter(EmbedNumberConverter):
     def convert(self, argument: str):
         return int(super().convert(argument))
-    
+
+
 @dataclass
 class EmbedBooleanConverter(EmbedDefaultConverter):
     def convert(self, argument: str):
         return argument.lower() in ["true", "yes", "y", "1", "t"]
-    
+
+
 @dataclass
 class EmbedStringConverter(EmbedDefaultConverter):
     def convert(self, argument: str):
         return argument
-    
+
+
 @dataclass
-class EmbedRangeConverter(EmbedNumberConverter):
+class EmbedRangeConverter(EmbedIntegerConverter):
     max: int = math.inf
     min: int = -math.inf
 
     def convert(self, argument):
-        argument = int(super().convert(argument))
+        argument = super().convert(argument)
 
         if argument > self.max:
             raise commands.BadArgument(f"Number must be less than {self.max}")
-        
+
         if argument < self.min:
             raise commands.BadArgument(f"Number must be more than {self.min}")
-        
+
         return argument
-    
+
+
 @dataclass
 class EmbedChoiceConverter(EmbedDefaultConverter):
     choices: List[str] = ()
@@ -253,9 +259,9 @@ class EmbedChoiceConverter(EmbedDefaultConverter):
         argument = argument.strip().lower()
         if argument not in self.choices:
             raise commands.BadArgument(f"Choice must be one of {', '.join(self.choices)}")
-        
+
         return argument
-    
+
 
 @dataclass
 class EmbedIterableConverter(EmbedDefaultConverter):
@@ -265,16 +271,20 @@ class EmbedIterableConverter(EmbedDefaultConverter):
         return [arg.strip() for arg in argument.split(self.separator)]
 
 
-def generate_edit_modal(title, attributes: dict, keys: List[str], converters: Dict[str, EmbedDefaultConverter], view: 'MultiInputEmbedView'):
+def generate_edit_modal(
+    title,
+    attributes: dict,
+    keys: List[str],
+    converters: Dict[str, EmbedDefaultConverter],
+    view: "MultiInputEmbedView",
+):
     class EditModal(discord.ui.Modal, title=title):
         async def on_submit(self, interaction: discord.Interaction):
             await interaction.response.defer()
 
             errors = []
             for key in keys:
-                text_input = discord.utils.get(
-                    self.children, label=convert_key_to_label(key)
-                )
+                text_input = discord.utils.get(self.children, label=convert_key_to_label(key))
 
                 converter = converters[key]
 
@@ -288,13 +298,20 @@ def generate_edit_modal(title, attributes: dict, keys: List[str], converters: Di
                     errors.append(f"- {key}: {str(e)}")
 
             if not errors:
-                await interaction.followup.edit_message(
-                    interaction.message.id, embed=await view.generate_embed()
-                )
+                try:
+                    await interaction.followup.edit_message(
+                        interaction.message.id, embed=await view.generate_embed()
+                    )
+                except Exception as e:
+                    await interaction.followup.send(
+                        f"Something went wrong while sending an embed: {e}"
+                    )
+                    await interaction.followup.edit_message(interaction.message.id)
             else:
-                errors_str = '\n'.join(errors)
+                errors_str = "\n".join(errors)
                 await interaction.followup.send(
-                    f"Something went wrong with some of the values submitted:\n {errors_str}", ephemeral=True
+                    f"Something went wrong with some of the values submitted:\n {errors_str}",
+                    ephemeral=True,
                 )
                 await interaction.followup.edit_message(interaction.message.id)
 
@@ -314,8 +331,10 @@ def generate_edit_modal(title, attributes: dict, keys: List[str], converters: Di
 
     return modal
 
+
 def chunker(seq, size):
-    return [seq[pos:pos + size] for pos in range(0, len(seq), size)]
+    return [seq[pos : pos + size] for pos in range(0, len(seq), size)]
+
 
 class EditModalSelect(discord.ui.Select):
     def __init__(self, converters, values, title):
@@ -327,7 +346,7 @@ class EditModalSelect(discord.ui.Select):
         options = [
             discord.SelectOption(
                 label=f"Edit - {', '.join(convert_key_to_label(key) for key in chunk)}",
-                value=index 
+                value=index,
             )
             for index, chunk in enumerate(self.chunks)
         ]
@@ -335,11 +354,19 @@ class EditModalSelect(discord.ui.Select):
         super().__init__(options=options, row=1, placeholder="Pick a set of attributes to edit")
 
     async def callback(self, interaction: discord.Interaction):
-        modal = generate_edit_modal(self.title, self.attributes, self.chunks[int(self.values[0])], self.converters, self.view)
+        modal = generate_edit_modal(
+            self.title,
+            self.attributes,
+            self.chunks[int(self.values[0])],
+            self.converters,
+            self.view,
+        )
         await interaction.response.send_modal(modal)
+
 
 class EmbedConverterError(Exception):
     pass
+
 
 class MultiInputEmbedView(discord.ui.View):
     def __init__(
@@ -367,7 +394,7 @@ class MultiInputEmbedView(discord.ui.View):
             return await self.embed_maker(converted_values)
 
         return self.embed_maker(converted_values)
-    
+
     def convert_values(self):
         final_values = {}
         for key, value in self.values.items():
@@ -378,12 +405,16 @@ class MultiInputEmbedView(discord.ui.View):
                 raise EmbedConverterError(f"{key}: {e}") from e
 
         return final_values
-    
+
     def confirm_check(self, values):
-        missing = [key for key, value in values.items() if not self.converters[key].optional and value is None]
+        missing = [
+            convert_key_to_label(key)
+            for key, value in values.items()
+            if not self.converters[key].optional and value is None
+        ]
         if missing:
             raise BotError(f"Missing required values: {', '.join(missing)}")
-        
+
         if self.extra_confirm_check is not None:
             self.extra_confirm_check(values)
 

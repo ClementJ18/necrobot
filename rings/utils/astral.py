@@ -66,8 +66,7 @@ except ImportError:
 
 import datetime
 import sys
-from math import (acos, asin, atan2, ceil, cos, degrees, floor, pow, radians,
-                  sin, tan)
+from math import acos, asin, atan2, ceil, cos, degrees, floor, pow, radians, sin, tan
 from time import time
 
 try:

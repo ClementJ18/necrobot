@@ -1,4 +1,3 @@
-
 ball8_list = [
     "It is certain",
     " It is decidedly so",

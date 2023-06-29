@@ -7,11 +7,21 @@ from discord.ext import commands
 
 from rings.db import DatabaseError
 from rings.utils.checks import has_perms
-from rings.utils.converters import (MemberConverter, RangeConverter,
-                                    RoleConverter, TimeConverter,
-                                    WritableChannelConverter)
-from rings.utils.ui import (Confirm, EmbedRangeConverter, EmbedStringConverter,
-                            MultiInputEmbedView, SelectView, paginate)
+from rings.utils.converters import (
+    MemberConverter,
+    RangeConverter,
+    RoleConverter,
+    TimeConverter,
+    WritableChannelConverter,
+)
+from rings.utils.ui import (
+    Confirm,
+    EmbedRangeConverter,
+    EmbedStringConverter,
+    MultiInputEmbedView,
+    SelectView,
+    paginate,
+)
 from rings.utils.utils import BotError, build_format_dict, check_channel
 
 
@@ -840,9 +850,9 @@ class Server(commands.Cog):
         """
         check_channel(channel)
         defaults = {
-            "message": EmbedStringConverter(), 
-            "start": EmbedRangeConverter(min=0, max=23), 
-            "interval": EmbedRangeConverter(default="1", min=1, max=24)
+            "message": EmbedStringConverter(),
+            "start": EmbedRangeConverter(min=0, max=23),
+            "interval": EmbedRangeConverter(default="1", min=1, max=24),
         }
         view = await self.broadcast_editor(defaults, channel, ctx)
         if not view.value:
@@ -887,9 +897,9 @@ class Server(commands.Cog):
             raise BotError("No broadcast found with that ID")
 
         defaults = {
-            "message": EmbedStringConverter(default=str(query[0]["message"])), 
-            "start": EmbedRangeConverter(default=str(query[0]["start_time"]), min=0, max=23), 
-            "interval": EmbedRangeConverter(default=str(query[0]["interval"]), min=1, max=24)
+            "message": EmbedStringConverter(default=str(query[0]["message"])),
+            "start": EmbedRangeConverter(default=str(query[0]["start_time"]), min=0, max=23),
+            "interval": EmbedRangeConverter(default=str(query[0]["interval"]), min=1, max=24),
         }
         view = await self.broadcast_editor(
             defaults, ctx.guild.get_channel(query[0]["channel_id"]), ctx

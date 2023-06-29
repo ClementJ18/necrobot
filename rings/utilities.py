@@ -14,8 +14,7 @@ from rings.utils.BIG import pack_file
 from rings.utils.checks import has_perms, leaderboard_enabled
 from rings.utils.converters import MemberConverter
 from rings.utils.ui import paginate
-from rings.utils.utils import (BotError, format_dt, time_converter,
-                               time_string_parser)
+from rings.utils.utils import BotError, format_dt, time_converter, time_string_parser
 
 
 class Utilities(commands.Cog):

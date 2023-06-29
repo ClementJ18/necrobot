@@ -6,8 +6,7 @@ import discord
 from discord.ext import commands
 
 from rings.utils.checks import has_perms, requires_mute_role
-from rings.utils.converters import (MemberConverter, RangeConverter,
-                                    RoleConverter, TimeConverter)
+from rings.utils.converters import MemberConverter, RangeConverter, RoleConverter, TimeConverter
 from rings.utils.ui import paginate
 from rings.utils.utils import BotError, format_dt
 
