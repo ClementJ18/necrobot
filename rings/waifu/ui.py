@@ -186,7 +186,7 @@ class CombatView(discord.ui.View):
             await interaction.followup.edit_message(
                 self.message.id, embed=self.embed_maker(self.battle), view=self
             )
-            await asyncio.sleep(5 - end)
+            await asyncio.sleep(3 - end)
 
         self.battle.end_turn()
         self.reset_view()

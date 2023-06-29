@@ -22,6 +22,7 @@ from rings.utils.utils import BotError
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
+from .ui import HungerGames
 
 class Misc(commands.Cog):
     """A cog for all bunch commands that don't have a specific category they can stick to."""
@@ -92,15 +93,10 @@ class Misc(commands.Cog):
         `{pre}fight john , bob , emilia the trap` - starts a battle between tributes john, bob and emilia the trap"""
         tributes_list = list(set([f"**{x.strip()}**" for x in tributes.split(",")]))
         if len(tributes_list) < 2:
-            await ctx.send(
-                ":negative_squared_cross_mark: | Please provide at least two names separated by `,`"
-            )
-            return
+            raise BotError("Please provide at least two names separated by `,`")
 
         if len(tributes_list) > 32:
-            await ctx.send(
-                ":negative_squared_cross_mark: | Please provide no more than 32 names separated by `,`."
-            )
+            raise BotError("Please provide no more than 32 names separated by `,`.")
 
         hg = HungerGames(self.bot, tributes_list)
         embed = hg.prepare_next_phase(hg.get_next_phase())

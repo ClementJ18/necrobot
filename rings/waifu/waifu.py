@@ -677,7 +677,7 @@ class Flowers(commands.Cog):
             fetchval=True,
         )
 
-        await ctx.send(f"Character creation done! ID is {char_id}")
+        await ctx.send(f"Character creation done! ID is **{char_id}**")
 
     @characters.command(name="edit")
     @has_perms(6)
@@ -830,6 +830,7 @@ class Flowers(commands.Cog):
         if not view.value:
             return
 
+        await asyncio.sleep(1)
         level = await self.add_characters_to_user(ctx.guild.id, user.id, char["id"])
         await view.message.edit(
             content=f":white_check_mark: | Added **{char['id']}** to user's rolled characters (New: {level == 1})",
@@ -1043,9 +1044,7 @@ class Flowers(commands.Cog):
                 f":white_check_mark: | Character **{char['name']}** added to banner **{banner['name']}**."
             )
         except Exception:
-            await ctx.send(
-                f":negative_squared_cross_mark: | Character **{char['name']}** already in banner **{banner['name']}**."
-            )
+            raise BotError(f"Character **{char['name']}** already in banner **{banner['name']}**.")
 
     @banners.command(name="remove")
     @has_perms(4)
@@ -1076,9 +1075,7 @@ class Flowers(commands.Cog):
                 f":white_check_mark: | Characters **{char['name']}** removed from banner **{banner['name']}**."
             )
         else:
-            await ctx.send(
-                f":negative_squared_cross_mark: | Characters **{char['name']}** not present on banner **{banner['name']}**."
-            )
+            raise BotError(f"Characters **{char['name']}** not present on banner **{banner['name']}**.")
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -1312,6 +1309,7 @@ class Flowers(commands.Cog):
 
     @commands.group()
     async def equipment(self, ctx):
+        """{usage}"""
         pass
 
     @equipment.command(name="equip")
@@ -1319,7 +1317,7 @@ class Flowers(commands.Cog):
         self,
         ctx,
         character: GachaCharacterConverter(allowed_types=("character",), is_owned=True),
-        equipment: GachaCharacterConverter(allowed_types=("weapon", "artefact"), is_owned=True),
+        *equipments: GachaCharacterConverter(allowed_types=("weapon", "artefact"), is_owned=True),
     ):
         """Equip a character you own with weapons or artefacts.
 
@@ -1328,20 +1326,55 @@ class Flowers(commands.Cog):
         __Examples__
         `{pre}equipment equip Amelan Sword` - Equip Amelan with the weapon Sword.
         """
-        changed = "art_id" if equipment["type"] == "artefact" else "weapon_id"
-        await self.bot.db.query(
-            f"""
-            INSERT INTO necrobot.EquipmentSet(guild_id, user_id, char_id, {changed}) VALUES($1, $2, $3, $4) 
-            ON CONFLICT (guild_id, user_id, char_id)
-            DO UPDATE SET {changed} = $4""",
-            ctx.guild.id,
-            ctx.user.id,
-            character["id"],
-            equipment["id"],
+        if len(equipments) > 2:
+            raise BotError("Please specify one weapon and one artefact")
+        
+        mapped = {x["type"]: x for x in equipments}
+
+        try:
+            if len(equipments) == 2:
+                await self.bot.db.query(
+                    f"""
+                    INSERT INTO necrobot.EquipmentSet(guild_id, user_id, char_id, artefact_id, weapon_id) VALUES($1, $2, $3, $4, $5) 
+                    ON CONFLICT (guild_id, user_id, char_id)
+                    DO UPDATE SET artefact_id = $4, weapon_id = $5""",
+                    ctx.guild.id,
+                    ctx.author.id,
+                    character["id"],
+                    mapped["artefact"]["id"],
+                    mapped["weapon"]["id"],
+                )
+                await ctx.send(
+                    f":white_check_mark: | Equipped **{character['name']}** with artefact **{mapped['artefact']['name']}** and weapon **{mapped['weapon']['name']}**"
+                )
+            else:
+                key = next(mapped.keys())
+                updated = await self.bot.db.query(
+                    f"UPDATE necrobot.EquipmentSet SET {key} = $1 WHERE guild_id = $2 AND user_id = $3 AND char_id = $4 RETURNING user_id",
+                    mapped[key]["id"], ctx.guild.id, ctx.author.id, character["id"], fetchval=True
+                )
+                if not updated:
+                    raise BotError("Cannot change just one equipment of a character with none. Start by specifying both a weapon and artefact.")
+
+                await ctx.send(f":white_check_mark: | Equipped **{character['name']}** with {key} **{mapped[key]['name']}**")
+
+        except:
+            raise BotError("You cannot equip the same weapon/artefact to multiple characters.")
+        
+    @equipment.command(name="remove")
+    async def equipment_remove(self, ctx, character: GachaCharacterConverter(allowed_types=("character",), is_owned=True)):
+        """Remove the equipment set of a character so that it can be given to another character. 
+        
+        {usage}
+        """
+        deleted = await self.bot.db.query(
+            "DELETE necrobot.EquipmentSet WHERE user_id = $1 AND guild_id = $2 AND char_id = $3 RETURNING char_id",
+            ctx.author.id, ctx.guild.id, character["id"], fetchval=True
         )
-        await ctx.send(
-            f":white_check_mark: | Equipped **{character['id']}** with {equipment['type']} **{equipment['name']}"
-        )
+        if not deleted:
+            raise BotError(f"Character {character['name']} has no equipment set")
+            
+        await ctx.send(f":white_check_mark: | Deleted equipment set for **{character['name']}**")
 
     def format_character_stats(self, character):
         return f"- Name: {character['name']}\n- Tier: {character['tier'] * ':star:'}\n\n__Stats__\nComing soon..."
@@ -1352,7 +1385,7 @@ class Flowers(commands.Cog):
             FROM necrobot.EquipmentSet as es
                 JOIN necrobot.Characters as c1 ON es.char_id = c1.id 
                 JOIN necrobot.Characters as c2 ON es.weapon_id = c2.id 
-                JOIN necrobot.Characters as c3 ON es.art_id = c3.id
+                JOIN necrobot.Characters as c3 ON es.artefact_id = c3.id
             WHERE guild_id = $1 AND user_id = $2{' AND c1.id = ANY($3)' if character_ids else ''};"""
 
         if character_ids:
@@ -1460,7 +1493,7 @@ class Flowers(commands.Cog):
             )
 
         embed.add_field(
-            name="Actions", value="\n".join(map(str, battle.action_log[-LOG_SIZE:])), inline=False
+            name="Actions", value="\n".join(map(str, reversed(battle.action_log[-LOG_SIZE:]))), inline=False
         )
         embed.add_field(
             name="Key",

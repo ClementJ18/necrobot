@@ -107,8 +107,7 @@ class Support(commands.Cog):
         news = self.bot.settings["news"]
 
         if not news:
-            await ctx.send(":negative_squared_cross_mark: | No news available")
-            return
+            raise BotError("No news available")
 
         def embed_maker(view, entries):
             return discord.Embed.from_data(news[view.page_number])
@@ -155,14 +154,10 @@ class Support(commands.Cog):
 
         {usage}"""
         if not self.bot.settings["news"]:
-            await ctx.send(":negative_squared_cross_mark: | No news available")
-            return
+            raise BotError("No news available")
 
         if not 0 <= index < len(self.bot.settings["news"]):
-            await ctx.send(
-                f":negative_squared_cross_mark: | Not a valid index, pick a number between 1 and {len(self.bot.settings['news'])}"
-            )
-            return
+            raise BotError(f"Not a valid index, pick a number between 1 and {len(self.bot.settings['news'])}")
 
         news = self.bot.settings["news"].pop(index)
         await ctx.send(f":white_check_mark: | News **{news['title']}** removed")

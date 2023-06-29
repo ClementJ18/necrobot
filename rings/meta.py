@@ -210,23 +210,6 @@ class Meta(commands.Cog):
 
             self.bot.counter += 1
 
-    # NEED TO FIND MODULE FOR SH ON WINDOWS
-    # async def check_processes(self):
-    #     if not self.bot.check_enabled or self.bot.user.id == self.bot.TEST_BOT_ID:
-    #         return
-
-    #     ps = sh.grep(sh.ps("-ef"), "python3.8")
-    #     downed = []
-    #     for file, name in self.processes.items():
-    #         if file not in ps:
-    #             downed.append(name)
-
-    #     if downed:
-    #         await self.bot.get_bot_channel().send(
-    #             f":negative_squared_cross_mark: | The following processes are down: {', '.join(downed)}"
-    #         )
-    #         self.bot.check_enabled = False
-
     async def clear_potential_star(self):
         ids = list(self.bot.potential_stars.keys())
         ids.sort()

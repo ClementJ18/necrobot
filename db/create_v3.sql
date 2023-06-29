@@ -338,8 +338,10 @@ CREATE TABLE necrobot.EquipmentSet(
     user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
     char_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
     weapon_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
-    art_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
-    PRIMARY KEY (guild_id, user_id, char_id)
+    artefact_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
+    PRIMARY KEY (guild_id, user_id, char_id),
+    UNIQUE (guild_id, user_id, weapon_id),
+    UNIQUE (guild_id, user_id, artefact_id)
 );
 
 CREATE TYPE character_stat AS (is_percent boolean, stat int)

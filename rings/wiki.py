@@ -247,7 +247,7 @@ class Wiki(commands.Cog):
             message.append(f"[{section}]({base}#{url})")
 
         if not message:
-            return await ctx.send(":negative_squared_cross_mark: | Sorry, didn't find anything")
+            raise BotError("Sorry, didn't find anything")
 
         embed = discord.Embed(
             title="Frequently Asked Questions",
