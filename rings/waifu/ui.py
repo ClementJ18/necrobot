@@ -8,9 +8,8 @@ from discord.interactions import Interaction
 
 from rings.utils.ui import EmbedBooleanConverter, EmbedDefaultConverter, EmbedIntegerConverter
 
-from .base import get_symbol
+from .base import get_symbol, Stat
 from .battle import Battle, Character, MovementType
-from .entities import Stat
 
 
 class EmbedStatConverter(EmbedDefaultConverter):
@@ -113,6 +112,7 @@ class CharacterUI(discord.ui.Select):
                     row=2,
                     character=character,
                     action=ActionType.skill,
+                    disabled=not character.has_used_active_skill
                 )
             )
 

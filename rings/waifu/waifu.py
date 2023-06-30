@@ -30,10 +30,10 @@ from rings.utils.ui import (
 )
 from rings.utils.utils import BotError, check_channel
 
-from .base import POSITION_EMOJIS
+from .base import POSITION_EMOJIS, Stat, StatBlock
 from .battle import Battle, Battlefield, Character, get_distance, is_wakable
 from .enemies import POTENTIAL_ENEMIES
-from .entities import Stat, StatBlock, StatedEntity
+from .entities import StatedEntity
 from .fields import POTENTIAL_FIELDS
 from .ui import CombatView, EmbedStatConverter
 
@@ -326,13 +326,7 @@ class Flowers(commands.Cog):
         if char_type := character.get("type"):
             embed.add_field(name="Type", value=char_type.title())
 
-        def c(s):
-            if isinstance(s, asyncpg.Record):
-                return Stat.from_db(s)
-
-            return s
-
-        stats = f"- Health: {c(character['primary_health'])} ({c(character['secondary_health'])})\n- PA: {c(character['physical_attack'])}\n- MA: {c(character['magical_attack'])}\n- PD: {c(character['physical_defense'])}\n- MD: {c(character['magical_defense'])}"
+        stats = f"- Health: {self.c(character['primary_health'])} ({self.c(character['secondary_health'])})\n- PA: {self.c(character['physical_attack'])}\n- MA: {self.c(character['magical_attack'])}\n- PD: {self.c(character['physical_defense'])}\n- MD: {self.c(character['magical_defense'])}"
         embed.add_field(name="Stats", value=stats, inline=False)
 
         embed.add_field(
@@ -340,6 +334,12 @@ class Flowers(commands.Cog):
             value=f"- Active: {character['active_ability']}\n- Passive: {character['passive_ability']}",
         )
         return embed
+    
+    def c(self, s):
+            if isinstance(s, asyncpg.Record):
+                return Stat.from_db(s)
+
+            return s
 
     def embed_banner(self, banner, admin=False):
         embed = discord.Embed(
@@ -1377,7 +1377,8 @@ class Flowers(commands.Cog):
         await ctx.send(f":white_check_mark: | Deleted equipment set for **{character['name']}**")
 
     def format_character_stats(self, character):
-        return f"- Name: {character['name']}\n- Tier: {character['tier'] * ':star:'}\n\n__Stats__\nComing soon..."
+        stats = f"- Health: {self.c(character['primary_health'])} ({self.c(character['secondary_health'])})\n- PA: {self.c(character['physical_attack'])}\n- MA: {self.c(character['magical_attack'])}\n- PD: {self.c(character['physical_defense'])}\n- MD: {self.c(character['magical_defense'])}"
+        return f"- Name: {character['name']}\n- Tier: {character['tier'] * ':star:'}\n\n__Stats__\n{stats}"
 
     async def get_equipment_set(self, guild_id, user_id, character_ids=()) -> List[EquipmentSet]:
         string = f"""
@@ -1415,12 +1416,27 @@ class Flowers(commands.Cog):
         entries = await self.get_equipment_set(ctx.guild.id, ctx.author.id)
 
         def embed_maker(view, entry: EquipmentSet):
+            character = Character(
+                name=entry.character["name"],
+                stats=StatBlock.from_dict(entry.character),
+                weapon=StatedEntity(name=entry.weapon["name"], stats=StatBlock.from_dict(entry.weapon)),
+                artefact=StatedEntity(
+                    name=entry.artefact["name"], stats=StatBlock.from_dict(entry.artefact)
+                ),
+            )
+            stats = f"- Health: {self.c(character.calculate_stat('primary_health'))} ({self.c(character.calculate_stat('secondary_health'))})\n- PA: {self.c(character.calculate_stat('physical_attack'))}\n- MA: {self.c(character.calculate_stat('magical_attack'))}\n- PD: {self.c(character.calculate_stat('physical_defense'))}\n- MD: {self.c(character.calculate_stat('magical_defense'))}"
+
+
             embed = discord.Embed(
                 title=f"{entry.character['name']} ({view.page_number}/{view.page_count})",
                 colour=self.bot.bot_color,
-                description=self.format_character_stats(entry.character),
+                description=stats,
             )
             embed.set_footer(**self.bot.bot_footer)
+            
+            embed.add_field(
+                name="Character", value=self.format_character_stats(entry.character), inline=False
+            )
             embed.add_field(
                 name="Weapon", value=self.format_character_stats(entry.weapon), inline=False
             )

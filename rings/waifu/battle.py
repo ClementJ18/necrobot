@@ -221,6 +221,7 @@ class Battle:
 
     def use_active_skill(self, character: Character):
         self.action_log.append(f"{get_symbol(character.index)} - {character} {ActionType.skill}")
+        character.has_used_active_skill = True
 
     def do_ai_turn(self):
         for enemy in self.enemies:
