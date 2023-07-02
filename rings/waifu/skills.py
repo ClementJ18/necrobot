@@ -16,6 +16,7 @@ class ActiveSkillType(enum.Enum):
 class PassiveSkill:
     pass
 
+
 @dataclass
 class ActiveSkill:
     was_activated: bool = False
@@ -26,10 +27,10 @@ class ActiveSkill:
 
     def on_activation(self, battle, character):
         raise NotImplementedError
-    
+
     def on_attack(self, battle, character, target):
         raise NotImplementedError
-    
+
     def on_end_turn(self, battle, character):
         raise NotImplementedError
 
@@ -40,5 +41,3 @@ class EmpoweredAttack(ActiveSkill):
 
     def on_attack(self, battle, character, target):
         pass
-        
-

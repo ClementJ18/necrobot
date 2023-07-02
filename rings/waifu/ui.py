@@ -12,6 +12,11 @@ from .base import get_symbol, Stat
 from .battle import Battle, Character, MovementType
 
 
+class BattleOverException(Exception):
+    def __init__(self, victory: bool) -> None:
+        self.victory = victory
+
+
 class EmbedStatConverter(EmbedDefaultConverter):
     def convert(self, argument):
         percent, value = argument.split(",")
@@ -31,6 +36,7 @@ class AttackOrder(discord.ui.Select):
     def __init__(self, battle: Battle, character: Character):
         self.character = character
         self.battle = battle
+        disabled = False
 
         adjacents = battle.get_adjacent_positions(character.position)
         options = [
@@ -38,14 +44,27 @@ class AttackOrder(discord.ui.Select):
                 label=e.name,
                 value=index,
                 description=f"Attack {e.name}",
-                emoji=get_symbol(index + len(battle.players)),
+                emoji=get_symbol(e.index),
             )
             for index, e in enumerate(battle.enemies)
-            if e.position in adjacents.values()
+            if e.position in adjacents.values() and not character.has_attacked
         ]
 
+        if not options:
+            options = [
+                discord.SelectOption(
+                    label="No targets",
+                    value=0,
+                    description="No nearby enemies to attack",
+                )
+            ]
+            disabled = True
+
         super().__init__(
-            options=options, row=2, placeholder="Pick which enemy to attack with your weapon"
+            options=options,
+            row=3,
+            placeholder="Pick which enemy to attack with your weapon",
+            disabled=disabled,
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -78,11 +97,13 @@ class CharacterUI(discord.ui.Select):
         self.embed_maker = embed_maker
 
         options = [
-            discord.SelectOption(label=character.name, value=index, emoji=get_symbol(index))
-            for index, character in enumerate(characters)
+            discord.SelectOption(
+                label=character.name, value=character.index, emoji=get_symbol(character.index)
+            )
+            for character in characters
         ]
 
-        super().__init__(options=options, row=0, placeholder="Pick which character to use")
+        super().__init__(options=options, row=1, placeholder="Pick which character to use")
 
     def generate_buttons(self, character: Character):
         buttons = [
@@ -92,7 +113,7 @@ class CharacterUI(discord.ui.Select):
                 disabled=not self.battle.is_valid_movement(
                     character.position, move.value, character.current_movement_range
                 ),
-                row=1,
+                row=2,
                 character=character,
                 action=ActionType.move,
                 arguments={"direction": move},
@@ -100,9 +121,7 @@ class CharacterUI(discord.ui.Select):
             for move in MovementType
         ]
 
-        attack_order = AttackOrder(self.battle, character)
-        if attack_order.options:
-            buttons.append(attack_order)
+        buttons.append(AttackOrder(self.battle, character))
 
         if character.active_skill is not None:
             buttons.append(
@@ -112,7 +131,7 @@ class CharacterUI(discord.ui.Select):
                     row=2,
                     character=character,
                     action=ActionType.skill,
-                    disabled=not character.has_used_active_skill
+                    disabled=not character.has_used_active_skill,
                 )
             )
 
@@ -133,13 +152,21 @@ class CharacterUI(discord.ui.Select):
             view=self.view, embed=self.embed_maker(self.battle, character)
         )
 
+    def update_buttons(self, character: Character):
+        for child in self.view.children:
+            if isinstance(child, (ActionButton, AttackOrder)):
+                self.view.remove_item(child)
+
+        for button in self.generate_buttons(character):
+            self.view.add_item(button)
+
 
 class CombatView(discord.ui.View):
     def __init__(self, battle: Battle, embed_maker, author: discord.Member):
         super().__init__()
 
         self.battle = battle
-        self.add_item(CharacterUI(battle.players, battle, embed_maker))
+        self.set_ui(CharacterUI(battle.players, battle, embed_maker))
         self.message: discord.Message = None
         self.embed_maker = embed_maker
         self.author = author
@@ -148,32 +175,38 @@ class CombatView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction):
         return interaction.user.id == self.author.id
 
-    async def on_timeout(self):
-        self.stop()
-        self.clear_items()
-        await self.message.edit(view=self)
+    def set_ui(self, ui: CharacterUI):
+        self.ui = ui
+        self.add_item(ui)
 
     def reset_view(self):
         self.clear_items()
-        self.add_item(CharacterUI(self.battle.players, self.battle, self.embed_maker))
+        self.set_ui(CharacterUI(self.battle.players, self.battle, self.embed_maker))
         self.add_item(self.end_turn)
 
+    def update_view(self, character: Character):
+        self.ui.update_buttons(character)
+
     async def take_action(self, interaction: discord.Interaction, action: ActionType, **kwargs):
+        character: Character = kwargs.get("character")
+
         if action == ActionType.move:
-            self.battle.move_character(
-                kwargs.get("character"), change=kwargs.get("direction").value
-            )
+            self.battle.move_character(character, change=kwargs.get("direction").value)
         elif action == ActionType.attack:
-            character: Character = kwargs.get("character")
             self.battle.attack_character(character, kwargs.get("target"))
             character.current_movement_range = 0
         elif action == ActionType.skill:
-            self.battle.use_active_skill(kwargs.get("character"))
+            self.battle.use_active_skill(character)
 
-        self.reset_view()
-        await interaction.response.edit_message(embed=self.embed_maker(self.battle), view=self)
+        self.update_view(character)
+        await interaction.response.edit_message(
+            embed=self.embed_maker(self.battle, character), view=self
+        )
 
-    @discord.ui.button(label="End Turn", style=discord.ButtonStyle.red, row=4)
+        if not self.battle.enemies:
+            raise BattleOverException(True)
+
+    @discord.ui.button(label="End Turn", style=discord.ButtonStyle.red, row=0)
     async def end_turn(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.clear_items()
@@ -189,7 +222,19 @@ class CombatView(discord.ui.View):
             await asyncio.sleep(3 - end)
 
         self.battle.end_turn()
+
+        if not self.battle.players:
+            raise BattleOverException(False)
+
         self.reset_view()
         await interaction.followup.edit_message(
             self.message.id, embed=self.embed_maker(self.battle), view=self
         )
+
+    async def on_error(self, interaction: discord.Interaction, error, item):
+        if isinstance(error, BattleOverException):
+            self.victory = error.victory
+            self.stop()
+            self.clear_items()
+        else:
+            await super().on_error(interaction, error, item)

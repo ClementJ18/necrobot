@@ -14,7 +14,9 @@ class StatedEntity(DataClass):
     movement_range: int = 3
     current_movement_range: int = 0
     index: int = 0
+
     has_used_active_skill: bool = False
+    has_attacked: bool = False
 
     @property
     def is_physical(self):
@@ -80,6 +82,9 @@ class StatedEntity(DataClass):
 
     def end_turn(self):
         self.current_movement_range = self.movement_range
+
+        self.has_attacked = False
+        self.has_used_active_skill = False
 
     def can_use_ability(self):
         return True

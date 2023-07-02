@@ -2,24 +2,35 @@ from collections import Counter
 
 from .battle import Battlefield, Size
 
-default_field = [
-    [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-    [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1],
-    [3, 1, 0, 0, 3, 1, 1, 0, 1, 1, 0, 0],
-    [1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
-    [0, 0, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1],
-    [1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 2],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
-]
+# 0 : non-walkable
+# 1 : walkable
+# 2 : player placements
+# 3 : enemy placements
+
+default_field = (
+    (0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1),
+    (0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+    (1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1),
+    (3, 1, 0, 0, 3, 1, 1, 0, 1, 1, 0, 0),
+    (1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1),
+    (0, 0, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1),
+    (1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 2),
+    (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0),
+    (1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0),
+)
+
+test_field = (
+    (1, 1, 1, 1, 1),
+    (1, 3, 1, 3, 1),
+    (1, 1, 1, 1, 1),
+    (2, 1, 2, 1, 2),
+)
 
 POTENTIAL_FIELDS = (
     Battlefield(
-        default_field,
-        Size(len(default_field[0]), len(default_field)),
+        tiles=default_field,
         name="Large Plain",
         description="A large plains with some holes",
-        enemy_count=Counter(x for xs in default_field for x in xs)[3],
     ),
+    Battlefield(tiles=test_field, name="Debug Time", description="How'd you get here?"),
 )

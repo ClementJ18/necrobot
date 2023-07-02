@@ -4,10 +4,9 @@ import re
 import discord
 from discord.ext import commands
 
-from rings.db import DatabaseError
 from rings.utils.converters import Tag
 from rings.utils.ui import paginate
-from rings.utils.utils import BotError, build_format_dict
+from rings.utils.utils import BotError, DatabaseError, build_format_dict
 
 
 class Tags(commands.Cog):

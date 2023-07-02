@@ -5,7 +5,6 @@ import discord
 import emoji
 from discord.ext import commands
 
-from rings.db import DatabaseError
 from rings.utils.checks import has_perms
 from rings.utils.converters import (
     MemberConverter,
@@ -22,7 +21,7 @@ from rings.utils.ui import (
     SelectView,
     paginate,
 )
-from rings.utils.utils import BotError, build_format_dict, check_channel
+from rings.utils.utils import BotError, DatabaseError, build_format_dict, check_channel
 
 
 class Server(commands.Cog):

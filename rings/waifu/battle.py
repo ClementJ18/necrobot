@@ -1,3 +1,4 @@
+from collections import Counter
 import enum
 import random
 from dataclasses import dataclass, field
@@ -11,15 +12,71 @@ from .base import Coords, Size, get_symbol
 from .entities import Character, Enemy
 
 
+class ActionLog:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+
+        return self.eq(other)
+
+    def eq(self, other: object) -> bool:
+        raise NotImplementedError
+
+    def __add__(self, other: object) -> object:
+        raise NotImplementedError
+
+    def __str__(self) -> str:
+        raise NotImplemented
+
+
+@dataclass(eq=False)
+class MoveAction(ActionLog):
+    character: Character
+    distance: int
+
+    def eq(self, other: "MoveAction") -> bool:
+        return self.character == other.character
+
+    def __add__(self, other: "MoveAction") -> "MoveAction":
+        return MoveAction(self.character, self.distance + other.distance)
+
+    def __str__(self) -> str:
+        return (
+            f"{get_symbol(self.character.index)} - {self.character} moved {self.distance} meters"
+        )
+
+
+@dataclass(eq=False)
+class AttackAction(ActionLog):
+    character: Character
+    damage: int
+    attackee: Character
+
+    def eq(self, other: "AttackAction") -> bool:
+        return self.character == other.character and self.attackee == other.attackee
+
+    def __add__(self, other: "AttackAction") -> "AttackAction":
+        return AttackAction(self.character, self.damage + other.damage, other.attackee)
+
+    def __str__(self) -> str:
+        return f"{get_symbol(self.character.index)} - {self.character} {'attacked' if self.attackee.is_alive() else 'killed'} {self.attackee} ({get_symbol(self.attackee.index)}) for {self.damage} health"
+
+
+@dataclass(eq=False)
+class SkillAction(ActionLog):
+    character: Character
+
+    def eq(self, other: "SkillAction") -> bool:
+        return self.character == other.character
+
+    def __add__(self, other: object) -> object:
+        return SkillAction(self.character)
+
+    def __str__(self):
+        return f"{get_symbol(self.character.index)} - {self.character} used action"
+
+
 class InvalidPosition(Exception):
-    pass
-
-
-class Terrain:
-    pass
-
-
-class Event:
     pass
 
 
@@ -55,12 +112,17 @@ def get_distance(origin: Coords, destination: Coords):
 
 @dataclass
 class Battlefield:
-    tiles: List[List[TileType]]
-    size: Size
+    tiles: List[List[int]]
     name: str
     description: str
-    enemy_count: int
-    grid: List[List[TileType]] = ()
+    grid: List[List[int]] = ()
+
+    size: Size = Size(0, 0)
+    enemy_count: int = 0
+
+    def __post_init__(self):
+        self.size = Size(len(self.tiles[0]), len(self.tiles))
+        self.enemy_count = Counter(x for xs in self.tiles for x in xs)[3]
 
     def initialise(self):
         # transform into a matrix for pathfinding
@@ -73,40 +135,12 @@ class Battlefield:
         ]
 
 
-class ActionType(enum.Enum):
-    moved = "moved"
-    attacked = "attacked"
-    skill = "activated a skill"
-    killed = "killed"
-    died = "has fallen in battle"
-
-    def __str__(self):
-        return str(self.value)
-
-
-@dataclass
-class ActionEntry:
-    character: Character
-    action: ActionType
-    arg: Union[Character, MovementType] = None
-
-    def __str__(self):
-        string = f"{self.character} {self.action.value}"
-        if self.arg is not None:
-            string += f" {self.arg}"
-
-        return string
-
-
 @dataclass
 class Battle:
     _players: List[Character]
     _enemies: List[Enemy]
-    # terrain: Terrain
-    # event: Event
     battlefield: Battlefield
-    used_last_turn: List[Character] = field(default_factory=list)
-    action_log: List[str] = field(default_factory=list)
+    action_logs: List[ActionLog] = field(default_factory=list)
 
     @property
     def players(self):
@@ -115,13 +149,6 @@ class Battle:
     @property
     def enemies(self):
         return [e for e in self._enemies if e.is_alive()]
-
-    def can_move_this_turn(self, char: Character) -> bool:
-        return char not in self.used_last_turn
-
-    def pick_enemies(self) -> List[Character]:
-        valid_list = [enemy for enemy in self.enemies if enemy not in self.used_last_turn]
-        return random.sample(valid_list, len(valid_list) // 3)
 
     def is_in_board(self, position: Coords) -> bool:
         if not 0 <= position[1] < self.battlefield.size.height:
@@ -177,19 +204,31 @@ class Battle:
 
         return adjacents
 
+    def add_action_log(self, log: ActionLog):
+        if not self.action_logs:
+            self.action_logs.append(log)
+        elif self.action_logs[-1] == log:
+            self.action_logs[-1] = self.action_logs[-1] + log
+        else:
+            self.action_logs.append(log)
+
     def initialise(self):
+        player_count = len(self.players)
+        enemy_count = len(self.enemies)
+
         player_positions = self.get_positions(TileType.player_start)
-        for player, position in zip(self.players, player_positions):
+        for player, position, index in zip(self.players, player_positions, range(player_count)):
             player.position = position
+            player.index = index
 
         enemy_positions = self.get_positions(TileType.enemy_start)
-        for enemy, position in zip(self.enemies, enemy_positions):
+        for enemy, position, index in zip(
+            self.enemies, enemy_positions, range(player_count, player_count + enemy_count)
+        ):
             enemy.position = position
+            enemy.index = index
 
         self.battlefield.initialise()
-
-        for index, character in enumerate(self.players + self.enemies):
-            character.index = index
 
     def move_character(
         self, character: Character, *, new_position: Coords = (), change: Coords = ()
@@ -203,24 +242,17 @@ class Battle:
         distance = get_distance(character.position, new_position)
         character.position = new_position
         character.current_movement_range -= distance
-        self.action_log.append(
-            f"{character} ({get_symbol(character.index)}) {ActionType.moved} {distance} meters"
-        )
+
+        self.add_action_log(MoveAction(character, distance))
 
     def attack_character(self, attacker: Character, attackee: Character):
         damage = attacker.attack(attackee)
+        attacker.has_attacked = True
 
-        if attackee.is_alive():
-            self.action_log.append(
-                f"{attacker} ({get_symbol(attacker.index)}) {ActionType.attacked} {attackee} for {damage}"
-            )
-        else:
-            self.action_log.append(
-                f"{attacker} ({get_symbol(attacker.index)}) {ActionType.killed} {attackee} with {damage}"
-            )
+        self.add_action_log(AttackAction(attacker, damage, attackee))
 
     def use_active_skill(self, character: Character):
-        self.action_log.append(f"{get_symbol(character.index)} - {character} {ActionType.skill}")
+        self.add_action_log(SkillAction(character))
         character.has_used_active_skill = True
 
     def do_ai_turn(self):

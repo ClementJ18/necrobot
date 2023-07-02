@@ -157,7 +157,9 @@ class Support(commands.Cog):
             raise BotError("No news available")
 
         if not 0 <= index < len(self.bot.settings["news"]):
-            raise BotError(f"Not a valid index, pick a number between 1 and {len(self.bot.settings['news'])}")
+            raise BotError(
+                f"Not a valid index, pick a number between 1 and {len(self.bot.settings['news'])}"
+            )
 
         news = self.bot.settings["news"].pop(index)
         await ctx.send(f":white_check_mark: | News **{news['title']}** removed")

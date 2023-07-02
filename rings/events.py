@@ -6,9 +6,8 @@ import traceback
 import discord
 from discord.ext import commands
 
-from rings.db import DatabaseError
 from rings.misc.ui import FightError
-from rings.utils.utils import BotError, build_format_dict
+from rings.utils.utils import BotError, DatabaseError, build_format_dict
 
 
 class Events(commands.Cog):

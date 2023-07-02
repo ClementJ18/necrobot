@@ -24,6 +24,7 @@ import matplotlib.pyplot as plt
 
 from .ui import HungerGames
 
+
 class Misc(commands.Cog):
     """A cog for all bunch commands that don't have a specific category they can stick to."""
 
@@ -449,29 +450,6 @@ class Misc(commands.Cog):
             title, intro, ifile = await self.bot.loop.run_in_executor(None, func)
 
         await ctx.send(f"**__W/L {title}__**\n{intro}", file=ifile)
-
-    # @commands.command()
-    async def pdf(self, ctx: commands.Context, *, doi):
-        """Get a PDF from a doi using sci-hub
-
-        {usage}
-        """
-
-        async with self.bot.session.post(
-            "https://sci-hub.mksa.top/",
-            params={"sci-hub-plugin-check": "", "request": doi},
-        ) as resp:
-            soup = BeautifulSoup(await resp.text(), "html.parser")
-
-        pdf_url = soup.find("iframe")["src"]
-        print(pdf_url)
-        async with self.bot.session.get(pdf_url) as resp:
-            pdf = BytesIO(await resp.read())
-            pdf.seek(0)
-            # not working cause cloudflare protection
-
-        ifile = discord.File(pdf, filename="converted.html")
-        await ctx.send(file=ifile)
 
     #######################################################################
     ## Events

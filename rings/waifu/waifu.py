@@ -11,6 +11,9 @@ import asyncpg
 import discord
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
+from pathfinding.core.diagonal_movement import DiagonalMovement
+from pathfinding.core.grid import Grid
+from pathfinding.finder.breadth_first import BreadthFirstFinder
 
 from rings.utils.checks import has_perms
 from rings.utils.converters import (
@@ -28,7 +31,7 @@ from rings.utils.ui import (
     MultiInputEmbedView,
     paginate,
 )
-from rings.utils.utils import BotError, check_channel
+from rings.utils.utils import BotError, DatabaseError, check_channel
 
 from .base import POSITION_EMOJIS, Stat, StatBlock
 from .battle import Battle, Battlefield, Character, get_distance, is_wakable
@@ -334,12 +337,12 @@ class Flowers(commands.Cog):
             value=f"- Active: {character['active_ability']}\n- Passive: {character['passive_ability']}",
         )
         return embed
-    
-    def c(self, s):
-            if isinstance(s, asyncpg.Record):
-                return Stat.from_db(s)
 
-            return s
+    def c(self, s):
+        if isinstance(s, asyncpg.Record):
+            return Stat.from_db(s)
+
+        return s
 
     def embed_banner(self, banner, admin=False):
         embed = discord.Embed(
@@ -1075,7 +1078,9 @@ class Flowers(commands.Cog):
                 f":white_check_mark: | Characters **{char['name']}** removed from banner **{banner['name']}**."
             )
         else:
-            raise BotError(f"Characters **{char['name']}** not present on banner **{banner['name']}**.")
+            raise BotError(
+                f"Characters **{char['name']}** not present on banner **{banner['name']}**."
+            )
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -1328,11 +1333,25 @@ class Flowers(commands.Cog):
         """
         if len(equipments) > 2:
             raise BotError("Please specify one weapon and one artefact")
-        
+
         mapped = {x["type"]: x for x in equipments}
 
         try:
             if len(equipments) == 2:
+                view = Confirm(confirm_msg=None)
+                view.message = await ctx.send(
+                    "With the new equipment the character will have the following stats:",
+                    embed=self.embed_equipment_set(
+                        character["name"],
+                        EquipmentSet(character, mapped["weapon"], mapped["artefact"]),
+                    ),
+                    view=view,
+                )
+
+                await view.wait()
+                if not view.value:
+                    return
+
                 await self.bot.db.query(
                     f"""
                     INSERT INTO necrobot.EquipmentSet(guild_id, user_id, char_id, artefact_id, weapon_id) VALUES($1, $2, $3, $4, $5) 
@@ -1348,32 +1367,66 @@ class Flowers(commands.Cog):
                     f":white_check_mark: | Equipped **{character['name']}** with artefact **{mapped['artefact']['name']}** and weapon **{mapped['weapon']['name']}**"
                 )
             else:
-                key = next(mapped.keys())
-                updated = await self.bot.db.query(
-                    f"UPDATE necrobot.EquipmentSet SET {key} = $1 WHERE guild_id = $2 AND user_id = $3 AND char_id = $4 RETURNING user_id",
-                    mapped[key]["id"], ctx.guild.id, ctx.author.id, character["id"], fetchval=True
+                key = list(mapped.keys())[0]
+                current_equipment = (
+                    await self.get_equipment_set(ctx.guild.id, ctx.author.id, (character["id"],))
+                )[0]
+                if not current_equipment:
+                    raise BotError(
+                        "Cannot change just one equipment of a character with none. Start by specifying both a weapon and artefact."
+                    )
+
+                current_equipment = current_equipment._replace(**{key: mapped[key]})
+
+                view = Confirm(confirm_msg=None)
+                view.message = await ctx.send(
+                    "With the new equipment the character will have the following stats:",
+                    embed=self.embed_equipment_set(
+                        current_equipment.character["name"], current_equipment
+                    ),
+                    view=view,
                 )
-                if not updated:
-                    raise BotError("Cannot change just one equipment of a character with none. Start by specifying both a weapon and artefact.")
 
-                await ctx.send(f":white_check_mark: | Equipped **{character['name']}** with {key} **{mapped[key]['name']}**")
+                await view.wait()
+                if not view.value:
+                    return
 
-        except:
-            raise BotError("You cannot equip the same weapon/artefact to multiple characters.")
-        
+                await self.bot.db.query(
+                    f"UPDATE necrobot.EquipmentSet SET {key}_id = $1 WHERE guild_id = $2 AND user_id = $3 AND char_id = $4",
+                    mapped[key]["id"],
+                    ctx.guild.id,
+                    ctx.author.id,
+                    character["id"],
+                    fetchval=True,
+                )
+
+                await ctx.send(
+                    f":white_check_mark: | Equipped **{character['name']}** with {key} **{mapped[key]['name']}**"
+                )
+
+        except DatabaseError as e:
+            raise BotError(
+                f"You cannot equip the same weapon/artefact to multiple characters."
+            ) from e
+
     @equipment.command(name="remove")
-    async def equipment_remove(self, ctx, character: GachaCharacterConverter(allowed_types=("character",), is_owned=True)):
-        """Remove the equipment set of a character so that it can be given to another character. 
-        
+    async def equipment_remove(
+        self, ctx, character: GachaCharacterConverter(allowed_types=("character",), is_owned=True)
+    ):
+        """Remove the equipment set of a character so that it can be given to another character.
+
         {usage}
         """
         deleted = await self.bot.db.query(
-            "DELETE necrobot.EquipmentSet WHERE user_id = $1 AND guild_id = $2 AND char_id = $3 RETURNING char_id",
-            ctx.author.id, ctx.guild.id, character["id"], fetchval=True
+            "DELETE FROM necrobot.EquipmentSet WHERE user_id = $1 AND guild_id = $2 AND char_id = $3 RETURNING char_id",
+            ctx.author.id,
+            ctx.guild.id,
+            character["id"],
+            fetchval=True,
         )
         if not deleted:
             raise BotError(f"Character {character['name']} has no equipment set")
-            
+
         await ctx.send(f":white_check_mark: | Deleted equipment set for **{character['name']}**")
 
     def format_character_stats(self, character):
@@ -1405,6 +1458,30 @@ class Flowers(commands.Cog):
             for entry in query
         ]
 
+    def embed_equipment_set(self, name, entry: EquipmentSet):
+        character = Character(
+            name=entry.character["name"],
+            stats=StatBlock.from_dict(entry.character),
+            weapon=StatedEntity(
+                name=entry.weapon["name"], stats=StatBlock.from_dict(entry.weapon)
+            ),
+            artefact=StatedEntity(
+                name=entry.artefact["name"], stats=StatBlock.from_dict(entry.artefact)
+            ),
+        )
+
+        embed = discord.Embed(
+            title=name,
+            colour=self.bot.bot_color,
+            description=f"- Character: {entry.character['name']} ({entry.character['tier'] * ':star:'})\n- Weapon: {entry.weapon['name']} ({entry.weapon['tier'] * ':star:'})\n- Artefact: {entry.artefact['name']} ({entry.artefact['tier'] * ':star:'})",
+        )
+        embed.set_footer(**self.bot.bot_footer)
+
+        stats = f"- Health: {self.c(character.calculate_stat('primary_health'))} ({self.c(character.calculate_stat('secondary_health'))})\n- PA: {self.c(character.calculate_stat('physical_attack'))}\n- MA: {self.c(character.calculate_stat('magical_attack'))}\n- PD: {self.c(character.calculate_stat('physical_defense'))}\n- MD: {self.c(character.calculate_stat('magical_defense'))}"
+        embed.add_field(name="Stats", value=stats, inline=False)
+
+        return embed
+
     @equipment.command(name="list")
     async def equipment_list(self, ctx):
         """List your characters and their equipment.
@@ -1413,56 +1490,35 @@ class Flowers(commands.Cog):
 
         __Examples
         `{pre}equipment list` - list all your equipped characters"""
+
+        def embed_maker(view, entry):
+            return self.embed_equipment_set(
+                f"{entry.character['name']} ({view.page_number}/{view.page_count})", entry
+            )
+
         entries = await self.get_equipment_set(ctx.guild.id, ctx.author.id)
-
-        def embed_maker(view, entry: EquipmentSet):
-            character = Character(
-                name=entry.character["name"],
-                stats=StatBlock.from_dict(entry.character),
-                weapon=StatedEntity(name=entry.weapon["name"], stats=StatBlock.from_dict(entry.weapon)),
-                artefact=StatedEntity(
-                    name=entry.artefact["name"], stats=StatBlock.from_dict(entry.artefact)
-                ),
-            )
-            stats = f"- Health: {self.c(character.calculate_stat('primary_health'))} ({self.c(character.calculate_stat('secondary_health'))})\n- PA: {self.c(character.calculate_stat('physical_attack'))}\n- MA: {self.c(character.calculate_stat('magical_attack'))}\n- PD: {self.c(character.calculate_stat('physical_defense'))}\n- MD: {self.c(character.calculate_stat('magical_defense'))}"
-
-
-            embed = discord.Embed(
-                title=f"{entry.character['name']} ({view.page_number}/{view.page_count})",
-                colour=self.bot.bot_color,
-                description=stats,
-            )
-            embed.set_footer(**self.bot.bot_footer)
-            
-            embed.add_field(
-                name="Character", value=self.format_character_stats(entry.character), inline=False
-            )
-            embed.add_field(
-                name="Weapon", value=self.format_character_stats(entry.weapon), inline=False
-            )
-            embed.add_field(
-                name="Artefact", value=self.format_character_stats(entry.artefact), inline=False
-            )
-
-            return embed
-
         await paginate(ctx, entries, 1, embed_maker)
 
     def convert_battlefield_to_str(
         self, field: Battlefield, characters: List[Character], character_range: Character = None
     ):
+        character_reach = []
+        grid = Grid(matrix=field.walkable_grid([x.position for x in characters]))
+
+        if character_range is not None:
+            character_reach.append(grid.node(*character_range.position))
+            for _ in range(character_range.current_movement_range):
+                new_neighbors = []
+                for node in character_reach:
+                    new_neighbors.extend(grid.neighbors(node))
+                character_reach.extend(new_neighbors)
+
         empty_board = []
         for y, row in enumerate(field.tiles):
             empty_row = []
             for x, cell in enumerate(row):
                 if is_wakable(cell):
-                    in_range = False
-                    if character_range is not None:
-                        in_range = (
-                            get_distance(character_range.position, (x, y))
-                            <= character_range.current_movement_range
-                        )
-
+                    in_range = grid.node(x, y) in character_reach
                     if in_range:
                         empty_row.append(":blue_square:")
                     else:
@@ -1471,29 +1527,19 @@ class Flowers(commands.Cog):
                     empty_row.append(":red_square:")
             empty_board.append(empty_row)
 
-        for character, emoji in zip(characters, POSITION_EMOJIS):
-            empty_board[character.position[1]][character.position[0]] = emoji
+        for character in characters:
+            empty_board[character.position[1]][character.position[0]] = POSITION_EMOJIS[
+                character.index
+            ]
 
         return "\n".join(["".join(row) for row in empty_board])
 
-    def convert_battle_log(self, battle: Battle, size: int = 5):
-        string = ""
-        for entry in battle.action_log[-size:]:
-            string += f"- {entry[0].name} {entry[1].value}"
-            if len(entry) > 2:
-                string += f" {entry[2].name}\n"
-            else:
-                string += "\n"
-
-        return string
-
     def embed_battle(self, battle: Battle, character_range: Character = None):
-        entity_list = battle.players + battle.enemies
         embed = discord.Embed(
             title="A Great Battle",
             colour=self.bot.bot_color,
             description=self.convert_battlefield_to_str(
-                battle.battlefield, entity_list, character_range
+                battle.battlefield, battle.players + battle.enemies, character_range
             ),
         )
 
@@ -1503,13 +1549,25 @@ class Flowers(commands.Cog):
             embed.add_field(
                 name=entity_name,
                 value="\n".join(
-                    f"{POSITION_EMOJIS[entity_list.index(character)]} - **{character.name}**: {character.stats.current_primary_health}/{character.stats.max_primary_health} ({character.stats.current_secondary_health}/{character.stats.max_secondary_health})"
+                    f"{POSITION_EMOJIS[character.index]} - **{character.name}**: {character.stats.current_primary_health}/{character.stats.max_primary_health} ({character.stats.current_secondary_health}/{character.stats.max_secondary_health})"
                     for character in entities
                 ),
             )
 
         embed.add_field(
-            name="Actions", value="\n".join(map(str, reversed(battle.action_log[-LOG_SIZE:]))), inline=False
+            name="Actions",
+            value="\n".join(
+                map(
+                    str,
+                    reversed(
+                        (
+                            (["\N{BLACK CIRCLE FOR RECORD}\N{VARIATION SELECTOR-16} -"] * LOG_SIZE)
+                            + battle.action_logs
+                        )[-LOG_SIZE:]
+                    ),
+                )
+            ),
+            inline=False,
         )
         embed.add_field(
             name="Key",
@@ -1543,10 +1601,14 @@ class Flowers(commands.Cog):
             for es in equipment_sets
         ]
 
-        field = copy.deepcopy(random.choice(POTENTIAL_FIELDS))
+        # field = copy.deepcopy(random.choice(POTENTIAL_FIELDS))
+        field = copy.deepcopy(POTENTIAL_FIELDS[1])
+        enemies = [
+            copy.deepcopy(random.choice(POTENTIAL_ENEMIES)) for _ in range(field.enemy_count)
+        ]
         battle = Battle(
             characters,
-            [copy.deepcopy(random.choice(POTENTIAL_ENEMIES)) for _ in range(field.enemy_count)],
+            enemies,
             field,
         )
         battle.initialise()
@@ -1555,10 +1617,12 @@ class Flowers(commands.Cog):
         cmd.message: discord.Message = await ctx.send(embed=self.embed_battle(battle), view=cmd)
 
         await cmd.wait()
+
+        cmd.clear_items()
         if cmd.victory:
-            await cmd.message.edit(content="The battle ended in victory")
+            await cmd.message.edit(content="The battle ended in victory", view=cmd)
         else:
-            await cmd.message.edit(content="The battle ended in defeat")
+            await cmd.message.edit(content="The battle ended in defeat", view=cmd)
 
     #######################################################################
     ## Events
