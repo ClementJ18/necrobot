@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .base import Coords, DataClass, StatBlock
+from .base import Coords, DataClass, StatBlock, DamageInstance
 from .skills import PassiveSkill, ActiveSkill
 
 
@@ -17,6 +17,18 @@ class StatedEntity(DataClass):
 
     has_used_active_skill: bool = False
     has_attacked: bool = False
+
+    def __str__(self):
+        return self.name
+
+    def __post_init__(self):
+        self.stats.current_primary_health = self.calculate_stat("primary_health")
+        self.stats.max_primary_health = self.stats.current_primary_health
+
+        self.stats.current_secondary_health = self.calculate_stat("secondary_health")
+        self.stats.max_secondary_health = self.stats.current_secondary_health
+
+        self.current_movement_range = self.movement_range
 
     @property
     def is_physical(self):
@@ -38,7 +50,7 @@ class StatedEntity(DataClass):
     def calculate_magical_defense(self):
         return self.calculate_stat("magical_defense")
 
-    def calculate_damage(self, attack, defense):
+    def calculate_damage(self, attack, defense) -> DamageInstance:
         return max(1, attack - defense)
 
     def is_alive(self):
@@ -46,48 +58,84 @@ class StatedEntity(DataClass):
 
     def attack(self, attackee: "StatedEntity"):
         if self.is_physical:
-            damage = self.calculate_damage(
-                self.calculate_physical_attack(), attackee.calculate_physical_defense()
-            )
+            attack = self.calculate_physical_attack()
+            defense = self.calculate_physical_defense()
         else:
-            damage = self.calculate_damage(
-                self.calculate_magical_attack(), attackee.calculate_magical_defense()
+            attack = self.calculate_magical_attack()
+            defense = self.calculate_magical_defense()
+
+        if self.skill_is_active():
+            attack += self.active_skill.on_calculate_attack(
+                self, attackee, attack, self.is_physical
             )
 
-        attackee.take_damage(damage)
+        if attackee.skill_is_active():
+            defense += self.active_skill.on_calculate_defense(
+                attackee, self, defense, self.is_physical
+            )
 
+        damage = DamageInstance(
+            self.calculate_damage(attack, defense),
+            False,
+        )
+
+        if self.skill_is_active():
+            damage = self.active_skill.on_deal_damage(self, attackee, damage)
+
+        if attackee.skill_is_active():
+            damage = attackee.active_skill.on_take_damage(attackee, self, damage)
+
+        attackee.take_damage(damage.amount, damage.secondary)
         return damage
 
-    def take_damage(self, damage):
-        self.stats.current_secondary_health -= damage
+    def take_damage(self, amount: int, secondary: bool = True):
+        if secondary:
+            if self.stats.current_secondary_health > amount:
+                self.stats.current_secondary_health -= amount
+                return
 
-        if self.stats.current_secondary_health < 0:
-            self.stats.current_primary_health += self.stats.current_secondary_health
+            amount -= self.stats.current_secondary_health
             self.stats.current_secondary_health = 0
 
-        if self.stats.current_primary_health < 0:
-            self.stats.current_primary_health = 0
+        if self.stats.current_primary_health > amount:
+            self.stats.current_primary_health -= amount
+            return
 
-    def __str__(self):
-        return self.name
+        self.stats.current_primary_health = 0
 
-    def __post_init__(self):
-        self.stats.current_primary_health = self.calculate_stat("primary_health")
-        self.stats.max_primary_health = self.stats.current_primary_health
+    def grant_health(self, amount: int, *, secondary: bool = False, respect_max: bool = True):
+        key = "secondary" if secondary else "primary"
+        current_health = f"current_{key}_health"
+        max_health = f"max_{key}_health"
 
-        self.stats.current_secondary_health = self.calculate_stat("secondary_health")
-        self.stats.max_secondary_health = self.stats.current_secondary_health
+        to_add = amount
+        if respect_max:
+            to_add = min(
+                amount,
+                max(0, getattr(self.stats, max_health) - getattr(self.stats, current_health)),
+            )
 
-        self.current_movement_range = self.movement_range
+        setattr(self.stats, current_health, getattr(self.stats, current_health) + to_add)
 
     def end_turn(self):
         self.current_movement_range = self.movement_range
 
         self.has_attacked = False
-        self.has_used_active_skill = False
 
-    def can_use_ability(self):
-        return True
+        if self.active_skill is not None:
+            self.active_skill.end_turn()
+
+    def can_use_skill(self):
+        if self.active_skill is None:
+            return False
+
+        return self.active_skill.can_activate()
+
+    def skill_is_active(self):
+        if self.active_skill is None:
+            return False
+
+        return self.active_skill.is_active()
 
 
 @dataclass

@@ -77,7 +77,7 @@ class AttackOrder(discord.ui.Select):
 
 
 class ActionButton(discord.ui.Button):
-    def __init__(self, *, character: Character, action: ActionType, arguments, **kwargs):
+    def __init__(self, *, character: Character, action: ActionType, arguments: dict, **kwargs):
         self.character = character
         self.action = action
         self.arguments = arguments
@@ -121,19 +121,22 @@ class CharacterUI(discord.ui.Select):
             for move in MovementType
         ]
 
-        buttons.append(AttackOrder(self.battle, character))
-
-        if character.active_skill is not None:
-            buttons.append(
-                ActionButton(
-                    style=discord.ButtonStyle.secondary,
-                    label="Activate Skill",
-                    row=2,
-                    character=character,
-                    action=ActionType.skill,
-                    disabled=not character.has_used_active_skill,
-                )
-            )
+        buttons += [
+            AttackOrder(self.battle, character),
+            ActionButton(
+                style=discord.ButtonStyle.red
+                if character.skill_is_active()
+                else discord.ButtonStyle.secondary,
+                label="Activate Skill"
+                if character.active_skill is None
+                else character.active_skill.name,
+                row=2,
+                character=character,
+                action=ActionType.skill,
+                disabled=not character.can_use_skill(),
+                arguments={},
+            ),
+        ]
 
         return buttons
 

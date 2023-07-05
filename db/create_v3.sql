@@ -288,8 +288,8 @@ CREATE TABLE necrobot.Characters(
     physical_attack character_stat DEFAULT (false, 0),
     magical_defense character_stat DEFAULT (false, 0),
     magical_attack character_stat DEFAULT (false, 0),
-    active_ability text,
-    passive_ability text
+    active_skill text,
+    passive_skill text
 );
 
 -- ALTER TABLE necrobot.Characters ADD COLUMN type text NOT NULL DEFAULT 'character';
@@ -299,8 +299,8 @@ CREATE TABLE necrobot.Characters(
 -- ALTER TABLE necrobot.Characters ADD COLUMN physical_attack character_stat DEFAULT (false, 0);
 -- ALTER TABLE necrobot.Characters ADD COLUMN magical_defense character_stat DEFAULT (false, 0);
 -- ALTER TABLE necrobot.Characters ADD COLUMN magical_attack character_stat DEFAULT (false, 0);
--- ALTER TABLE necrobot.Characters ADD COLUMN active_ability text;
--- ALTER TABLE necrobot.Characters ADD COLUMN passive_ability text;
+-- ALTER TABLE necrobot.Characters ADD COLUMN active_skill text;
+-- ALTER TABLE necrobot.Characters ADD COLUMN passive_skill text;
 
 CREATE TABLE necrobot.Banners(
     id SERIAL PRIMARY KEY,

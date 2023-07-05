@@ -1,5 +1,6 @@
 from collections import Counter
 import enum
+import logging
 import random
 from dataclasses import dataclass, field
 from typing import Dict, List, Union
@@ -8,7 +9,7 @@ from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 
-from .base import Coords, Size, get_symbol
+from .base import Coords, DamageInstance, Size, get_symbol
 from .entities import Character, Enemy
 
 
@@ -26,7 +27,7 @@ class ActionLog:
         raise NotImplementedError
 
     def __str__(self) -> str:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 @dataclass(eq=False)
@@ -49,7 +50,7 @@ class MoveAction(ActionLog):
 @dataclass(eq=False)
 class AttackAction(ActionLog):
     character: Character
-    damage: int
+    damage: DamageInstance
     attackee: Character
 
     def eq(self, other: "AttackAction") -> bool:
@@ -59,7 +60,7 @@ class AttackAction(ActionLog):
         return AttackAction(self.character, self.damage + other.damage, other.attackee)
 
     def __str__(self) -> str:
-        return f"{get_symbol(self.character.index)} - {self.character} {'attacked' if self.attackee.is_alive() else 'killed'} {self.attackee} ({get_symbol(self.attackee.index)}) for {self.damage} health"
+        return f"{get_symbol(self.character.index)} - {self.character} {'attacked' if self.attackee.is_alive() else 'killed'} {self.attackee} ({get_symbol(self.attackee.index)}) for {self.damage.amount} health"
 
 
 @dataclass(eq=False)
@@ -67,13 +68,13 @@ class SkillAction(ActionLog):
     character: Character
 
     def eq(self, other: "SkillAction") -> bool:
-        return self.character == other.character
+        return False
 
     def __add__(self, other: object) -> object:
         return SkillAction(self.character)
 
     def __str__(self):
-        return f"{get_symbol(self.character.index)} - {self.character} used action"
+        return f"{get_symbol(self.character.index)} - {self.character} used {self.character.active_skill.name}"
 
 
 class InvalidPosition(Exception):
@@ -246,20 +247,25 @@ class Battle:
         self.add_action_log(MoveAction(character, distance))
 
     def attack_character(self, attacker: Character, attackee: Character):
+        if attacker.skill_is_active():
+            attacker.active_skill.on_attack(self, attacker, attackee)
+
+        if attackee.skill_is_active():
+            attackee.active_skill.on_defend(self, attackee, attacker)
+
         damage = attacker.attack(attackee)
         attacker.has_attacked = True
 
         self.add_action_log(AttackAction(attacker, damage, attackee))
 
     def use_active_skill(self, character: Character):
-        self.add_action_log(SkillAction(character))
-        character.has_used_active_skill = True
+        character.active_skill.on_activation(self, character)
 
-    def do_ai_turn(self):
-        for enemy in self.enemies:
-            self.pick_ai_action(enemy)
+        self.add_action_log(SkillAction(character))
+        character.active_skill.was_activated = True
 
     def pick_ai_action(self, character: Character):
+        logging.info("Pathfinding %s at %s", character.name, character.position)
         adjacent = self.get_adjacent_positions(character.position)
         targets = [player for player in self.players if player.position in adjacent.values()]
 
@@ -274,21 +280,27 @@ class Battle:
         finder = AStarFinder(diagonal_movement=DiagonalMovement.never)
 
         current_path = []
-        for end in ends:
-            neighbors = grid.neighbors(end)
-            for neighbor in neighbors:
-                n = (neighbor.x, neighbor.y)
-                if n in adjacent:
-                    current_path = [n]
-                    break
+        neighbors = {neighbor for end in ends for neighbor in grid.neighbors(end)}
+        for neighbor in neighbors:
+            n = (neighbor.x, neighbor.y)
+            logging.info("Evaluating neighbor %s", n)
+            if n in adjacent:
+                logging.info("neighbor %s is adjacent %s", n, adjacent)
+                current_path = [n]
+                break
 
-                path, _ = finder.find_path(start, neighbor, grid)
-                if not path:
-                    continue
+            grid.cleanup()
+            path, _ = finder.find_path(start, neighbor, grid)
+            if not path:
+                logging.info("could not find path to %s", n)
+                continue
 
-                path.append(n)
-                if len(path) < len(current_path) or not current_path:
-                    current_path = path
+            path.append(n)
+            if len(path) < len(current_path) or not current_path:
+                logging.info("path %s is better than old path %s", path, current_path)
+                current_path = path
+            else:
+                logging.info("path %s is worse than old path %s", path, current_path)
 
         new_position = (
             current_path[character.movement_range]

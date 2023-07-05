@@ -11,9 +11,7 @@ import asyncpg
 import discord
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
-from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
-from pathfinding.finder.breadth_first import BreadthFirstFinder
 
 from rings.utils.checks import has_perms
 from rings.utils.converters import (
@@ -33,131 +31,16 @@ from rings.utils.ui import (
 )
 from rings.utils.utils import BotError, DatabaseError, check_channel
 
-from .base import POSITION_EMOJIS, Stat, StatBlock
-from .battle import Battle, Battlefield, Character, get_distance, is_wakable
+from .base import DUD_TEMPLATES, POSITION_EMOJIS, Stat, StatBlock
+from .battle import Battle, Battlefield, Character, is_wakable
 from .enemies import POTENTIAL_ENEMIES
 from .entities import StatedEntity
 from .fields import POTENTIAL_FIELDS
+from .skills import get_skill
 from .ui import CombatView, EmbedStatConverter
 
 LOG_SIZE = 7
-
-
-"""
-{
-        "name": "",
-        "image_url": "",
-        "description": "",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-"""
-
 EquipmentSet = namedtuple("EquipmentSet", "character weapon artefact")
-
-DUD_TEMPLATES = [
-    {
-        "name": "Bag of Goodies",
-        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116482199466819695/HReach-HealthPack.png",
-        "description": "A bag containing some goodies, good to eat but not for much else.",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-    {
-        "name": "Ancient Blade",
-        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116707849876275260/462px-Weapon_b_1020002200.png",
-        "description": "An old sword, very finely crafted but dulled by time.",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-    {
-        "name": "Broken Hourglass",
-        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116718269496299520/desktop-wallpaper-fantasy-artistic-video-game-sand-clock.png",
-        "description": "This hourglass used to be able to tell the time with no equal but ever since the glass was shattered it has been abandoned.",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-    {
-        "name": "Shattered Crown",
-        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116797755659128923/Broken_Crown_icon.png",
-        "description": "The crown of the empress of an long forgotten empire. It is said she wore it till she was betrayed by her own knights. The killing blow shattered the crown and doomed the kingdom.",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-    {
-        "name": "Rusty Goblet",
-        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116799230338662480/public.png",
-        "description": "This goblet sat on the table of the many kings of an ancient realm before it fell to the forces of evil.",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-    {
-        "name": "The Twin Dragons",
-        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116800827185696778/latest.png",
-        "description": "A dirty medallion, long ago it held power of life itself. Roughly welded together, the pieces were used in a dark ritual before being discarded.",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-    {
-        "name": "Tablets of the Arbiter",
-        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116814455829971148/latest.png",
-        "description": "An ancient tablet, a powerful tool used by the Arbiter to defeat his enemies. Now, long after his death, it is just a shattered pile of stone.",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-    {
-        "name": "Splintered Síoraíocht",
-        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1116816978523455498/636284768481526959.png",
-        "description": "The flame staff was once a symbol of power of an entire civilisation, it was taken away when that civilisation fell in a fool hope. Now its owner lays dead and the staff has been splintered.",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-    {
-        "name": "Extinguished Silverlight",
-        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1117099808822407268/glass_weapon_7_by_rittik_designs-d895tzq.png",
-        "description": "Once the blade of a powerful king, its light faded when the great darkness swept over the land, the likes of it never to be again.",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-    {
-        "name": "Thawed Frostpear",
-        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1117116745736523827/Select20a20file20name20for20output20files_004.png",
-        "description": "This wet spear was once a great frost spear, wielded by the mightiest of Dragon-knights. Bathed in demonic flames during the Cataclysm, its icy point thawed and its power was undone.",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-    {
-        "name": "Failnaught",
-        "image_url": "https://cdn.discordapp.com/attachments/318465643420712962/1117182929311899789/latest.png",
-        "description": "A dull, unstrung bow. Age has faded the ornate painting on the wood and rendered it brittle. ",
-        "tier": 0,
-        "universe": "Nexus",
-        "title": "*Poof*",
-        "modifier": 1,
-    },
-]
 
 
 class Flowers(commands.Cog):
@@ -334,7 +217,7 @@ class Flowers(commands.Cog):
 
         embed.add_field(
             name="Abilities",
-            value=f"- Active: {character['active_ability']}\n- Passive: {character['passive_ability']}",
+            value=f"- Active: {character['active_skill']}\n- Passive: {character['passive_skill']}",
         )
         return embed
 
@@ -612,8 +495,8 @@ class Flowers(commands.Cog):
                     "magical_attack": values["magical_attack"],
                     "physical_defense": values["physical_defense"],
                     "magical_defense": values["magical_defense"],
-                    "passive_ability": values["passive_ability"],
-                    "active_ability": values["active_ability"],
+                    "passive_skill": values["passive_skill"],
+                    "active_skill": values["active_skill"],
                 }
             )
 
@@ -650,8 +533,8 @@ class Flowers(commands.Cog):
             "magical_attack": EmbedStatConverter(),
             "physical_defense": EmbedStatConverter(),
             "magical_defense": EmbedStatConverter(),
-            "passive_ability": EmbedStringConverter(optional=True),
-            "active_ability": EmbedStringConverter(optional=True),
+            "passive_skill": EmbedStringConverter(optional=True),
+            "active_skill": EmbedStringConverter(optional=True),
         }
 
         view = await self.character_editor(ctx, name, None, defaults)
@@ -669,8 +552,8 @@ class Flowers(commands.Cog):
             False,
             final_values["universe"],
             final_values["type"],
-            final_values["active_ability"],
-            final_values["passive_ability"],
+            final_values["active_skill"],
+            final_values["passive_skill"],
             final_values["primary_health"].to_db(),
             final_values["secondary_health"].to_db(),
             final_values["physical_defense"].to_db(),
@@ -712,8 +595,8 @@ class Flowers(commands.Cog):
             "magical_attack": EmbedStatConverter(default=char["magical_attack"]),
             "physical_defense": EmbedStatConverter(default=char["physical_defense"]),
             "magical_defense": EmbedStatConverter(default=char["magical_defense"]),
-            "passive_ability": EmbedStringConverter(optional=True),
-            "active_ability": EmbedStringConverter(optional=True),
+            "passive_skill": EmbedStringConverter(optional=True),
+            "active_skill": EmbedStringConverter(optional=True),
         }
 
         view = await self.character_editor(ctx, char["name"], char["id"], defaults)
@@ -736,8 +619,8 @@ class Flowers(commands.Cog):
                     physical_attack = $9,
                     magical_defense = $10,
                     magical_attack = $11,
-                    active_ability = $12,
-                    passive_ability = $13, 
+                    active_skill = $12,
+                    passive_skill = $13, 
                 WHERE id = $14;""",
             final_values["title"],
             final_values["description"],
@@ -751,8 +634,8 @@ class Flowers(commands.Cog):
             final_values["physical_attack"].to_db(),
             final_values["magical_defense"].to_db(),
             final_values["magical_attack"].to_db(),
-            final_values["active_ability"],
-            final_values["passive_ability"],
+            final_values["active_skill"],
+            final_values["passive_skill"],
             char["id"],
         )
 
@@ -1480,6 +1363,17 @@ class Flowers(commands.Cog):
         stats = f"- Health: {self.c(character.calculate_stat('primary_health'))} ({self.c(character.calculate_stat('secondary_health'))})\n- PA: {self.c(character.calculate_stat('physical_attack'))}\n- MA: {self.c(character.calculate_stat('magical_attack'))}\n- PD: {self.c(character.calculate_stat('physical_defense'))}\n- MD: {self.c(character.calculate_stat('magical_defense'))}"
         embed.add_field(name="Stats", value=stats, inline=False)
 
+        active_skill = get_skill(entry.character["active_skill"])
+        if active_skill is not None:
+            embed.add_field(
+                name=f"Active: {active_skill.name}",
+                value=f"{active_skill.description}\n- Cooldown: {active_skill.cooldown} turns",
+            )
+
+        passive_skill = get_skill(entry.character["passive_skill"])
+        if passive_skill is not None:
+            embed.add_field(name=f"Passive: {passive_skill.name}", value=passive_skill.description)
+
         return embed
 
     @equipment.command(name="list")
@@ -1597,6 +1491,8 @@ class Flowers(commands.Cog):
                 artefact=StatedEntity(
                     name=es.artefact["name"], stats=StatBlock.from_dict(es.artefact)
                 ),
+                active_skill=get_skill(es.character["active_skill"]),
+                passive_skill=get_skill(es.character["passive_skill"]),
             )
             for es in equipment_sets
         ]
