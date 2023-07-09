@@ -1428,7 +1428,7 @@ class Flowers(commands.Cog):
 
         return "\n".join(["".join(row) for row in empty_board])
 
-    def embed_battle(self, battle: Battle, character_range: Character = None):
+    def embed_battle(self, battle: Battle, *, character_range: Character = None, page: int = 0):
         embed = discord.Embed(
             title="A Great Battle",
             colour=self.bot.bot_color,
@@ -1439,34 +1439,49 @@ class Flowers(commands.Cog):
 
         embed.set_footer(**self.bot.bot_footer)
 
-        for entity_name, entities in (("Players", battle.players), ("Enemies", battle.enemies)):
-            embed.add_field(
-                name=entity_name,
-                value="\n".join(
-                    f"{POSITION_EMOJIS[character.index]} - **{character.name}**: {character.stats.current_primary_health}/{character.stats.max_primary_health} ({character.stats.current_secondary_health}/{character.stats.max_secondary_health})"
-                    for character in entities
-                ),
-            )
-
-        embed.add_field(
-            name="Actions",
-            value="\n".join(
-                map(
-                    str,
-                    reversed(
-                        (
-                            (["\N{BLACK CIRCLE FOR RECORD}\N{VARIATION SELECTOR-16} -"] * LOG_SIZE)
-                            + battle.action_logs
-                        )[-LOG_SIZE:]
+        if page == 0:
+            for entity_name, entities in (("Players", battle.players), ("Enemies", battle.enemies)):
+                embed.add_field(
+                    name=entity_name,
+                    value="\n".join(
+                        f"{POSITION_EMOJIS[character.index]} - **{character.name}**: {character.stats.current_primary_health}/{character.stats.max_primary_health} ({character.stats.current_secondary_health}/{character.stats.max_secondary_health})"
+                        for character in entities
                     ),
                 )
-            ),
-            inline=False,
-        )
-        embed.add_field(
-            name="Key",
-            value=":blue_square: - possible movement\n:black_medium_square: - walkable terrain\n:red_square: - impassable terrain",
-        )
+
+            embed.add_field(
+                name="Actions",
+                value="\n".join(
+                    map(
+                        str,
+                        reversed(
+                            (
+                                (["\N{BLACK CIRCLE FOR RECORD}\N{VARIATION SELECTOR-16} -"] * LOG_SIZE)
+                                + battle.action_logs
+                            )[-LOG_SIZE:]
+                        ),
+                    )
+                ),
+                inline=False,
+            )
+            embed.add_field(
+                name="Key",
+                value=":blue_square: - possible movement\n:black_medium_square: - walkable terrain\n:red_square: - impassable terrain",
+            )
+        else:
+            character = battle.players[page-1]
+
+            modifiers = ', '.join((f"{modifier.name} ({modifier.duration})" for modifier in character.modifiers))
+            string = (
+                f"- Symbol: {POSITION_EMOJIS[character.index]} \n"
+                f"- Health: {character.stats.current_primary_health}/{character.stats.max_primary_health} ({character.stats.current_secondary_health}/{character.stats.max_secondary_health}) \n"
+                f"- Modifiers: {modifiers}\n"
+                f"- PA: {self.c(character.calculate_stat('physical_attack'))}\n"
+                f"- MA: {self.c(character.calculate_stat('magical_attack'))}\n"
+                f"- PD: {self.c(character.calculate_stat('physical_defense'))}\n"
+                f"- MD: {self.c(character.calculate_stat('magical_defense'))}"
+            )
+            embed.add_field(name=character.name, value=string)
 
         return embed
 

@@ -54,7 +54,7 @@ class AttackAction(ActionLog):
     attackee: StattedEntity
 
     def eq(self, other: "AttackAction") -> bool:
-        return self.other == other.attacker and self.attackee == other.attackee
+        return self.attacker == other.attacker and self.attackee == other.attackee
 
     def __add__(self, other: "AttackAction") -> "AttackAction":
         return AttackAction(self.attacker, self.damage + other.damage, other.attackee)
