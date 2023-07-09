@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import enum
 import time
@@ -9,7 +11,8 @@ from discord.interactions import Interaction
 from rings.utils.ui import EmbedBooleanConverter, EmbedDefaultConverter, EmbedIntegerConverter
 
 from .base import get_symbol, Stat
-from .battle import Battle, Character, MovementType
+from .battle import Battle, MovementType
+from .entities import Character, StattedEntity
 
 
 class BattleOverException(Exception):
@@ -33,6 +36,8 @@ class ActionType(enum.Enum):
 
 
 class AttackOrder(discord.ui.Select):
+    view: CombatView
+
     def __init__(self, battle: Battle, character: Character):
         self.character = character
         self.battle = battle
@@ -77,6 +82,8 @@ class AttackOrder(discord.ui.Select):
 
 
 class ActionButton(discord.ui.Button):
+    view: CombatView
+
     def __init__(self, *, character: Character, action: ActionType, arguments: dict, **kwargs):
         self.character = character
         self.action = action
@@ -91,6 +98,8 @@ class ActionButton(discord.ui.Button):
 
 
 class CharacterUI(discord.ui.Select):
+    view: CombatView
+
     def __init__(self, characters: List[Character], battle: Battle, embed_maker):
         self.characters = characters
         self.battle = battle
@@ -129,7 +138,7 @@ class CharacterUI(discord.ui.Select):
                 else discord.ButtonStyle.secondary,
                 label="Activate Skill"
                 if character.active_skill is None
-                else character.active_skill.name,
+                else character.active_skill.name + (f" (Ready in {character.active_skill.current_cooldown})" if character.active_skill.current_cooldown > 0 else ""),
                 row=2,
                 character=character,
                 action=ActionType.skill,
@@ -194,12 +203,13 @@ class CombatView(discord.ui.View):
         character: Character = kwargs.get("character")
 
         if action == ActionType.move:
-            self.battle.move_character(character, change=kwargs.get("direction").value)
+            self.battle.move_entity(character, change=kwargs.get("direction").value)
         elif action == ActionType.attack:
-            self.battle.attack_character(character, kwargs.get("target"))
+            self.battle.attack_entity(character, kwargs.get("target"))
             character.current_movement_range = 0
         elif action == ActionType.skill:
             self.battle.use_active_skill(character)
+            character.current_movement_range = 0
 
         self.update_view(character)
         await interaction.response.edit_message(
@@ -229,6 +239,7 @@ class CombatView(discord.ui.View):
         if not self.battle.players:
             raise BattleOverException(False)
 
+        self.battle.start_turn()
         self.reset_view()
         await interaction.followup.edit_message(
             self.message.id, embed=self.embed_maker(self.battle), view=self

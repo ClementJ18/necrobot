@@ -1,11 +1,12 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
 
 from .base import Coords, DataClass, StatBlock, DamageInstance
-from .skills import PassiveSkill, ActiveSkill
+from .skills import Modifier, PassiveSkill, ActiveSkill
 
 
 @dataclass(kw_only=True)
-class StatedEntity(DataClass):
+class StattedEntity(DataClass):
     name: str
     stats: StatBlock
     active_skill: ActiveSkill = None
@@ -17,6 +18,8 @@ class StatedEntity(DataClass):
 
     has_used_active_skill: bool = False
     has_attacked: bool = False
+    modifiers: List[Modifier] = field(default_factory=list)
+    position: Coords = None
 
     def __str__(self):
         return self.name
@@ -56,7 +59,7 @@ class StatedEntity(DataClass):
     def is_alive(self):
         return self.stats.is_alive()
 
-    def attack(self, attackee: "StatedEntity"):
+    def attack(self, attackee: "StattedEntity"):
         if self.is_physical:
             attack = self.calculate_physical_attack()
             defense = self.calculate_physical_defense()
@@ -64,26 +67,58 @@ class StatedEntity(DataClass):
             attack = self.calculate_magical_attack()
             defense = self.calculate_magical_defense()
 
+        attack_buff = 0
         if self.skill_is_active():
-            attack += self.active_skill.on_calculate_attack(
+            attack_buff += self.active_skill.on_calculate_attack(
                 self, attackee, attack, self.is_physical
             )
 
+        if self.has_passive():
+            attack_buff += self.passive_skill.on_calculate_attack(
+                self, attackee, attack, self.is_physical
+            )
+
+        for modifier in self.modifiers:
+            attack_buff += modifier.on_calculate_attack(self, attackee, attack, self.is_physical)
+
+        defense_buff = 0
         if attackee.skill_is_active():
-            defense += self.active_skill.on_calculate_defense(
+            defense_buff += attackee.active_skill.on_calculate_defense(
                 attackee, self, defense, self.is_physical
             )
 
+        if attackee.has_passive():
+            defense_buff += attackee.passive_skill.on_calculate_defense(
+                attackee, self, defense, self.is_physical
+            )
+
+        for modifier in attackee.modifiers:
+            defense_buff += modifier.on_calculate_defense(self, attackee, attack, self.is_physical)
+
         damage = DamageInstance(
-            self.calculate_damage(attack, defense),
-            False,
+            self.calculate_damage(attack + attack_buff, defense + defense_buff),
+            True,
         )
 
         if self.skill_is_active():
             damage = self.active_skill.on_deal_damage(self, attackee, damage)
 
+        if self.has_passive():
+            damage = self.passive_skill.on_deal_damage(self, attackee, damage)
+
+        for modifier in self.modifiers:
+            damage = modifier.on_deal_damage(self, attackee, damage)
+
         if attackee.skill_is_active():
             damage = attackee.active_skill.on_take_damage(attackee, self, damage)
+
+        if attackee.has_passive():
+            damage = attackee.passive_skill.on_take_damage(attackee, self, damage)
+
+        for modifier in attackee.modifiers:
+            damage = modifier.on_take_damage(attackee, self, damage)
+
+        damage.finalise()
 
         attackee.take_damage(damage.amount, damage.secondary)
         return damage
@@ -125,6 +160,8 @@ class StatedEntity(DataClass):
         if self.active_skill is not None:
             self.active_skill.end_turn()
 
+        self.modifiers = [modifier for modifier in self.modifiers if not modifier.end_turn()]
+
     def can_use_skill(self):
         if self.active_skill is None:
             return False
@@ -136,14 +173,23 @@ class StatedEntity(DataClass):
             return False
 
         return self.active_skill.is_active()
-
+    
+    def has_passive(self):
+        return self.passive_skill is not None
+    
+    def add_modifier(self, modifier: Modifier):
+        existing_modifier = next((mod for mod in self.modifiers if mod == modifier), None)
+        if existing_modifier is None or modifier.can_duplicate:
+            self.modifiers.append(modifier)
+        elif modifier.can_stack:
+            existing_modifier.duration += modifier.duration
+        else:
+            existing_modifier.duration = max(existing_modifier.duration, modifier.duration)
 
 @dataclass
-class Character(StatedEntity):
-    weapon: StatedEntity = None
-    artefact: StatedEntity = None
-
-    position: Coords = None
+class Character(StattedEntity):
+    weapon: StattedEntity = None
+    artefact: StattedEntity = None
 
     @property
     def is_physical(self):
@@ -164,6 +210,5 @@ class Character(StatedEntity):
 
 
 @dataclass
-class Enemy(StatedEntity):
+class Enemy(StattedEntity):
     description: str = None
-    position: Coords = None

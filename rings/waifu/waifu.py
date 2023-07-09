@@ -34,7 +34,7 @@ from rings.utils.utils import BotError, DatabaseError, check_channel
 from .base import DUD_TEMPLATES, POSITION_EMOJIS, Stat, StatBlock
 from .battle import Battle, Battlefield, Character, is_wakable
 from .enemies import POTENTIAL_ENEMIES
-from .entities import StatedEntity
+from .entities import StattedEntity
 from .fields import POTENTIAL_FIELDS
 from .skills import get_skill
 from .ui import CombatView, EmbedStatConverter
@@ -1345,10 +1345,10 @@ class Flowers(commands.Cog):
         character = Character(
             name=entry.character["name"],
             stats=StatBlock.from_dict(entry.character),
-            weapon=StatedEntity(
+            weapon=StattedEntity(
                 name=entry.weapon["name"], stats=StatBlock.from_dict(entry.weapon)
             ),
-            artefact=StatedEntity(
+            artefact=StattedEntity(
                 name=entry.artefact["name"], stats=StatBlock.from_dict(entry.artefact)
             ),
         )
@@ -1487,8 +1487,8 @@ class Flowers(commands.Cog):
             Character(
                 name=es.character["name"],
                 stats=StatBlock.from_dict(es.character),
-                weapon=StatedEntity(name=es.weapon["name"], stats=StatBlock.from_dict(es.weapon)),
-                artefact=StatedEntity(
+                weapon=StattedEntity(name=es.weapon["name"], stats=StatBlock.from_dict(es.weapon)),
+                artefact=StattedEntity(
                     name=es.artefact["name"], stats=StatBlock.from_dict(es.artefact)
                 ),
                 active_skill=get_skill(es.character["active_skill"]),

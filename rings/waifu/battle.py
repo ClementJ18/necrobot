@@ -9,8 +9,8 @@ from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 
-from .base import Coords, DamageInstance, Size, get_symbol
-from .entities import Character, Enemy
+from .base import Coords, DamageInstance, Size, get_distance, get_symbol
+from .entities import Character, Enemy, StattedEntity
 
 
 class ActionLog:
@@ -32,49 +32,49 @@ class ActionLog:
 
 @dataclass(eq=False)
 class MoveAction(ActionLog):
-    character: Character
+    entity: StattedEntity
     distance: int
 
     def eq(self, other: "MoveAction") -> bool:
-        return self.character == other.character
+        return self.entity == other.entity
 
     def __add__(self, other: "MoveAction") -> "MoveAction":
-        return MoveAction(self.character, self.distance + other.distance)
+        return MoveAction(self.entity, self.distance + other.distance)
 
     def __str__(self) -> str:
         return (
-            f"{get_symbol(self.character.index)} - {self.character} moved {self.distance} meters"
+            f"{get_symbol(self.entity.index)} - {self.entity} moved {self.distance} meters"
         )
 
 
 @dataclass(eq=False)
 class AttackAction(ActionLog):
-    character: Character
+    attacker: StattedEntity
     damage: DamageInstance
-    attackee: Character
+    attackee: StattedEntity
 
     def eq(self, other: "AttackAction") -> bool:
-        return self.character == other.character and self.attackee == other.attackee
+        return self.other == other.attacker and self.attackee == other.attackee
 
     def __add__(self, other: "AttackAction") -> "AttackAction":
-        return AttackAction(self.character, self.damage + other.damage, other.attackee)
+        return AttackAction(self.attacker, self.damage + other.damage, other.attackee)
 
     def __str__(self) -> str:
-        return f"{get_symbol(self.character.index)} - {self.character} {'attacked' if self.attackee.is_alive() else 'killed'} {self.attackee} ({get_symbol(self.attackee.index)}) for {self.damage.amount} health"
+        return f"{get_symbol(self.attacker.index)} - {self.attacker} {'attacked' if self.attackee.is_alive() else 'killed'} {self.attackee} ({get_symbol(self.attackee.index)}) for {self.damage.amount} health"
 
 
 @dataclass(eq=False)
 class SkillAction(ActionLog):
-    character: Character
+    entity: StattedEntity
 
     def eq(self, other: "SkillAction") -> bool:
         return False
 
     def __add__(self, other: object) -> object:
-        return SkillAction(self.character)
+        return SkillAction(self.entity)
 
     def __str__(self):
-        return f"{get_symbol(self.character.index)} - {self.character} used {self.character.active_skill.name}"
+        return f"{get_symbol(self.entity.index)} - {self.entity} used {self.entity.active_skill.name}"
 
 
 class InvalidPosition(Exception):
@@ -103,12 +103,6 @@ def is_wakable(tile_type: Union[TileType, int]):
         tile_type = tile_type.value
 
     return tile_type > 0
-
-
-def get_distance(origin: Coords, destination: Coords):
-    dx = destination[0] - origin[0]
-    dy = destination[1] - origin[1]
-    return abs(dx) + abs(dy)
 
 
 @dataclass
@@ -231,51 +225,69 @@ class Battle:
 
         self.battlefield.initialise()
 
-    def move_character(
-        self, character: Character, *, new_position: Coords = (), change: Coords = ()
+    def move_entity(
+        self, entity: StattedEntity, *, new_position: Coords = (), change: Coords = ()
     ):
         if not new_position and not change:
             raise ValueError("Specify either change or new_position")
 
         if change:
-            new_position = (character.position[0] + change[0], character.position[1] + change[1])
+            new_position = (entity.position[0] + change[0], entity.position[1] + change[1])
 
-        distance = get_distance(character.position, new_position)
-        character.position = new_position
-        character.current_movement_range -= distance
+        distance = get_distance(entity.position, new_position)
+        entity.position = new_position
+        entity.current_movement_range -= distance
 
-        self.add_action_log(MoveAction(character, distance))
+        self.add_action_log(MoveAction(entity, distance))
 
-    def attack_character(self, attacker: Character, attackee: Character):
+    def attack_entity(self, attacker: StattedEntity, attackee: StattedEntity):
         if attacker.skill_is_active():
             attacker.active_skill.on_attack(self, attacker, attackee)
 
+        if attacker.has_passive():
+            attacker.passive_skill.on_attack(self, attacker, attackee)
+
+        for modifier in attacker.modifiers:
+            modifier.on_attack(self, attacker, attackee)
+
         if attackee.skill_is_active():
             attackee.active_skill.on_defend(self, attackee, attacker)
+
+        if attackee.has_passive():
+            attackee.passive_skill.on_defend(self, attackee, attacker)
+
+        for modifier in attackee.modifiers:
+            modifier.on_defend(self, attackee, attacker)
 
         damage = attacker.attack(attackee)
         attacker.has_attacked = True
 
         self.add_action_log(AttackAction(attacker, damage, attackee))
 
-    def use_active_skill(self, character: Character):
-        character.active_skill.on_activation(self, character)
+    def use_active_skill(self, entity: StattedEntity):
+        entity.active_skill.on_activation(self, entity)
 
-        self.add_action_log(SkillAction(character))
-        character.active_skill.was_activated = True
+        if entity.has_passive():
+            entity.passive_skill.on_activation(self, entity)
 
-    def pick_ai_action(self, character: Character):
-        logging.info("Pathfinding %s at %s", character.name, character.position)
-        adjacent = self.get_adjacent_positions(character.position)
+        for modifier in entity.modifiers:
+            modifier.on_activation(self, entity)
+
+        self.add_action_log(SkillAction(entity))
+        entity.active_skill.was_activated = True
+
+    def pick_ai_action(self, entity: StattedEntity):
+        logging.info("Pathfinding %s at %s", entity.name, entity.position)
+        adjacent = self.get_adjacent_positions(entity.position)
         targets = [player for player in self.players if player.position in adjacent.values()]
 
         if targets:
-            return self.attack_character(character, random.choice(targets))
+            return self.attack_entity(entity, random.choice(targets))
 
         entities = self.players + self.enemies
         grid = Grid(matrix=self.battlefield.walkable_grid([x.position for x in entities]))
 
-        start = grid.node(*character.position)
+        start = grid.node(*entity.position)
         ends = [grid.node(*x.position) for x in self.players]
         finder = AStarFinder(diagonal_movement=DiagonalMovement.never)
 
@@ -303,18 +315,39 @@ class Battle:
                 logging.info("path %s is worse than old path %s", path, current_path)
 
         new_position = (
-            current_path[character.movement_range]
-            if character.movement_range <= len(current_path)
+            current_path[entity.movement_range] if len(current_path) > entity.movement_range else current_path[-1]
+            if entity.movement_range <= len(current_path)
             else current_path[-1]
         )
-        self.move_character(character, new_position=new_position)
+        self.move_entity(entity, new_position=new_position)
 
-        adjacent = self.get_adjacent_positions(character.position)
+        adjacent = self.get_adjacent_positions(entity.position)
         targets = [player for player in self.players if player.position in adjacent.values()]
 
         if targets:
-            return self.attack_character(character, random.choice(targets))
+            return self.attack_entity(entity, random.choice(targets))
 
     def end_turn(self):
         for e in self.players + self.enemies:
+            if e.skill_is_active():
+                e.active_skill.on_end_turn(self, e)
+
+            if e.has_passive():
+                e.passive_skill.on_end_turn(self, e)
+
+            for modifier in e.modifiers:
+                modifier.on_end_turn(self, e)
+
             e.end_turn()
+
+    def start_turn(self):
+        for e in self.players + self.enemies:
+            if e.skill_is_active():
+                e.active_skill.on_start_turn(self, e)
+
+            if e.has_passive():
+                e.passive_skill.on_start_turn(self, e)
+
+            for modifier in e.modifiers:
+                modifier.on_start_turn(self, e)
+

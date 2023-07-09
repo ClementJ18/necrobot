@@ -20,6 +20,12 @@ POSITION_EMOJIS = [
 ]
 
 
+def get_distance(origin: Coords, destination: Coords):
+    dx = destination[0] - origin[0]
+    dy = destination[1] - origin[1]
+    return abs(dx) + abs(dy)
+
+
 def get_symbol(index):
     return f"{index}\ufe0f\N{COMBINING ENCLOSING KEYCAP}"
 
@@ -31,7 +37,10 @@ class DamageInstance:
     the different methods and calls."""
 
     amount: int
-    secondary: bool = False
+    secondary: bool = True
+
+    def finalise(self):
+        self.amount = int(self.amount)
 
 
 class DataClass:
@@ -97,7 +106,7 @@ class StatBlock(DataClass):
         return 0.02 * self.tier
 
     def is_alive(self):
-        return self.current_primary_health > 0 or self.current_secondary_health > 0
+        return self.current_primary_health > 0
 
     def __post_init__(self):
         for f in fields(self):
