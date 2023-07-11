@@ -273,22 +273,6 @@ class Bridge(commands.Cog):
         )
         await self.bot.queued_posts.put(post)
 
-        # ids = mu_moderator(self.bot.get_guild(payload.guild_id))
-        # if str(payload.emoji) == "\N{WHITE HEAVY CHECK MARK}":
-        #     if payload.user_id in ids:
-        #         post = self.bot.pending_posts.pop(payload.message_id)
-        #         await post["message"].add_reaction("\N{GEAR}")
-        #         await post["message"].add_reaction("\N{SLEEPING SYMBOL}")
-        #         post["approver"] = payload.user_id
-        #         await self.bot.queued_posts.put(post)
-        # elif str(payload.emoji) == "\N{NEGATIVE SQUARED CROSS MARK}":
-        #     ids.append(self.bot.pending_posts[payload.message_id]["message"].author.id)
-        #     if payload.user_id in ids:
-        #         post = self.bot.pending_posts.pop(payload.message_id)
-        #         post["denier"] = payload.user_id
-        #         self.bot.denied_posts.append(post)
-        #         await post["message"].delete()
-
 
 async def setup(bot):
     await bot.add_cog(Bridge(bot))

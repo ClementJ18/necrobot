@@ -1,16 +1,21 @@
+from __future__ import annotations
 from collections import Counter
 import enum
 import logging
 import random
 from dataclasses import dataclass, field
-from typing import Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 
+from .objectives import Objective, StandardObjective
 from .base import Coords, DamageInstance, Size, get_distance, get_symbol
 from .entities import Character, Enemy, StattedEntity
+
+if TYPE_CHECKING:
+    from .battle import Battle
 
 
 class ActionLog:
@@ -104,6 +109,9 @@ def is_wakable(tile_type: Union[TileType, int]):
 
     return tile_type > 0
 
+class BattleOverException(Exception):
+    def __init__(self, victory: bool) -> None:
+        self.victory = victory
 
 @dataclass
 class Battlefield:
@@ -111,9 +119,12 @@ class Battlefield:
     name: str
     description: str
     grid: List[List[int]] = ()
+    objective: Objective = StandardObjective()
 
     size: Size = Size(0, 0)
     enemy_count: int = 0
+
+    enemies: List[StattedEntity] = ()
 
     def __post_init__(self):
         self.size = Size(len(self.tiles[0]), len(self.tiles))
@@ -128,6 +139,24 @@ class Battlefield:
             [0 if cell < 1 or (x, y) in non_walkable else 1 for x, cell in enumerate(row)]
             for y, row in enumerate(self.tiles)
         ]
+    
+    def check_victory(self, battle: Battle):
+        if self.objective.is_victory(battle):
+            raise BattleOverException(True)
+        
+        if self.objective.is_defeat(battle):
+            raise BattleOverException(False)
+        
+@dataclass
+class RandomBattlefield(Battlefield):
+    """The random in random battlefield is for the randomized enemies."""
+
+    weighted_choices: List[Tuple(int, StattedEntity)] = ()
+
+@dataclass
+class SetBattlefield(Battlefield):
+    ordered_enemies: List[StattedEntity]
+
 
 
 @dataclass

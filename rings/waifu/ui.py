@@ -11,13 +11,8 @@ from discord.interactions import Interaction
 from rings.utils.ui import EmbedBooleanConverter, EmbedDefaultConverter, EmbedIntegerConverter
 
 from .base import get_symbol, Stat
-from .battle import Battle, MovementType
+from .battle import Battle, BattleOverException, MovementType
 from .entities import Character
-
-
-class BattleOverException(Exception):
-    def __init__(self, victory: bool) -> None:
-        self.victory = victory
 
 
 class EmbedStatConverter(EmbedDefaultConverter):
@@ -221,8 +216,7 @@ class CombatView(discord.ui.View):
             embed=self.embed_maker(self.battle, character_range=character, page=self.index), view=self
         )
 
-        if not self.battle.enemies:
-            raise BattleOverException(True)
+        self.battle.battlefield.check_victory(self.battle)
 
     @discord.ui.button(label="End Turn", style=discord.ButtonStyle.red, row=0)
     async def end_turn(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -242,8 +236,7 @@ class CombatView(discord.ui.View):
 
         self.battle.end_turn()
 
-        if not self.battle.players:
-            raise BattleOverException(False)
+        self.battle.battlefield.check_victory(self.battle)
 
         self.battle.start_turn()
         self.reset_view()
