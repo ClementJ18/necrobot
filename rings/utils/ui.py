@@ -106,14 +106,22 @@ class PollEditorModal(discord.ui.Modal):
     view: PollEditorView
 
     def __init__(self, view):
-        super().__init__(title="Add option")
+        super().__init__(title="Add up to three options")
 
-        self.name = discord.ui.TextInput(label="Name of the option")
-        self.add_item(self.name)
+        self.option_1 = discord.ui.TextInput(label="Option 1", required=False)
+        self.option_2 = discord.ui.TextInput(label="Option 2", required=False)
+        self.option_3 = discord.ui.TextInput(label="Option 3", required=False)
+        self.add_item(self.option_1)
+        self.add_item(self.option_2)
+        self.add_item(self.option_3)
+
         self.view = view
 
     async def on_submit(self, interaction: Interaction):
-        self.view.options.append(self.name.value)
+        for option in [self.option_1, self.option_2, self.option_3]:
+            if option.value:
+                self.view.options.append(option.value)
+
         await interaction.response.edit_message(embed=await self.view.generate_embed())
 
 
@@ -146,7 +154,7 @@ class PollEditorView(discord.ui.View):
             [f"- {option}" for option in self.options],
         )
 
-    @discord.ui.button(label="Add an option", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Add options", style=discord.ButtonStyle.secondary)
     async def add_option(self, interaction: discord.Interaction, button: discord.ui.Button):
         if len(self.options) >= 25:
             return await interaction.response.send_message(

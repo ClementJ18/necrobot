@@ -66,30 +66,6 @@ class Server(commands.Cog):
 
         return l
 
-    async def add_reactions(self, message, content=None):
-        if content is None:
-            content = message.content
-
-        CUSTOM_EMOJI = r"<:[^\s]+:([0-9]*)>"
-        UNICODE_EMOJI = r":\w*:"
-        custom_emojis = [
-            self.bot.get_emoji(int(emoji)) for emoji in re.findall(CUSTOM_EMOJI, content)
-        ]
-        unicode_emojis = [
-            emoji.emojize(raw) for raw in re.findall(UNICODE_EMOJI, emoji.demojize(content))
-        ]
-
-        emojis = [*custom_emojis, *unicode_emojis]
-        final_list = []
-        for reaction in emojis:
-            try:
-                await message.add_reaction(reaction)
-                final_list.append(str(reaction))
-            except (discord.NotFound, TypeError, discord.HTTPException):
-                pass
-
-        return final_list
-
     async def update_binding(self, role):
         roles = await self.bot.db.query(
             "SELECT * FROM necrobot.PermissionRoles WHERE guild_id=$1", role.guild.id

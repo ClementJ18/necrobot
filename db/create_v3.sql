@@ -123,8 +123,6 @@ CREATE TABLE necrobot.Warnings(
     date_issued TIMESTAMPTZ DEFAULT NOW()
 );
 
--- SELECT setval(pg_get_serial_sequence('necrobot.Warnings', 'warn_id'), coalesce(max(warn_id)+1, 1), false) FROM necrobot.Warnings;
-
 CREATE TABLE necrobot.Starred(
     message_id bigint PRIMARY KEY,
     starred_id bigint,
@@ -133,9 +131,6 @@ CREATE TABLE necrobot.Starred(
     stars int DEFAULT 4,
     link varchar(200) DEFAULT 'None'
 );
-
--- ALTER TABLE necrobot.Starred ADD stars int DEFAULT 4;
--- ALTER TABLE necrobot.Starred ADD link varchar(200) DEFAULT 'None';
 
 CREATE TABLE necrobot.Reminders(
     id SERIAL PRIMARY KEY,
@@ -293,16 +288,6 @@ CREATE TABLE necrobot.Characters(
     active_skill text,
     passive_skill text
 );
-
--- ALTER TABLE necrobot.Characters ADD COLUMN type text NOT NULL DEFAULT 'character';
--- ALTER TABLE necrobot.Characters ADD COLUMN primary_health character_stat DEFAULT (false, 100);
--- ALTER TABLE necrobot.Characters ADD COLUMN secondary_health character_stat DEFAULT (false, 0);
--- ALTER TABLE necrobot.Characters ADD COLUMN physical_defense character_stat DEFAULT (false, 0);
--- ALTER TABLE necrobot.Characters ADD COLUMN physical_attack character_stat DEFAULT (false, 0);
--- ALTER TABLE necrobot.Characters ADD COLUMN magical_defense character_stat DEFAULT (false, 0);
--- ALTER TABLE necrobot.Characters ADD COLUMN magical_attack character_stat DEFAULT (false, 0);
--- ALTER TABLE necrobot.Characters ADD COLUMN active_skill text;
--- ALTER TABLE necrobot.Characters ADD COLUMN passive_skill text;
 
 CREATE TABLE necrobot.Banners(
     id SERIAL PRIMARY KEY,
