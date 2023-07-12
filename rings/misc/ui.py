@@ -29,7 +29,7 @@ class FightError(Exception):
 
 
 class HungerGames(discord.ui.View):
-    def __init__(self, bot, tributes, *, timeout=180):
+    def __init__(self, bot, tributes, author, *, timeout=180):
         super().__init__(timeout=timeout)
 
         self.tributes = tributes
@@ -40,6 +40,14 @@ class HungerGames(discord.ui.View):
         self.ongoing = True
         self.phase = None
         self.bot = bot
+        self.author = author
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if not interaction.user == self.ctx.author:
+            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            return False
+        
+        return True
 
     @property
     def max_index(self):

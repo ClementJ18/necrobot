@@ -173,6 +173,7 @@ class Profile(commands.Cog):
         `{pre}pay @NecroBot 200` - pays NecroBot 200 :euro:"""
         payer = ctx.author
         view = Confirm(
+            ctx.author,
             confirm_msg=f":white_check_mark: | **{payer.display_name}** approved the transaction.",
             cancel_msg=f":white_check_mark: | **{payer.display_name}** cancelled the transaction.",
         )

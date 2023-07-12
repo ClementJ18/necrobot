@@ -81,7 +81,7 @@ class PollView(discord.ui.View):
             self.poll_id,
         )
 
-    @discord.ui.button(label="Close poll", style=discord.ButtonStyle.red, row=1)
+    @discord.ui.button(label="Close poll", style=discord.ButtonStyle.red, row=1, custom_id="poll_end")
     async def close_poll(self, interaction: discord.Interaction, button: discord.ui.Button):
         perms = await interaction.client.db.get_permission(
             interaction.user.id, interaction.guild.id
@@ -96,6 +96,7 @@ class PollView(discord.ui.View):
         self.stop()
         self.clear_items()
         await interaction.response.edit_message(
+            content="Poll closed!",
             embed=self.generate_embed(await self.get_values(interaction.client)), view=self
         )
         await interaction.followup.send(":white_check_mark: | Poll closed", ephemeral=True)
@@ -117,7 +118,7 @@ class PollEditorModal(discord.ui.Modal):
 
 
 class PollEditorView(discord.ui.View):
-    def __init__(self, channel: discord.TextChannel, bot):
+    def __init__(self, channel: discord.TextChannel, bot, author):
         super().__init__()
         self.converters = {
             "title": EmbedStringConverter(),
@@ -128,6 +129,14 @@ class PollEditorView(discord.ui.View):
         self.options = []
         self.channel = channel
         self.bot = bot
+        self.author = author
+
+    async def interaction_check(self, interaction: Interaction):
+        if not interaction.user == self.author:
+            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            return False
+        
+        return True
 
     async def generate_embed(self):
         return self.bot.embed_poll(
@@ -183,7 +192,7 @@ class PollEditorView(discord.ui.View):
         ]
         if missing:
             return await interaction.response.send_message(
-                f"Missing required values: {', '.join(missing)}"
+                f"Missing required values: {', '.join(missing)}", ephemeral=True
             )
 
         self.stop()
@@ -239,6 +248,7 @@ class SelectView(discord.ui.View):
     def __init__(
         self,
         options,
+        author,
         *,
         min_values=1,
         max_values=1,
@@ -247,6 +257,7 @@ class SelectView(discord.ui.View):
     ):
         self.options = [discord.SelectOption(label=x) for x in options]
         self.value = False
+        self.author = author
         self.select = Select(
             min_values=min_values,
             max_values=max_values,
@@ -257,6 +268,13 @@ class SelectView(discord.ui.View):
         super().__init__(timeout=timeout)
 
         self.add_item(self.select)
+
+    async def interaction_check(self, interaction: Interaction):
+        if not interaction.user == self.author:
+            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            return False
+        
+        return True
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, row=1)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -276,6 +294,7 @@ class SelectView(discord.ui.View):
 class Confirm(discord.ui.View):
     def __init__(
         self,
+        author,
         confirm_msg=":white_check_mark: | Confirmed",
         cancel_msg=":negative_squared_cross_mark: | Cancelled",
         *,
@@ -286,6 +305,14 @@ class Confirm(discord.ui.View):
         self.confirm_msg = confirm_msg
         self.cancel_msg = cancel_msg
         self.message = None
+        self.author = author
+
+    async def interaction_check(self, interaction: Interaction):
+        if not interaction.user == self.author:
+            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            return False
+        
+        return True
 
     async def on_timeout(self):
         self.value = False
@@ -329,7 +356,7 @@ async def paginate(ctx, entries, page_size, embed_maker, *, timeout=300):
     if not entries:
         raise BotError("No entries in this list")
 
-    paginator = Paginator(embed_maker, page_size, entries, timeout=timeout)
+    paginator = Paginator(embed_maker, page_size, entries, ctx.author, timeout=timeout)
 
     if paginator.max_index == 0:
         return await ctx.send(embed=paginator.embed_maker(paginator, paginator.get_entry_subset()))
@@ -343,7 +370,7 @@ async def paginate(ctx, entries, page_size, embed_maker, *, timeout=300):
 
 
 class Paginator(discord.ui.View):
-    def __init__(self, embed_maker, page_size, entries, *, timeout=180):
+    def __init__(self, embed_maker, page_size, entries, author, *, timeout=180):
         super().__init__(timeout=timeout)
 
         self.embed_maker = embed_maker
@@ -352,6 +379,14 @@ class Paginator(discord.ui.View):
         self.max_index = max(0, ((len(entries) - 1) // page_size))
         self.page_size = page_size
         self.message = None
+        self.author = author
+
+    async def interaction_check(self, interaction: Interaction):
+        if not interaction.user == self.author:
+            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            return False
+        
+        return True
 
     @property
     def page_number(self):
@@ -589,6 +624,7 @@ class MultiInputEmbedView(discord.ui.View):
         embed_maker: Callable,
         defaults: Dict[str, EmbedDefaultConverter],
         modal_title: str,
+        author,
         *,
         extra_confirm_check: Callable = None,
     ):
@@ -601,7 +637,15 @@ class MultiInputEmbedView(discord.ui.View):
         self.message = None
         self.modal_title = modal_title
         self.value = False
+        self.author = author
         self.add_item(EditModalSelect(self.converters, self.values, modal_title))
+
+    async def interaction_check(self, interaction: Interaction):
+        if not interaction.user == self.author:
+            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            return False
+        
+        return True
 
     async def generate_embed(self):
         converted_values = self.convert_values()

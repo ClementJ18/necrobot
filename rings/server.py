@@ -19,7 +19,6 @@ from rings.utils.ui import (
     EmbedStringConverter,
     MultiInputEmbedView,
     PollEditorView,
-    SelectView,
     paginate,
 )
 from rings.utils.utils import BotError, DatabaseError, build_format_dict, check_channel
@@ -286,7 +285,7 @@ class Server(commands.Cog):
                 if not role.members:
                     return await ctx.send(":white_check_mark: | Removed permission link!")
 
-                view = Confirm()
+                view = Confirm(ctx.author)
                 view.message = await ctx.send(
                     ":white_check_mark: | Removed permission link! Re-calculate permissions of members with the role? (This can take a while based on the number of members with the role)",
                     view=view,
@@ -319,7 +318,7 @@ class Server(commands.Cog):
         if not role.members:
             return await ctx.send(":white_check_mark: | Permission binding created!")
 
-        view = Confirm()
+        view = Confirm(ctx.author)
         view.message = await ctx.send(
             ":white_check_mark: | Permission binding created! Re-calculate permissions of members with the role?",
             view=view,
@@ -820,7 +819,7 @@ class Server(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        view = MultiInputEmbedView(embed_maker, defaults, "Broadcast Edit")
+        view = MultiInputEmbedView(embed_maker, defaults, "Broadcast Edit", ctx.author)
         await ctx.send(
             f"You can submit the edit form anytime. Missing field will only be checked on confirmation. Current bot hour is {self.bot.counter}\n- interval should be between 1 and 24\n- start should be between 0 and 23",
             embed=await view.generate_embed(),
@@ -1126,7 +1125,7 @@ class Server(commands.Cog):
         `{pre}poll #general Which character do you prefer: **Aragorn** :crossed_swords: or **Gimli** :axe:` - post a reaction poll
         two possible answers: :axe: and :crossed_swords:
         """
-        view = PollEditorView(channel, self.bot)
+        view = PollEditorView(channel, self.bot, ctx.author)
         await ctx.send("Let's start making your poll", view=view)
 
 

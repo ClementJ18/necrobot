@@ -380,8 +380,8 @@ class Meta(commands.Cog):
                     poll["max_votes"],
                     poll["options"],
                     poll["message_id"],
+                    self.bot,
                 ),
-                self.bot,
                 message_id=poll["message_id"],
             )
 

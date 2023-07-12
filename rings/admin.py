@@ -182,6 +182,7 @@ class Admin(commands.Cog):
             raise BotError("Operation not recognized.") from e
 
         view = Confirm(
+            ctx.author,
             confirm_msg=":atm: | **{}'s** balance is now **{:,}** :euro:".format(
                 user.display_name, operation
             ),

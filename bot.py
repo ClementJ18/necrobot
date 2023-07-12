@@ -49,7 +49,7 @@ class NecroBot(commands.Bot):
 
         self.version = 3.10
         self.prefixes = ["n!", "N!"]
-        self.new_commands = ["gacha", "banners", "characters"]
+        self.new_commands = ["gacha", "banners", "characters", "poll"]
         self.statuses = [
             "n!help for help",
             "currently in {guild} guilds",
@@ -403,7 +403,7 @@ async def off(ctx):
 
     {usage}"""
     if not bot.maintenance:
-        view = Confirm()
+        view = Confirm(ctx.author)
         view.message = await ctx.send("Shut down in 5 minutes?", view=view)
         await view.wait()
         if not view.value:

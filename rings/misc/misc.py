@@ -99,7 +99,7 @@ class Misc(commands.Cog):
         if len(tributes_list) > 32:
             raise BotError("Please provide no more than 32 names separated by `,`.")
 
-        hg = HungerGames(self.bot, tributes_list)
+        hg = HungerGames(self.bot, tributes_list, ctx.author)
         embed = hg.prepare_next_phase(hg.get_next_phase())
         hg.message = await ctx.send(embed=embed, view=hg)
         await hg.wait()
@@ -229,6 +229,7 @@ class Misc(commands.Cog):
         {usage}
         """
         view = Confirm(
+            ctx.author,
             confirm_msg=":white_check_mark: | All counters reset",
         )
 

@@ -500,7 +500,7 @@ class Flowers(commands.Cog):
                 }
             )
 
-        view = MultiInputEmbedView(embed_maker, defaults, "Character Edit")
+        view = MultiInputEmbedView(embed_maker, defaults, "Character Edit", ctx.author)
         view.message = await ctx.send(
             "You can submit the edit form anytime. Missing field will only be checked on confirmation.",
             embed=await view.generate_embed(),
@@ -651,7 +651,7 @@ class Flowers(commands.Cog):
         __Examples__
         `{pre}characters delete 12141` - Delete the character
         """
-        view = Confirm()
+        view = Confirm(ctx.author)
         view.message = await ctx.send(
             "Are you sure you want to delete this character?",
             view=view,
@@ -706,7 +706,7 @@ class Flowers(commands.Cog):
         __Examples__
         `{pre}characters give @Necro 12141` - Give one level of character 12141 to Necro
         """
-        view = Confirm()
+        view = Confirm(ctx.author)
         view.message = await ctx.send(
             f"Are you sure you want to give this character to {user.display_name}?",
             view=view,
@@ -739,7 +739,7 @@ class Flowers(commands.Cog):
         __Examples__
         `{pre}characters take @Necro 12141` - Remove one level of character 12141 from Necro
         """
-        view = Confirm()
+        view = Confirm(ctx.author)
         view.message = await ctx.send(
             f"Are you sure you want to remove this character from {user.display_name}?",
             view=view,
@@ -847,7 +847,7 @@ class Flowers(commands.Cog):
             "max_rolls": EmbedRangeConverter(min=0, default="0"),
         }
 
-        view = MultiInputEmbedView(embed_maker, defaults, "Banner Edit")
+        view = MultiInputEmbedView(embed_maker, defaults, "Banner Edit", ctx.author)
         msg = await ctx.send(
             "You can submit the edit form anytime. Missing field will only be checked on confirmation. \n Characters is a comma separate list of characters (name or ID)",
             embed=await view.generate_embed(),
@@ -1078,7 +1078,7 @@ class Flowers(commands.Cog):
             f"{char['name']} ({char['tier']} :star:)" for char in characters
         ]
 
-        view = Confirm(confirm_msg=None)
+        view = Confirm(ctx.author, confirm_msg=None)
         view.message = await ctx.send(
             f"Roll on this banner for **{data[0]['roll_cost']}** {data[0]['symbol']}?",
             embed=self.embed_banner(mutable_banner),
@@ -1221,7 +1221,7 @@ class Flowers(commands.Cog):
 
         try:
             if len(equipments) == 2:
-                view = Confirm(confirm_msg=None)
+                view = Confirm(ctx.author, confirm_msg=None)
                 view.message = await ctx.send(
                     "With the new equipment the character will have the following stats:",
                     embed=self.embed_equipment_set(
@@ -1261,7 +1261,7 @@ class Flowers(commands.Cog):
 
                 current_equipment = current_equipment._replace(**{key: mapped[key]})
 
-                view = Confirm(confirm_msg=None)
+                view = Confirm(ctx.author, confirm_msg=None)
                 view.message = await ctx.send(
                     "With the new equipment the character will have the following stats:",
                     embed=self.embed_equipment_set(

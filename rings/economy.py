@@ -1,6 +1,7 @@
 #!/usr/bin/python3.6
 import discord
 from discord.ext import commands
+from discord.interactions import Interaction
 
 from cards import common
 from cards.decks import standard52
@@ -105,6 +106,13 @@ class BlackJack(discord.ui.View):
         self.status = "Ongoing"
         self.actions = ["Game started"]
         self.index = 0
+
+    async def interaction_check(self, interaction: Interaction):
+        if not interaction.user == self.ctx.author:
+            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            return False
+        
+        return True
 
     @property
     def max_index(self):

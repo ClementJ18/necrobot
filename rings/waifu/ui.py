@@ -188,8 +188,12 @@ class CombatView(discord.ui.View):
         self.victory = False
         self.index = 0
 
-    async def interaction_check(self, interaction: discord.Interaction):
-        return interaction.user.id == self.author.id
+    async def interaction_check(self, interaction: Interaction):
+        if not interaction.user == self.author:
+            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            return False
+        
+        return True
 
     def set_ui(self, ui: CharacterUI):
         self.ui = ui

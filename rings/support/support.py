@@ -82,6 +82,7 @@ class Support(commands.Cog):
         )
 
         view = Confirm(
+            ctx.author,
             confirm_msg=":white_check_mark: | Report sent!",
         )
 
@@ -137,7 +138,7 @@ class Support(commands.Cog):
         }
         news_e = {**news, **base_d}
         embed = discord.Embed.from_data(news_e)
-        view = Confirm()
+        view = Confirm(ctx.author)
         view.message = await ctx.send(embed=embed, view=view)
         await view.wait()
 
