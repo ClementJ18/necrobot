@@ -133,7 +133,12 @@ class CharacterUI(discord.ui.Select):
                 else discord.ButtonStyle.secondary,
                 label="Activate Skill"
                 if character.active_skill is None
-                else character.active_skill.name + (f" ({character.active_skill.current_cooldown})" if character.active_skill.current_cooldown > 0 else ""),
+                else character.active_skill.name
+                + (
+                    f" ({character.active_skill.current_cooldown})"
+                    if character.active_skill.current_cooldown > 0
+                    else ""
+                ),
                 row=2,
                 character=character,
                 action=ActionType.skill,
@@ -158,7 +163,8 @@ class CharacterUI(discord.ui.Select):
         self.view.add_item(self.view.previous_page)
         self.view.add_item(self.view.next_page)
         await interaction.response.edit_message(
-            view=self.view, embed=self.embed_maker(self.battle, character_range=character, page=self.view.index)
+            view=self.view,
+            embed=self.embed_maker(self.battle, character_range=character, page=self.view.index),
         )
 
     def update_buttons(self, character: Character):
@@ -213,7 +219,8 @@ class CombatView(discord.ui.View):
 
         self.update_view(character)
         await interaction.response.edit_message(
-            embed=self.embed_maker(self.battle, character_range=character, page=self.index), view=self
+            embed=self.embed_maker(self.battle, character_range=character, page=self.index),
+            view=self,
         )
 
         self.battle.battlefield.check_victory(self.battle)
@@ -254,7 +261,9 @@ class CombatView(discord.ui.View):
         if self.ui.values:
             character = self.battle.players[int(self.ui.values[0])]
 
-        await interaction.response.edit_message(embed=self.embed_maker(self.battle, page=self.index, character_range=character))
+        await interaction.response.edit_message(
+            embed=self.embed_maker(self.battle, page=self.index, character_range=character)
+        )
 
     @discord.ui.button(label=">")
     async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -266,7 +275,9 @@ class CombatView(discord.ui.View):
         if self.ui.values:
             character = self.battle.players[int(self.ui.values[0])]
 
-        await interaction.response.edit_message(embed=self.embed_maker(self.battle, page=self.index, character_range=character))
+        await interaction.response.edit_message(
+            embed=self.embed_maker(self.battle, page=self.index, character_range=character)
+        )
 
     async def on_error(self, interaction: discord.Interaction, error, item):
         if isinstance(error, BattleOverException):

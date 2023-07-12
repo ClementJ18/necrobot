@@ -770,24 +770,6 @@ class SyncDatabase:
 
         return guilds
 
-    def load_polls(self):
-        polls = {}
-        self.cur.execute("SELECT message_id, votes, emoji_list FROM necrobot.Polls")
-        for u in self.cur.fetchall():
-            polls[u["message_id"]] = {
-                "votes": u["votes"],
-                "voters": [],
-                "list": u["emoji_list"] if u["emoji_list"] else [],
-            }
-
-        self.cur.execute(
-            "SELECT message_id, array_agg(user_id) as user_ids FROM necrobot.Votes GROUP BY message_id;"
-        )
-        for u in self.cur.fetchall():
-            polls[u["message_id"]]["voters"] = u["user_ids"]
-
-        return polls
-
 
 async def setup(bot):
     await bot.add_cog(Database(bot))

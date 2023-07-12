@@ -173,10 +173,10 @@ class StattedEntity(DataClass):
             return False
 
         return self.active_skill.is_active()
-    
+
     def has_passive(self):
         return self.passive_skill is not None
-    
+
     def add_modifier(self, modifier: Modifier):
         existing_modifier = next((mod for mod in self.modifiers if mod == modifier), None)
         if existing_modifier is None or modifier.can_duplicate:
@@ -185,6 +185,7 @@ class StattedEntity(DataClass):
             existing_modifier.duration += modifier.duration
         else:
             existing_modifier.duration = max(existing_modifier.duration, modifier.duration)
+
 
 @dataclass
 class Character(StattedEntity):

@@ -18,6 +18,7 @@ from rings.utils.ui import (
     EmbedRangeConverter,
     EmbedStringConverter,
     MultiInputEmbedView,
+    PollEditorView,
     SelectView,
     paginate,
 )
@@ -1115,7 +1116,7 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(3)
-    async def poll(self, ctx: commands.Context, channel: WritableChannelConverter, *, message):
+    async def poll(self, ctx: commands.Context, channel: WritableChannelConverter):
         """Create a reaction poll for your server in the specified channel. This will also ask you to specify a
         maximum number of reactions. This number will limit how many options users can vote for.
 
@@ -1125,77 +1126,8 @@ class Server(commands.Cog):
         `{pre}poll #general Which character do you prefer: **Aragorn** :crossed_swords: or **Gimli** :axe:` - post a reaction poll
         two possible answers: :axe: and :crossed_swords:
         """
-        await self.add_reactions(ctx.message, content=message)
-
-        view = SelectView(options=list(range(1, 21)))
-        view.message = await ctx.send("How many options can the users react with?", view=view)
-        await view.wait()
-
-        if not view.value:
-            return
-
-        votes = int(view.select.values[0])
-        poll = await channel.send(f"{message}\n\n**Maximum votes: {votes}**")
-        emoji_list = await self.add_reactions(poll, content=message)
-
-        self.bot.polls[poll.id] = {"votes": votes, "voters": [], "list": emoji_list}
-        await self.bot.db.query(
-            "INSERT INTO necrobot.Polls VALUES($1, $2, $3, $4, $5)",
-            poll.id,
-            poll.guild.id,
-            poll.jump_url,
-            votes,
-            emoji_list,
-        )
-
-    @commands.command()
-    async def results(self, ctx: commands.Context):
-        """Get the results of a poll
-
-        {usage}
-
-        __Examples__
-        `{pre}results` - get the results of the polls from this server starting at the first one
-        `{pre}results 3` - get the results of the polls from this server stating at the 3rd one.
-        """
-
-        results = await self.bot.db.query(
-            """
-            SELECT p.link, p.emoji_list, ARRAY_AGG(v.votes)
-            FROM necrobot.Polls p, (
-                    SELECT message_id, (reaction, COUNT(reaction))::emote_count_hybrid AS votes
-                    FROM necrobot.Votes
-                    GROUP BY message_id, reaction
-                    ORDER BY COUNT(reaction) DESC
-                ) v
-            WHERE p.guild_id = $1 AND p.message_id = v.message_id
-            GROUP BY p.link, p.emoji_list, p.message_id
-            ORDER BY p.message_id DESC""",
-            ctx.guild.id,
-        )
-
-        def embed_maker(view, entry):
-            string = ""
-            for reaction in entry[1]:
-                count = discord.utils.find(lambda x: x[0] == reaction, entry[2])
-                if count is not None:
-                    count = count[1]
-                else:
-                    count = 0
-
-                string += (
-                    f"{discord.utils.get(ctx.guild.emojis, name=reaction) or reaction} - {count}\n"
-                )
-
-            embed = discord.Embed(
-                title=f"Results ({view.page_number}/{view.page_count})",
-                description=f"[**Link**]({entry[0]})\n\n{string}",
-            )
-            embed.set_footer(**self.bot.bot_footer)
-
-            return embed
-
-        await paginate(ctx, results, 1, embed_maker)
+        view = PollEditorView(channel, self.bot)
+        await ctx.send("Let's start making your poll", view=view)
 
 
 async def setup(bot):

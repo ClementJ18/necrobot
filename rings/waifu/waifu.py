@@ -1440,7 +1440,10 @@ class Flowers(commands.Cog):
         embed.set_footer(**self.bot.bot_footer)
 
         if page == 0:
-            for entity_name, entities in (("Players", battle.players), ("Enemies", battle.enemies)):
+            for entity_name, entities in (
+                ("Players", battle.players),
+                ("Enemies", battle.enemies),
+            ):
                 embed.add_field(
                     name=entity_name,
                     value="\n".join(
@@ -1456,7 +1459,10 @@ class Flowers(commands.Cog):
                         str,
                         reversed(
                             (
-                                (["\N{BLACK CIRCLE FOR RECORD}\N{VARIATION SELECTOR-16} -"] * LOG_SIZE)
+                                (
+                                    ["\N{BLACK CIRCLE FOR RECORD}\N{VARIATION SELECTOR-16} -"]
+                                    * LOG_SIZE
+                                )
                                 + battle.action_logs
                             )[-LOG_SIZE:]
                         ),
@@ -1469,9 +1475,11 @@ class Flowers(commands.Cog):
                 value=":blue_square: - possible movement\n:black_medium_square: - walkable terrain\n:red_square: - impassable terrain",
             )
         else:
-            character = battle.players[page-1]
+            character = battle.players[page - 1]
 
-            modifiers = ', '.join((f"{modifier.name} ({modifier.duration})" for modifier in character.modifiers))
+            modifiers = ", ".join(
+                (f"{modifier.name} ({modifier.duration})" for modifier in character.modifiers)
+            )
             string = (
                 f"- Symbol: {POSITION_EMOJIS[character.index]} \n"
                 f"- Health: {character.stats.current_primary_health}/{character.stats.max_primary_health} ({character.stats.current_secondary_health}/{character.stats.max_secondary_health}) \n"

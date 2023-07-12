@@ -47,9 +47,7 @@ class MoveAction(ActionLog):
         return MoveAction(self.entity, self.distance + other.distance)
 
     def __str__(self) -> str:
-        return (
-            f"{get_symbol(self.entity.index)} - {self.entity} moved {self.distance} meters"
-        )
+        return f"{get_symbol(self.entity.index)} - {self.entity} moved {self.distance} meters"
 
 
 @dataclass(eq=False)
@@ -79,7 +77,9 @@ class SkillAction(ActionLog):
         return SkillAction(self.entity)
 
     def __str__(self):
-        return f"{get_symbol(self.entity.index)} - {self.entity} used {self.entity.active_skill.name}"
+        return (
+            f"{get_symbol(self.entity.index)} - {self.entity} used {self.entity.active_skill.name}"
+        )
 
 
 class InvalidPosition(Exception):
@@ -109,9 +109,11 @@ def is_wakable(tile_type: Union[TileType, int]):
 
     return tile_type > 0
 
+
 class BattleOverException(Exception):
     def __init__(self, victory: bool) -> None:
         self.victory = victory
+
 
 @dataclass
 class Battlefield:
@@ -139,24 +141,25 @@ class Battlefield:
             [0 if cell < 1 or (x, y) in non_walkable else 1 for x, cell in enumerate(row)]
             for y, row in enumerate(self.tiles)
         ]
-    
+
     def check_victory(self, battle: Battle):
         if self.objective.is_victory(battle):
             raise BattleOverException(True)
-        
+
         if self.objective.is_defeat(battle):
             raise BattleOverException(False)
-        
+
+
 @dataclass
 class RandomBattlefield(Battlefield):
     """The random in random battlefield is for the randomized enemies."""
 
     weighted_choices: List[Tuple(int, StattedEntity)] = ()
 
+
 @dataclass
 class SetBattlefield(Battlefield):
-    ordered_enemies: List[StattedEntity]
-
+    ordered_enemies: List[StattedEntity] = ()
 
 
 @dataclass
@@ -344,7 +347,9 @@ class Battle:
                 logging.info("path %s is worse than old path %s", path, current_path)
 
         new_position = (
-            current_path[entity.movement_range] if len(current_path) > entity.movement_range else current_path[-1]
+            current_path[entity.movement_range]
+            if len(current_path) > entity.movement_range
+            else current_path[-1]
             if entity.movement_range <= len(current_path)
             else current_path[-1]
         )
@@ -379,4 +384,3 @@ class Battle:
 
             for modifier in e.modifiers:
                 modifier.on_start_turn(self, e)
-

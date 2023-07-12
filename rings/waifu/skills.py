@@ -19,6 +19,7 @@ class PassiveSkillType(enum.Enum):
 class ActiveSkillType(enum.Enum):
     pass
 
+
 @dataclass
 class Skill:
     name: str = None
@@ -32,24 +33,32 @@ class Skill:
         """This is triggered when an entity is declared an attack on."""
         pass
 
-    def on_calculate_attack(self, entity: StattedEntity, attackee: StattedEntity, current_attack: int, physical: bool):
+    def on_calculate_attack(
+        self, entity: StattedEntity, attackee: StattedEntity, current_attack: int, physical: bool
+    ):
         """This is triggered when calculating stats to determine the final
         attack stat. The returned value is added to the rest."""
         return 0
 
-    def on_calculate_defense(self, entity: StattedEntity, attacker: StattedEntity, current_defense: int, physical: bool):
+    def on_calculate_defense(
+        self, entity: StattedEntity, attacker: StattedEntity, current_defense: int, physical: bool
+    ):
         """This is triggered when calculating stats to determine the final
         defense stat. The returned value is added to the rest."""
         return 0
 
-    def on_take_damage(self, entity: StattedEntity, attacker: StattedEntity, damage: DamageInstance):
+    def on_take_damage(
+        self, entity: StattedEntity, attacker: StattedEntity, damage: DamageInstance
+    ):
         """This is triggered when damage is taken. The return of this is the final damage.
 
         This value is not affected by modifier, often called "true" damage.
         """
         return damage
 
-    def on_deal_damage(self, entity: StattedEntity, attackee: StattedEntity, damage: DamageInstance):
+    def on_deal_damage(
+        self, entity: StattedEntity, attackee: StattedEntity, damage: DamageInstance
+    ):
         """This is triggered when damage is dealt. The return of this is the final damage.
 
         This value is not affected by modifier, often called "true" damage."""
@@ -75,6 +84,7 @@ class Skill:
 - Active skill only trigger when activated and enter a cooldown after
 """
 
+
 @dataclass(eq=False)
 class Modifier(Skill):
     duration: int = 0
@@ -88,7 +98,7 @@ class Modifier(Skill):
 
     def is_expired(self):
         return self.duration < 1
-    
+
     def __eq__(self, other: Modifier) -> bool:
         return self.name == other.name
 
@@ -123,10 +133,12 @@ class ActiveSkill(Skill):
 
 @dataclass
 class ShieldPiercing(PassiveSkill):
-    def on_deal_damage(self, entity: StattedEntity, attackee: StattedEntity, damage: DamageInstance):
+    def on_deal_damage(
+        self, entity: StattedEntity, attackee: StattedEntity, damage: DamageInstance
+    ):
         damage.secondary = False
         return damage
-    
+
 
 @dataclass
 class ConsecutiveAttacks(PassiveSkill):
@@ -141,20 +153,27 @@ class ConsecutiveAttacks(PassiveSkill):
         else:
             self.times_attacked += 1
 
-    def on_calculate_attack(self, entity: StattedEntity, attackee: StattedEntity, current_attack: int, physical: bool):
+    def on_calculate_attack(
+        self, entity: StattedEntity, attackee: StattedEntity, current_attack: int, physical: bool
+    ):
         stat = "physical_attack" if physical else "magical_attack"
 
         if self.stats.stat_is_raw(stat):
             return min(self.times_attacked, self.stats.calculate_raw(stat) * self.times_attacked)
 
-        return  min(self.times_attacked, self.stats.calculate_modifier(stat) * current_attack * self.times_attacked)
+        return min(
+            self.times_attacked,
+            self.stats.calculate_modifier(stat) * current_attack * self.times_attacked,
+        )
 
 
 @dataclass
 class EmpoweredAttack(ActiveSkill):
     stats: StatBlock = None
 
-    def on_calculate_attack(self, entity: StattedEntity, attackee: StattedEntity, current_attack: int, physical: bool):
+    def on_calculate_attack(
+        self, entity: StattedEntity, attackee: StattedEntity, current_attack: int, physical: bool
+    ):
         self.put_on_cooldown()
         stat = "physical_attack" if physical else "magical_attack"
 
@@ -174,6 +193,7 @@ class GrantShield(ActiveSkill):
 
         self.put_on_cooldown()
 
+
 @dataclass
 class ChangeDamageType(ActiveSkill):
     currently_physical: bool = True
@@ -186,13 +206,16 @@ class ChangeDamageType(ActiveSkill):
 class DefensiveBuff(Modifier):
     stats: StatBlock = None
 
-    def on_calculate_defense(self, entity: StattedEntity, attacker: StattedEntity, current_defense: int, physical: bool):
+    def on_calculate_defense(
+        self, entity: StattedEntity, attacker: StattedEntity, current_defense: int, physical: bool
+    ):
         stat = "physical_defense" if physical else "magical_defense"
 
         if self.stats.stat_is_raw(stat):
             return self.stats.calculate_raw(stat)
 
         return self.stats.calculate_modifier(stat) * current_defense
+
 
 @dataclass
 class MapWideAura(PassiveSkill):
@@ -211,13 +234,16 @@ class MapWideAura(PassiveSkill):
 class OffensiveBuff(Modifier):
     stats: StatBlock = None
 
-    def on_calculate_attack(self, entity: StattedEntity, attacker: StattedEntity, current_attack: int, physical: bool):
+    def on_calculate_attack(
+        self, entity: StattedEntity, attacker: StattedEntity, current_attack: int, physical: bool
+    ):
         stat = "physical_attack" if physical else "magical_attack"
 
         if self.stats.stat_is_raw(stat):
             return self.stats.calculate_raw(stat)
 
         return self.stats.calculate_modifier(stat) * current_attack
+
 
 @dataclass
 class GrantStatBoost(ActiveSkill):
@@ -231,8 +257,9 @@ class GrantStatBoost(ActiveSkill):
                 continue
 
             if get_distance(e.position, entity.position) <= self.distance:
-                e.add_modifier(OffensiveBuff(duration=self.turns, stats=self.stats, name=self.name))
-
+                e.add_modifier(
+                    OffensiveBuff(duration=self.turns, stats=self.stats, name=self.name)
+                )
 
 
 def get_skill(name) -> Union[ActiveSkill, PassiveSkill]:
@@ -257,21 +284,21 @@ SKILLS = {
     "Ghostly Reach": {
         "values": {},
         "class": ShieldPiercing,
-        "description": "The character's attacks pierce through armor and magical shields, reaching out directly to the vitality of its target."
+        "description": "The character's attacks pierce through armor and magical shields, reaching out directly to the vitality of its target.",
     },
     "Scholar": {
         "values": {"stats": StatBlock(physical_attack=(True, 5), magical_attack=(True, 5))},
         "class": ConsecutiveAttacks,
-        "description": "Every time this character attack the same enemy as last turn they gain a small stacking boost in damage."
+        "description": "Every time this character attack the same enemy as last turn they gain a small stacking boost in damage.",
     },
     "Aura of the Smith": {
         "values": {"turns": 1, "stats": StatBlock(physical_defense=(True, 10))},
         "class": MapWideAura,
-        "description": "The knowledge of the smith boosts the physical defense of all allies on the map"
+        "description": "The knowledge of the smith boosts the physical defense of all allies on the map",
     },
     "Presence of the Smith": {
         "values": {"turns": 5, "stats": StatBlock(physical_attack=(True, 15))},
         "class": GrantStatBoost,
-        "description": "When activated, all allies adjacent to the smith gain a long lasting buff to their physical attack"
-    }
+        "description": "When activated, all allies adjacent to the smith gain a long lasting buff to their physical attack",
+    },
 }

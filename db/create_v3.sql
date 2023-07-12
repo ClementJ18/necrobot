@@ -12,6 +12,8 @@ CREATE TYPE emote_count_hybrid as (
 
 CREATE TYPE character_stat AS (is_percent boolean, stat int);
 
+CREATE TYPE poll_option AS (poll_id bigint, message text);
+
 
 CREATE TABLE necrobot.Users (
     user_id bigint PRIMARY KEY,
@@ -345,4 +347,28 @@ CREATE TABLE necrobot.EquipmentSet(
     PRIMARY KEY (guild_id, user_id, char_id),
     UNIQUE (guild_id, user_id, weapon_id),
     UNIQUE (guild_id, user_id, artefact_id)
+);
+
+
+CREATE TABLE necrobot.PollsV2(
+    message_id bigint PRIMARY KEY,
+    channel_id bigint,
+    guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
+    message text,
+    title text,
+    max_votes int,
+    open boolean DEFAULT true
+);
+
+CREATE TABLE necrobot.PollOptions(
+    id SERIAL PRIMARY KEY,
+    poll_id bigint REFERENCES necrobot.PollsV2(message_id) ON DELETE CASCADE,
+    message text
+);
+
+CREATE TABLE necrobot.PollVotes(
+    option_id int REFERENCES necrobot.PollOptions(id) ON DELETE CASCADE,
+    user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
+    poll_id bigint REFERENCES necrobot.PollsV2(message_id) ON DELETE CASCADE,
+    PRIMARY KEY (option_id, user_id)
 );
