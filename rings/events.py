@@ -1,14 +1,13 @@
 #!/usr/bin/python3.6
+import asyncio
+import logging
+import traceback
+
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, build_format_dict
-from rings.db import DatabaseError
-from rings.utils.ui import FightError
-
-import asyncio
-import traceback
-import logging
+from rings.misc.ui import FightError
+from rings.utils.utils import BotError, DatabaseError, build_format_dict
 
 
 class Events(commands.Cog):
@@ -27,49 +26,6 @@ class Events(commands.Cog):
                 )
             except (discord.Forbidden, discord.HTTPException):
                 pass
-
-    async def poll_reaction_handler(self, payload):
-        if payload.user_id == self.bot.user.id:
-            return
-
-        if (
-            str(payload.emoji) not in self.bot.polls[payload.message_id]["list"]
-            and self.bot.polls[payload.message_id]["list"]
-        ):
-            if await self.bot.db.get_permission(payload.user_id, payload.guild_id) < 4:
-                emoji = payload.emoji._as_reaction()
-                await self.bot._connection.http.remove_reaction(
-                    payload.channel_id, payload.message_id, emoji, payload.user_id
-                )
-
-            return
-
-        counter = self.bot.polls[payload.message_id]["voters"].count(payload.user_id) + 1
-        if counter > self.bot.polls[payload.message_id]["votes"]:
-            if await self.bot.db.get_permission(payload.user_id, payload.guild_id) < 4:
-                emoji = payload.emoji._as_reaction()
-                await self.bot._connection.http.remove_reaction(
-                    payload.channel_id, payload.message_id, emoji, payload.user_id
-                )
-
-                if self.bot.guild_data[payload.guild_id]["automod"]:
-                    channel = self.bot.get_channel(
-                        self.bot.guild_data[payload.guild_id]["automod"]
-                    )
-                    user = self.bot.get_user(payload.user_id)
-
-                    await channel.send(
-                        f":warning:| User {user.mention} tried adding more reactions than allowed to a poll"
-                    )
-            return
-
-        await self.bot.db.query(
-            "INSERT INTO necrobot.Votes VALUES($1, $2, $3)",
-            payload.message_id,
-            payload.user_id,
-            payload.emoji.name,
-        )
-        self.bot.polls[payload.message_id]["voters"].append(payload.user_id)
 
     async def starred_reaction_handler(self, payload):
         await self.bot.db.update_stars(payload.message_id, payload.user_id, 1)
@@ -163,7 +119,7 @@ class Events(commands.Cog):
         elif isinstance(error, commands.BadLiteralArgument):
             msg = f"`{error.param}` must be any of **{', '.join(error.literals)}"
         elif isinstance(error, discord.Forbidden):
-            msg = "Looks like I don't have permission to do this."
+            msg = f"Looks like I don't have permission to do this. {error}"
         elif isinstance(error, discord.HTTPException) and getattr(error, "status", 0) >= 500:
             msg = "An error occured with Discord's servers. Unable to complete action, the Discord servers might be struggling, please try again later"
         else:
@@ -534,9 +490,6 @@ class Events(commands.Cog):
         if payload.guild_id is None:
             return await self.dm_reaction_handler(payload)
 
-        if payload.message_id in self.bot.polls:
-            return await self.poll_reaction_handler(payload)
-
         if payload.emoji.name == "\N{WHITE MEDIUM STAR}":
             return await self.starred_reaction_handler(payload)
 
@@ -544,20 +497,6 @@ class Events(commands.Cog):
     async def on_raw_reaction_remove(self, payload):
         if payload.user_id in self.bot.settings["blacklist"] or payload.guild_id is None:
             return
-
-        if payload.message_id in self.bot.polls:
-            if payload.user_id == self.bot.user.id:
-                return
-
-            result = await self.bot.db.query(
-                "DELETE FROM necrobot.Votes WHERE message_id = $1 AND user_id = $2 AND reaction = $3 RETURNING user_id",
-                payload.message_id,
-                payload.user_id,
-                payload.emoji.name,
-            )
-
-            if result:
-                self.bot.polls[payload.message_id]["voters"].remove(payload.user_id)
 
         if payload.emoji.name == "\N{WHITE MEDIUM STAR}":
             if payload.message_id in self.bot.potential_stars:

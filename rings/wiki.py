@@ -1,14 +1,14 @@
-import discord
-from discord.ext import commands
-
-from rings.utils.utils import BotError
-
+import asyncio
 import re
 import urllib
-import asyncio
 from datetime import datetime
+
+import discord
 from bs4 import BeautifulSoup
+from discord.ext import commands
 from fuzzywuzzy import process
+
+from rings.utils.utils import BotError
 
 
 def _check_error_response(response, query):
@@ -247,7 +247,7 @@ class Wiki(commands.Cog):
             message.append(f"[{section}]({base}#{url})")
 
         if not message:
-            return await ctx.send(":negative_squared_cross_mark: | Sorry, didn't find anything")
+            raise BotError("Sorry, didn't find anything")
 
         embed = discord.Embed(
             title="Frequently Asked Questions",

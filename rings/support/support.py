@@ -1,14 +1,16 @@
-import discord
-from discord.ext import commands
-
-from rings.utils.utils import BotError
-from rings.utils.var import tutorial_e, gdpr_e
-from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm, paginate
-
 import ast
 import time
 from datetime import timedelta
+
+import discord
+from discord.ext import commands
+
+from rings.utils.checks import has_perms
+from rings.utils.ui import Confirm, paginate
+from rings.utils.utils import BotError
+from rings.utils.var import tutorial_e
+
+from .var import gdpr_e
 
 
 class Support(commands.Cog):
@@ -105,8 +107,7 @@ class Support(commands.Cog):
         news = self.bot.settings["news"]
 
         if not news:
-            await ctx.send(":negative_squared_cross_mark: | No news available")
-            return
+            raise BotError("No news available")
 
         def embed_maker(view, entries):
             return discord.Embed.from_data(news[view.page_number])
@@ -153,14 +154,12 @@ class Support(commands.Cog):
 
         {usage}"""
         if not self.bot.settings["news"]:
-            await ctx.send(":negative_squared_cross_mark: | No news available")
-            return
+            raise BotError("No news available")
 
         if not 0 <= index < len(self.bot.settings["news"]):
-            await ctx.send(
-                f":negative_squared_cross_mark: | Not a valid index, pick a number between 1 and {len(self.bot.settings['news'])}"
+            raise BotError(
+                f"Not a valid index, pick a number between 1 and {len(self.bot.settings['news'])}"
             )
-            return
 
         news = self.bot.settings["news"].pop(index)
         await ctx.send(f":white_check_mark: | News **{news['title']}** removed")
@@ -202,7 +201,3 @@ class Support(commands.Cog):
             await ctx.author.send(embed=self.bot.gdpr_embed)
         except discord.Forbidden as e:
             raise BotError("Looks like you have private messages disabled") from e
-
-
-async def setup(bot):
-    await bot.add_cog(Support(bot))

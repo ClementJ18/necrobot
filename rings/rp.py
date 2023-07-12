@@ -1,11 +1,11 @@
+import datetime
+from typing import Union
+
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import time_converter
 from rings.utils.ui import paginate
-
-import datetime
-from typing import Union
+from rings.utils.utils import time_converter
 
 
 class RP(commands.Cog):

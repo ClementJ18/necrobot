@@ -4,6 +4,9 @@ from discord.ext import commands
 
 def has_perms(level):
     async def predicate(ctx):
+        if await ctx.bot.is_owner(ctx.author):
+            return True
+
         if await ctx.bot.db.is_admin(ctx.message.author.id):
             return True
 

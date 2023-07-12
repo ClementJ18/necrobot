@@ -1,36 +1,14 @@
-import discord
-from discord.ext import commands
-
-from rings.utils.config import dbpass, dbusername
-
-import asyncpg
-import psycopg2
 import traceback
 from datetime import datetime
+
+import asyncpg
+import discord
+import psycopg2
+from discord.ext import commands
 from psycopg2.extras import RealDictCursor
 
-
-class DatabaseError(Exception):
-    def __init__(self, message, query=None, args=tuple()):
-        super().__init__(message)
-        self.message = message
-        self.query = query
-        self.args = args
-
-    def embed(self, bot):
-        formatted = traceback.format_exception(type(self), self, self.__traceback__, chain=False)
-        msg = f"```py\n{' '.join(formatted)}\n```"
-
-        embed = discord.Embed(title="DB Error", description=msg, colour=bot.bot_color)
-        embed.add_field(name="Event", value=self.message, inline=False)
-        embed.add_field(name="Query", value=self.query, inline=False)
-        embed.add_field(name="Arguments", value=self.args, inline=False)
-        embed.set_footer(**bot.bot_footer)
-
-        return embed
-
-    def __str__(self):
-        return self.message
+from rings.utils.config import dbpass, dbusername
+from rings.utils.utils import DatabaseError
 
 
 class Database(commands.Cog):
@@ -791,24 +769,6 @@ class SyncDatabase:
             guilds[g["guild_id"]]["self-roles"] = g["roles"]
 
         return guilds
-
-    def load_polls(self):
-        polls = {}
-        self.cur.execute("SELECT message_id, votes, emoji_list FROM necrobot.Polls")
-        for u in self.cur.fetchall():
-            polls[u["message_id"]] = {
-                "votes": u["votes"],
-                "voters": [],
-                "list": u["emoji_list"] if u["emoji_list"] else [],
-            }
-
-        self.cur.execute(
-            "SELECT message_id, array_agg(user_id) as user_ids FROM necrobot.Votes GROUP BY message_id;"
-        )
-        for u in self.cur.fetchall():
-            polls[u["message_id"]]["voters"] = u["user_ids"]
-
-        return polls
 
 
 async def setup(bot):

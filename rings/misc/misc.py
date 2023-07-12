@@ -1,24 +1,28 @@
+import asyncio
 import functools
+import itertools
+import random
+import re
+from io import BytesIO
+
+import aiohttp
 import discord
+import matplotlib
+import matplotlib.pyplot as plt
+import pandas as pds
+from bs4 import BeautifulSoup
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
-from rings.utils.utils import BotError
-from rings.utils.checks import has_perms, guild_only
+from rings.utils.checks import guild_only, has_perms
 from rings.utils.converters import UserConverter
-from rings.utils.ui import Confirm, paginate, HungerGames
+from rings.utils.ui import Confirm, paginate
+from rings.utils.utils import BotError
 
-import re
-import random
-import asyncio
-import aiohttp
-import itertools
-from io import BytesIO
-from bs4 import BeautifulSoup
-import pandas as pds
-import matplotlib
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
+
+from .ui import HungerGames
 
 
 class Misc(commands.Cog):
@@ -90,15 +94,10 @@ class Misc(commands.Cog):
         `{pre}fight john , bob , emilia the trap` - starts a battle between tributes john, bob and emilia the trap"""
         tributes_list = list(set([f"**{x.strip()}**" for x in tributes.split(",")]))
         if len(tributes_list) < 2:
-            await ctx.send(
-                ":negative_squared_cross_mark: | Please provide at least two names separated by `,`"
-            )
-            return
+            raise BotError("Please provide at least two names separated by `,`")
 
         if len(tributes_list) > 32:
-            await ctx.send(
-                ":negative_squared_cross_mark: | Please provide no more than 32 names separated by `,`."
-            )
+            raise BotError("Please provide no more than 32 names separated by `,`.")
 
         hg = HungerGames(self.bot, tributes_list)
         embed = hg.prepare_next_phase(hg.get_next_phase())
@@ -373,7 +372,11 @@ class Misc(commands.Cog):
         emoji = self.bot.get_emoji(emoji_id)
         intro = f'{emoji} {self.bot.settings["messages"]["msg"][index]} {emoji}\n\n'
 
-        faction_data = {key: [(0, 0, logs[0]["log_date"], key)] for key in self.bot.settings["messages"]["factions"] if key.lower() != faction}
+        faction_data = {
+            key: [(0, 0, logs[0]["log_date"], key)]
+            for key in self.bot.settings["messages"]["factions"]
+            if key.lower() != faction
+        }
         for log in logs:
             if log["faction"].lower() == faction:
                 key = "enemy"
@@ -383,24 +386,42 @@ class Misc(commands.Cog):
                 victory = int(not log["faction_won"])
 
             previous = faction_data[log[key]][-1]
-            faction_data[log[key]].append((previous[0] + 1, previous[1] + victory, log["log_date"], log[key]))
+            faction_data[log[key]].append(
+                (previous[0] + 1, previous[1] + victory, log["log_date"], log[key])
+            )
 
         entries = [value for tup in faction_data.values() for value in tup]
-        df = pds.DataFrame.from_records(entries, columns=["Total Matches", "Victories", "Date", "Faction"])
+        df = pds.DataFrame.from_records(
+            entries, columns=["Total Matches", "Victories", "Date", "Faction"]
+        )
         df = df.reset_index(drop=True).set_index("Date")
         df["percent"] = (df["Victories"] / df["Total Matches"]) * 100
-        df = df.pivot_table(index="Date", columns="Faction", values="percent").resample('M').mean().ffill().fillna(0)
-        df = df.resample("D").interpolate("cubic").clip(upper=100, lower=0)
+        df = (
+            df.pivot_table(index="Date", columns="Faction", values="percent")
+            .resample("M")
+            .mean()
+            .ffill()
+            .fillna(0)
+        )
+        df = df.resample("D").interpolate("cubic").clip(upper=100)
 
         df.plot(alpha=0.7)
         plt.ylim(ymin=0)
         plt.ylabel("Win Rate (%)")
-        plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left", mode="expand", borderaxespad=0, ncol=3, fancybox=True, shadow=True)
+        plt.legend(
+            bbox_to_anchor=(0, 1.02, 1, 0.2),
+            loc="lower left",
+            mode="expand",
+            borderaxespad=0,
+            ncol=3,
+            fancybox=True,
+            shadow=True,
+        )
         plt.tight_layout()
-        plt.grid(which = 'both', linestyle="dashed")
+        plt.grid(which="both", linestyle="dashed")
 
         figfile = BytesIO()
-        plt.savefig(figfile, format='png')
+        plt.savefig(figfile, format="png")
         figfile.seek(0)
         ifile = discord.File(filename=f"graph_{faction}.png", fp=figfile)
 
@@ -410,45 +431,25 @@ class Misc(commands.Cog):
     @guild_only(496617962334060545)
     async def matchups_stats(self, ctx: commands.Context, *, arguments: str):
         """Get specific stats over time for a faction W/L
-        
+
         {usage}
         """
         arguments = arguments.lower()
         factions = re.findall(self.faction_regex, arguments)
         if not factions:
             raise BotError("No faction detected in input string.")
-        
+
         async with ctx.typing():
             faction = factions[0]
-            logs = await self.bot.db.query("SELECT * FROM necrobot.InternalRankedLogs WHERE LOWER(faction) = $1 OR LOWER(enemy) = $1 ORDER BY log_date DESC;", faction)
-            
+            logs = await self.bot.db.query(
+                "SELECT * FROM necrobot.InternalRankedLogs WHERE LOWER(faction) = $1 OR LOWER(enemy) = $1 ORDER BY log_date DESC;",
+                faction,
+            )
+
             func = functools.partial(self.compile_stats, logs, faction)
             title, intro, ifile = await self.bot.loop.run_in_executor(None, func)
-        
+
         await ctx.send(f"**__W/L {title}__**\n{intro}", file=ifile)
-
-    # @commands.command()
-    async def pdf(self, ctx: commands.Context, *, doi):
-        """Get a PDF from a doi using sci-hub
-
-        {usage}
-        """
-
-        async with self.bot.session.post(
-            "https://sci-hub.mksa.top/",
-            params={"sci-hub-plugin-check": "", "request": doi},
-        ) as resp:
-            soup = BeautifulSoup(await resp.text(), "html.parser")
-
-        pdf_url = soup.find("iframe")["src"]
-        print(pdf_url)
-        async with self.bot.session.get(pdf_url) as resp:
-            pdf = BytesIO(await resp.read())
-            pdf.seek(0)
-            # not working cause cloudflare protection
-
-        ifile = discord.File(pdf, filename="converted.html")
-        await ctx.send(file=ifile)
 
     #######################################################################
     ## Events
@@ -525,7 +526,3 @@ class Misc(commands.Cog):
             checkmark.emoji._as_reaction(),
             payload.user_id,
         )
-
-
-async def setup(bot):
-    await bot.add_cog(Misc(bot))

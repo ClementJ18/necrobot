@@ -1,41 +1,30 @@
+import re
+from typing import List, Literal, Optional, get_args
+
 import discord
 from discord.ext import commands
 from discord.ext.commands.converter import _get_from_guilds
-from rings.db import DatabaseError
 
-from rings.utils.utils import time_converter, BotError
-
-import re
+from rings.utils.utils import BotError, time_converter
 
 utils = discord.utils
 _utils_get = utils.get
 
 
 def get_member_named(members, name):
-    result = None
-    if len(name) > 5 and name[-5] == "#":
-        # The 5 length is checking to see if #0000 is in the string,
-        # as a#0000 has a length of 6, the minimum for a potential
-        # discriminator lookup.
-        potential_discriminator = name[-4:]
-
-        # do the actual lookup and return if found
-        # if it isn't found then we'll do a full name lookup below.
-        result = utils.find(
-            lambda m: name[:-5].lower() == m.name.lower()
-            and potential_discriminator == m.discriminator,
+    username, _, discriminator = name.rpartition("#")
+    if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
+        return utils.find(
+            lambda m: m.name.lower() == username.lower() and m.discriminator == discriminator,
             members,
         )
-        if result is not None:
-            return result
 
-    def pred(m):
-        nick = None
-
-        if m.nick is not None:
-            nick = m.nick.lower()
-
-        return nick == name.lower() or m.name.lower() == name.lower()
+    def pred(m) -> bool:
+        return (
+            m.nick.lower() == name.lower()
+            or m.global_name.lower() == name.lower()
+            or m.name.lower() == name.lower()
+        )
 
     return utils.find(pred, members)
 
@@ -73,11 +62,57 @@ class MemberConverter(commands.IDConverter):
 
     ctx_attr = "author"
 
-    async def convert(self, ctx: commands.Context, argument):
+    async def query_member_named(
+        self, guild: discord.Guild, argument: str
+    ) -> Optional[discord.Member]:
+        cache = guild._state.member_cache_flags.joined
+        username, _, discriminator = argument.rpartition("#")
+        if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
+            lookup = username.lower()
+            predicate = (
+                lambda m: m.name.lower() == username.lower() and m.discriminator == discriminator
+            )
+        else:
+            lookup = argument.lower()
+            predicate = (
+                lambda m: m.nick.lower() == argument.lower()
+                or m.global_name.lower() == argument.lower()
+                or m.name.lower() == argument.lower()
+            )
+
+        members = await guild.query_members(lookup, limit=100, cache=cache)
+        return discord.utils.find(predicate, members)
+
+    async def query_member_by_id(
+        self, bot, guild: discord.Guild, user_id: int
+    ) -> Optional[discord.Member]:
+        ws = bot._get_websocket(shard_id=guild.shard_id)
+        cache = guild._state.member_cache_flags.joined
+        if ws.is_ratelimited():
+            # If we're being rate limited on the WS, then fall back to using the HTTP API
+            # So we don't have to wait ~60 seconds for the query to finish
+            try:
+                member = await guild.fetch_member(user_id)
+            except discord.HTTPException:
+                return None
+
+            if cache:
+                guild._add_member(member)
+            return member
+
+        # If we're not being rate limited then we can use the websocket to actually query
+        members = await guild.query_members(limit=1, user_ids=[user_id], cache=cache)
+        if not members:
+            return None
+        return members[0]
+
+    async def convert(self, ctx: commands.Context, argument: str) -> discord.Member:
         bot = ctx.bot
-        match = self._get_id_match(argument) or re.match(r"<@!?([0-9]+)>$", argument)
+        match = self._get_id_match(argument) or re.match(r"<@!?([0-9]{15,20})>$", argument)
         guild = ctx.guild
         result = None
+        user_id = None
+
         if match is None:
             # not a mention...
             if guild:
@@ -91,8 +126,17 @@ class MemberConverter(commands.IDConverter):
             else:
                 result = _get_from_guilds(bot, "get_member", user_id)
 
-        if result is None:
-            raise commands.BadArgument(f'Member "{argument}" not found')
+        if not isinstance(result, discord.Member):
+            if guild is None:
+                raise discord.errors.MemberNotFound(argument)
+
+            if user_id is not None:
+                result = await self.query_member_by_id(bot, guild, user_id)
+            else:
+                result = await self.query_member_named(guild, argument)
+
+            if not result:
+                raise discord.errors.MemberNotFound(argument)
 
         return result
 
@@ -102,36 +146,36 @@ class UserConverter(commands.IDConverter):
 
     ctx_attr = "author"
 
-    async def convert(self, ctx: commands.Context, argument):
-        match = self._get_id_match(argument) or re.match(r"<@!?([0-9]+)>$", argument)
+    async def convert(self, ctx: commands.Context, argument: str) -> discord.User:
+        match = self._get_id_match(argument) or re.match(r"<@!?([0-9]{15,20})>$", argument)
         result = None
         state = ctx._state
 
         if match is not None:
             user_id = int(match.group(1))
             result = ctx.bot.get_user(user_id) or _utils_get(ctx.message.mentions, id=user_id)
+            if result is None:
+                try:
+                    result = await ctx.bot.fetch_user(user_id)
+                except discord.HTTPException:
+                    raise discord.errors.UserNotFound(argument) from None
+
+            return result  # type: ignore
+
+        username, _, discriminator = argument.rpartition("#")
+        if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
+            predicate = (
+                lambda u: u.name.lower() == username.lower() and u.discriminator == discriminator
+            )
         else:
-            arg = argument
+            predicate = (
+                lambda u: u.global_name.lower() == argument.lower()
+                or u.name.lower() == argument.lower()
+            )
 
-            # Remove the '@' character if this is the first character from the argument
-            if arg[0] == "@":
-                # Remove first character
-                arg = arg[1:]
-
-            # check for discriminator if it exists,
-            if len(arg) > 5 and arg[-5] == "#":
-                discrim = arg[-4:]
-                name = arg[:-5]
-                predicate = lambda u: u.name.lower() == name.lower() and u.discriminator == discrim
-                result = discord.utils.find(predicate, state._users.values())
-                if result is not None:
-                    return result
-
-            predicate = lambda u: u.name.lower() == arg.lower()
-            result = discord.utils.find(predicate, state._users.values())
-
+        result = discord.utils.find(predicate, state._users.values())
         if result is None:
-            raise commands.BadArgument(f'User "{argument}" not found')
+            raise discord.errors.UserNotFound(argument)
 
         return result
 
@@ -323,29 +367,46 @@ class WritableChannelConverter(commands.TextChannelConverter):
         return result
 
 
+CharacterType = Literal["character", "weapon", "artefact", "enemy"]
+
+
 class GachaCharacterConverter(commands.Converter):
-    def __init__(self, respect_obtainable=False):
+    def __init__(
+        self, *, respect_obtainable=False, allowed_types: List[CharacterType] = (), is_owned=False
+    ):
+        """
+        Params
+        ------
+        respect_obtainable: bool
+            Only search in the list of characters currently toggled on
+        allowed_types: List[CharacterType]
+            Types of entities that are valid
+        is_owned: bool
+            Only consider characters that are owned by the author
+        """
         self.respect_obtainable = respect_obtainable
+        self.allowed_types = allowed_types
+        self.is_owned = is_owned
 
     async def convert(self, ctx: commands.Context, argument):
+        allowed_types = self.allowed_types if self.allowed_types else get_args(CharacterType)
         char_id = 0
         if argument.isdigit():
             char_id = int(argument)
 
         query = await ctx.bot.db.query(
-            "SELECT * FROM necrobot.Characters WHERE LOWER(name)=$1 OR id=$2",
+            "SELECT * FROM necrobot.Characters WHERE (LOWER(name)=$1 OR id=$2) AND type = ANY($3)",
             argument.lower(),
             char_id,
+            allowed_types,
         )
 
         if not query:
-            try:
-                query = await ctx.bot.db.query(
-                    "SELECT * FROM necrobot.Characters WHERE LOWER(name) LIKE $1;",
-                    f"%{argument.lower()}%",
-                )
-            except DatabaseError:
-                query = None
+            query = await ctx.bot.db.query(
+                "SELECT * FROM necrobot.Characters WHERE LOWER(name) LIKE $1 AND type = ANY($2);",
+                f"%{argument.lower()}%",
+                allowed_types,
+            )
 
         if not query:
             raise commands.BadArgument(f"Character **{argument}** could not be found.")
@@ -354,6 +415,14 @@ class GachaCharacterConverter(commands.Converter):
             raise commands.BadArgument(
                 f"Characters **{query[0]['name']}** cannot currently be added to a banner"
             )
+
+        if self.is_owned:
+            owned = await ctx.bot.db.query(
+                "SELECT char_id FROM necrobot.RolledCharacters WHERE char_id = $1 LIMIT 1;",
+                query[0]["id"],
+            )
+            if not owned:
+                raise BotError(f"You do not own this {query[0]['type']}.")
 
         return query[0]
 
@@ -375,14 +444,11 @@ class GachaBannerConverter(commands.Converter):
         )
 
         if not query:
-            try:
-                query = await ctx.bot.db.query(
-                    "SELECT * FROM necrobot.Banners WHERE LOWER(name) LIKE $1 AND guild_id = $2;",
-                    f"%{argument.lower()}%",
-                    ctx.guild.id,
-                )
-            except DatabaseError:
-                query = None
+            query = await ctx.bot.db.query(
+                "SELECT * FROM necrobot.Banners WHERE LOWER(name) LIKE $1 AND guild_id = $2;",
+                f"%{argument.lower()}%",
+                ctx.guild.id,
+            )
 
         if not query:
             raise commands.BadArgument(f"Banner **{argument}** could not be found.")

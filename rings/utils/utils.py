@@ -1,13 +1,37 @@
-import discord
-from discord.ext import commands
-
-import re
 import datetime
 import itertools
+import re
+import traceback
+
+import discord
+from discord.ext import commands
 
 
 class BotError(Exception):
     pass
+
+
+class DatabaseError(Exception):
+    def __init__(self, message, query=None, args=tuple()):
+        super().__init__(message)
+        self.message = message
+        self.query = query
+        self.args = args
+
+    def embed(self, bot):
+        formatted = traceback.format_exception(type(self), self, self.__traceback__, chain=False)
+        msg = f"```py\n{' '.join(formatted)}\n```"
+
+        embed = discord.Embed(title="DB Error", description=msg, colour=bot.bot_color)
+        embed.add_field(name="Event", value=self.message, inline=False)
+        embed.add_field(name="Query", value=self.query, inline=False)
+        embed.add_field(name="Arguments", value=self.args, inline=False)
+        embed.set_footer(**bot.bot_footer)
+
+        return embed
+
+    def __str__(self):
+        return self.message
 
 
 def check_channel(channel):

@@ -1,25 +1,17 @@
+import functools
+import random
+from io import BytesIO
+from typing import Union
+
 import discord
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
+from PIL import Image, ImageDraw, ImageFont
 
-from rings.utils.utils import midnight, BotError
-from rings.utils.converters import (
-    MoneyConverter,
-    BadgeConverter,
-    MemberConverter,
-    RangeConverter,
-)
-from rings.db import DatabaseError
 from rings.utils.checks import has_perms
+from rings.utils.converters import BadgeConverter, MemberConverter, MoneyConverter, RangeConverter
 from rings.utils.ui import Confirm, paginate
-
-import random
-import functools
-from io import BytesIO
-from PIL import Image
-from PIL import ImageFont
-from PIL import ImageDraw
-from typing import Union
+from rings.utils.utils import BotError, DatabaseError, midnight
 
 
 class Profile(commands.Cog):

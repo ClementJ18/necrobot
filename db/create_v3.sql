@@ -1,5 +1,20 @@
 CREATE SCHEMA necrobot;
 
+CREATE TYPE channel_filter_hybrid as (
+    channel_id bigint,
+    filter varchar(50)
+);
+
+CREATE TYPE emote_count_hybrid as (
+    reaction varchar(200),
+    count int
+);
+
+CREATE TYPE character_stat AS (is_percent boolean, stat int);
+
+CREATE TYPE poll_option AS (poll_id bigint, message text);
+
+
 CREATE TABLE necrobot.Users (
     user_id bigint PRIMARY KEY,
     necroins bigint CHECK (necroins >= 0) DEFAULT 200,
@@ -164,7 +179,7 @@ CREATE TABLE necrobot.Twitch(
     filter varchar(200),
     twitch_name varchar(200),
     PRIMARY KEY(guild_id, twitch_id)
-)
+);
 
 CREATE TABLE necrobot.Invites(
     id varchar(10) PRIMARY KEY,
@@ -215,12 +230,12 @@ CREATE TABLE necrobot.InternalRanked(
     faction varchar(25),
     enemy varchar(25),
     defeats int DEFAULT 0,
-    victories int DEFAULT 0
+    victories int DEFAULT 0,
     PRIMARY KEY(faction, enemy)
 );
 
 CREATE TABLE necrobot.InternalRankedLogs(
-    id SERIAL PRIMARY KEY
+    id SERIAL PRIMARY KEY,
     user_id bigint,
     faction varchar(25),
     enemy varchar(25),
@@ -256,7 +271,7 @@ CREATE TABLE necrobot.FlowersGuild(
     guild_id bigint PRIMARY KEY REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
     symbol varchar(50) DEFAULT ':cherry_blossom:',
     roll_cost int DEFAULT 50,
-    guaranteed int DEFAULT 9,
+    guaranteed int DEFAULT 9
 );
 
 CREATE TABLE necrobot.Characters(
@@ -268,16 +283,26 @@ CREATE TABLE necrobot.Characters(
     tier int NOT NULL,
     obtainable boolean DEFAULT false,
     universe text NOT NULL,
-    type character_type NOT NULL,
-    primary_health int NOT NULL,
-    secondary_health int DEFAULT 0
-    physical_defense int DEFAULT 0,
-    physical_attack int DEFAULT 0,
-    magical_defense int DEFAULT 0,
-    magical_attack int DEFAULT 0,
-    active_ability text,
-    passive_ability text
+    type text NOT NULL DEFAULT 'character',
+    primary_health character_stat DEFAULT (false, 100),
+    secondary_health character_stat DEFAULT (false, 0),
+    physical_defense character_stat DEFAULT (false, 0),
+    physical_attack character_stat DEFAULT (false, 0),
+    magical_defense character_stat DEFAULT (false, 0),
+    magical_attack character_stat DEFAULT (false, 0),
+    active_skill text,
+    passive_skill text
 );
+
+-- ALTER TABLE necrobot.Characters ADD COLUMN type text NOT NULL DEFAULT 'character';
+-- ALTER TABLE necrobot.Characters ADD COLUMN primary_health character_stat DEFAULT (false, 100);
+-- ALTER TABLE necrobot.Characters ADD COLUMN secondary_health character_stat DEFAULT (false, 0);
+-- ALTER TABLE necrobot.Characters ADD COLUMN physical_defense character_stat DEFAULT (false, 0);
+-- ALTER TABLE necrobot.Characters ADD COLUMN physical_attack character_stat DEFAULT (false, 0);
+-- ALTER TABLE necrobot.Characters ADD COLUMN magical_defense character_stat DEFAULT (false, 0);
+-- ALTER TABLE necrobot.Characters ADD COLUMN magical_attack character_stat DEFAULT (false, 0);
+-- ALTER TABLE necrobot.Characters ADD COLUMN active_skill text;
+-- ALTER TABLE necrobot.Characters ADD COLUMN passive_skill text;
 
 CREATE TABLE necrobot.Banners(
     id SERIAL PRIMARY KEY,
@@ -286,7 +311,7 @@ CREATE TABLE necrobot.Banners(
     description text NOT NULL,
     image_url text,
     ongoing boolean DEFAULT false,
-    max_rolls int DEFAULT 0,
+    max_rolls int DEFAULT 0
 );
 
 CREATE TABLE necrobot.Pity(
@@ -313,24 +338,37 @@ CREATE TABLE necrobot.RolledCharacters(
     PRIMARY KEY (guild_id, user_id, char_id)
 );
 
-CREATE TYPE channel_filter_hybrid as (
-    channel_id bigint,
-    filter varchar(50)
-);
-
-CREATE TYPE emote_count_hybrid as (
-    reaction varchar(200),
-    count int
-);
-
-CREATE TYPE character_type AS ENUM ('character', 'weapon', 'artefact', 'enemy');
-
 CREATE TABLE necrobot.EquipmentSet(
     guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
     user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
     char_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
     weapon_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
-    art_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
-    PRIMARY KEY (guild_id, user_id, char_id)
-)
+    artefact_id int REFERENCES necrobot.Characters(id) ON DELETE CASCADE,
+    PRIMARY KEY (guild_id, user_id, char_id),
+    UNIQUE (guild_id, user_id, weapon_id),
+    UNIQUE (guild_id, user_id, artefact_id)
+);
 
+
+CREATE TABLE necrobot.PollsV2(
+    message_id bigint PRIMARY KEY,
+    channel_id bigint,
+    guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
+    message text,
+    title text,
+    max_votes int,
+    open boolean DEFAULT true
+);
+
+CREATE TABLE necrobot.PollOptions(
+    id SERIAL PRIMARY KEY,
+    poll_id bigint REFERENCES necrobot.PollsV2(message_id) ON DELETE CASCADE,
+    message text
+);
+
+CREATE TABLE necrobot.PollVotes(
+    option_id int REFERENCES necrobot.PollOptions(id) ON DELETE CASCADE,
+    user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
+    poll_id bigint REFERENCES necrobot.PollsV2(message_id) ON DELETE CASCADE,
+    PRIMARY KEY (option_id, user_id)
+);

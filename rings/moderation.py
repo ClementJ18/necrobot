@@ -1,19 +1,14 @@
+import asyncio
+import datetime
+from typing import Literal, Optional, Union
+
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError, format_dt
-from rings.utils.converters import (
-    TimeConverter,
-    MemberConverter,
-    RoleConverter,
-    RangeConverter,
-)
 from rings.utils.checks import has_perms, requires_mute_role
+from rings.utils.converters import MemberConverter, RangeConverter, RoleConverter, TimeConverter
 from rings.utils.ui import paginate
-
-import asyncio
-import datetime
-from typing import Literal, Union, Optional
+from rings.utils.utils import BotError, format_dt
 
 
 class Moderation(commands.Cog):
@@ -281,20 +276,14 @@ class Moderation(commands.Cog):
         __Example__
         `{pre}unmute @NecroBot` - unmutes NecroBot if he is muted"""
         if not self.bot.guild_data[ctx.guild.id]["mute"]:
-            await ctx.send(
-                ":negative_squared_cross_mark: | Please set up the mute role with `n!mute role [rolename]` first."
-            )
-            return
+            raise BotError("Please set up the mute role with `n!mute role [rolename]` first.")
 
         role = discord.utils.get(ctx.guild.roles, id=self.bot.guild_data[ctx.guild.id]["mute"])
         if role in user.roles:
             await user.remove_roles(role)
             await ctx.send(f":white_check_mark: | User **{user.display_name}** has been unmuted")
         else:
-            await ctx.send(
-                f":negative_squared_cross_mark: | User **{user.display_name}** is not muted",
-                delete_after=5,
-            )
+            raise BotError(f"User **{user.display_name}** is not muted")
 
         automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
         if automod is not None:

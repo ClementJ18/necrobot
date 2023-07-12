@@ -1,21 +1,23 @@
+import asyncio
+import datetime
+import json
+import logging
+import time
+import traceback
+from typing import Tuple
+
 import discord
 from discord.ext import commands
 
 from rings.db import SyncDatabase
 from rings.utils.config import token
-from rings.utils.utils import get_pre, default_settings
 from rings.utils.help import NecrobotHelp
 from rings.utils.ui import Confirm
+from rings.utils.utils import default_settings, get_pre
 
-import json
-import time
-import asyncio
-import logging
-import datetime
-import traceback
-
-logging.basicConfig(filename="discord.log", level=logging.ERROR)
-# logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(
+    format="%(asctime)s %(levelname)-8s %(message)s", filename="discord.log", level=logging.ERROR
+)
 
 intents = discord.Intents.all()
 intents.emojis_and_stickers = False
@@ -30,8 +32,6 @@ intents.auto_moderation = False
 
 class NecroBot(commands.Bot):
     def __init__(self, exts):
-        
-
         super().__init__(
             max_messages=50000,
             fetch_offline_members=True,
@@ -83,7 +83,6 @@ class NecroBot(commands.Bot):
 
         sync_db = SyncDatabase()
         self.guild_data = sync_db.load_guilds()
-        self.polls = sync_db.load_polls()
 
         self.cat_cache = []
         self.ignored_messages = []
@@ -164,6 +163,26 @@ class NecroBot(commands.Bot):
 
         self.loop.create_task(self.meta.load_cache())
         self.queued_posts = asyncio.Queue()
+
+    def embed_poll(
+        self,
+        title,
+        message,
+        max_values,
+        options,
+        closer: Tuple[discord.User, datetime.datetime] = None,
+    ):
+        description = f"{message}\n\nMax number of votes: {max_values}"
+        embed = discord.Embed(title=title, description=description, color=self.bot_color)
+        embed.add_field(name="Options", value="\n".join(options), inline=False)
+        embed.set_footer(**self.bot_footer)
+
+        if closer is not None:
+            embed.add_field(
+                name="Closed", value=f"Closed by {closer[0].mention} on {closer[1]}", inline=False
+            )
+
+        return embed
 
     async def invoke(self, ctx: commands.Context):
         if self.maintenance and ctx.command is not None and ctx.author.id != self.OWNER_ID:

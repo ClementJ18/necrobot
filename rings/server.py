@@ -1,21 +1,28 @@
+import re
+from typing import Union
+
 import discord
+import emoji
 from discord.ext import commands
 
-from rings.utils.utils import BotError, build_format_dict, check_channel
-from rings.db import DatabaseError
+from rings.utils.checks import has_perms
 from rings.utils.converters import (
-    TimeConverter,
-    RangeConverter,
     MemberConverter,
+    RangeConverter,
     RoleConverter,
+    TimeConverter,
     WritableChannelConverter,
 )
-from rings.utils.checks import has_perms
-from rings.utils.ui import Confirm, MultiInputEmbedView, paginate, SelectView
-
-from typing import Union
-import re
-import emoji
+from rings.utils.ui import (
+    Confirm,
+    EmbedRangeConverter,
+    EmbedStringConverter,
+    MultiInputEmbedView,
+    PollEditorView,
+    SelectView,
+    paginate,
+)
+from rings.utils.utils import BotError, DatabaseError, build_format_dict, check_channel
 
 
 class Server(commands.Cog):
@@ -762,7 +769,7 @@ class Server(commands.Cog):
             )
             await self.bot.db.update_auto_role(ctx.guild.id, role.id, time)
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, aliases=["broadcasts"])
     @has_perms(4)
     async def broadcast(self, ctx: commands.Context):
         """See all the broadcasts currently set up on the server. Root command for setting up other broadcasts
@@ -770,10 +777,10 @@ class Server(commands.Cog):
         {usage}
 
         __Examples__
-        `{pre}broadcast` - see all broadcasst currently set up
+        `{pre}broadcast` - see all broadcast currently set up
         `{pre}broadcast add #channel` - start the process of adding a new broadcast by defining the channel it will be posted in
         `{pre}broadcast delete 3` - delete a broadcast based on the id
-        `{pre}broadcast edit channel 2 #another-channel` - change the channel that broadcast 2 is broacsting to
+        `{pre}broadcast edit channel 2 #another-channel` - change the channel that broadcast 2 is broadcasting to
         """
 
         def embed_maker(view, entry):
@@ -798,7 +805,7 @@ class Server(commands.Cog):
 
         await paginate(ctx, broadcasts, 1, embed_maker)
 
-    async def broadcast_editor(self, defaults, channel, ctx):
+    async def broadcast_editor(self, defaults, channel, ctx) -> MultiInputEmbedView:
         def embed_maker(values):
             embed = discord.Embed(
                 title="New Broadcast!", description=values["message"], colour=self.bot.bot_color
@@ -813,50 +820,14 @@ class Server(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        def start_check(m):
-            if not m.isdigit():
-                return False
-
-            return 0 <= int(m) <= 23
-
-        def interval_check(m):
-            if not m.isdigit():
-                return False
-
-            return 1 <= int(m) <= 24
-
-        def confirm_check(values):
-            missing = [key for key, value in values.items() if value is None or value == ""]
-            if missing:
-                raise BotError(f"Missing values required: {', '.join(missing)}")
-
-            m = values.get("start")
-            if isinstance(m, str):
-                if not start_check(m):
-                    raise BotError(
-                        f"Please submit start as a positive number between 0 and 23. Current hour is {self.bot.counter}"
-                    )
-
-            m = values.get("interval")
-            if isinstance(m, str):
-                if not interval_check(m):
-                    raise BotError(
-                        f"Please submit interval as a positive number between 1 and 24."
-                    )
-
-            return True
-
-        view = MultiInputEmbedView(embed_maker, confirm_check, defaults, "Broadcast Edit")
+        view = MultiInputEmbedView(embed_maker, defaults, "Broadcast Edit")
         await ctx.send(
             f"You can submit the edit form anytime. Missing field will only be checked on confirmation. Current bot hour is {self.bot.counter}\n- interval should be between 1 and 24\n- start should be between 0 and 23",
-            embed=embed_maker(defaults),
+            embed=await view.generate_embed(),
             view=view,
         )
 
         await view.wait()
-        if not view.value:
-            return
-
         return view
 
     @broadcast.command(name="add")
@@ -878,16 +849,24 @@ class Server(commands.Cog):
         `{pre}broadcast add #lounge` - start the process of adding a broadcast to lounge
         """
         check_channel(channel)
-        defaults = {"message": None, "start": "0", "interval": "0"}
+        defaults = {
+            "message": EmbedStringConverter(),
+            "start": EmbedRangeConverter(min=0, max=23),
+            "interval": EmbedRangeConverter(default="1", min=1, max=24),
+        }
         view = await self.broadcast_editor(defaults, channel, ctx)
+        if not view.value:
+            return
+
+        values = view.convert_values()
 
         broadcast_id = await self.bot.db.query(
             "INSERT INTO necrobot.Broadcasts(guild_id, channel_id, start_time, interval, message) VALUES ($1, $2, $3, $4, $5) RETURNING broadcast_id",
             ctx.guild.id,
             channel.id,
-            int(view.values["start"]),
-            int(view.values["interval"]),
-            view.values["message"],
+            int(values["start"]),
+            int(values["interval"]),
+            values["message"],
             fetchval=True,
         )
 
@@ -918,21 +897,25 @@ class Server(commands.Cog):
             raise BotError("No broadcast found with that ID")
 
         defaults = {
-            "message": query[0]["message"],
-            "start": query[0]["start_time"],
-            "interval": query[0]["interval"],
+            "message": EmbedStringConverter(default=str(query[0]["message"])),
+            "start": EmbedRangeConverter(default=str(query[0]["start_time"]), min=0, max=23),
+            "interval": EmbedRangeConverter(default=str(query[0]["interval"]), min=1, max=24),
         }
         view = await self.broadcast_editor(
             defaults, ctx.guild.get_channel(query[0]["channel_id"]), ctx
         )
+        if not view.value:
+            return
+
+        values = view.convert_values()
 
         broadcast_id = await self.bot.db.query(
             "UPDATE necrobot.Broadcasts SET start_time = $3, interval = $4, message = $5 WHERE broadcast_id = $1 AND guild_id = $2",
             broadcast_id,
             ctx.guild.id,
-            int(view.values["start"]),
-            int(view.values["interval"]),
-            view.values["message"],
+            int(values["start"]),
+            int(values["interval"]),
+            values["message"],
         )
 
         await ctx.send(f":white_check_mark: | Broadcast edited!")
@@ -1133,7 +1116,7 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(3)
-    async def poll(self, ctx: commands.Context, channel: WritableChannelConverter, *, message):
+    async def poll(self, ctx: commands.Context, channel: WritableChannelConverter):
         """Create a reaction poll for your server in the specified channel. This will also ask you to specify a
         maximum number of reactions. This number will limit how many options users can vote for.
 
@@ -1143,77 +1126,8 @@ class Server(commands.Cog):
         `{pre}poll #general Which character do you prefer: **Aragorn** :crossed_swords: or **Gimli** :axe:` - post a reaction poll
         two possible answers: :axe: and :crossed_swords:
         """
-        await self.add_reactions(ctx.message, content=message)
-
-        view = SelectView(options=list(range(1, 21)))
-        view.message = await ctx.send("How many options can the users react with?", view=view)
-        await view.wait()
-
-        if not view.value:
-            return
-
-        votes = int(view.select.values[0])
-        poll = await channel.send(f"{message}\n\n**Maximum votes: {votes}**")
-        emoji_list = await self.add_reactions(poll, content=message)
-
-        self.bot.polls[poll.id] = {"votes": votes, "voters": [], "list": emoji_list}
-        await self.bot.db.query(
-            "INSERT INTO necrobot.Polls VALUES($1, $2, $3, $4, $5)",
-            poll.id,
-            poll.guild.id,
-            poll.jump_url,
-            votes,
-            emoji_list,
-        )
-
-    @commands.command()
-    async def results(self, ctx: commands.Context):
-        """Get the results of a poll
-
-        {usage}
-
-        __Examples__
-        `{pre}results` - get the results of the polls from this server starting at the first one
-        `{pre}results 3` - get the results of the polls from this server stating at the 3rd one.
-        """
-
-        results = await self.bot.db.query(
-            """
-            SELECT p.link, p.emoji_list, ARRAY_AGG(v.votes)
-            FROM necrobot.Polls p, (
-                    SELECT message_id, (reaction, COUNT(reaction))::emote_count_hybrid AS votes
-                    FROM necrobot.Votes
-                    GROUP BY message_id, reaction
-                    ORDER BY COUNT(reaction) DESC
-                ) v
-            WHERE p.guild_id = $1 AND p.message_id = v.message_id
-            GROUP BY p.link, p.emoji_list, p.message_id
-            ORDER BY p.message_id DESC""",
-            ctx.guild.id,
-        )
-
-        def embed_maker(view, entry):
-            string = ""
-            for reaction in entry[1]:
-                count = discord.utils.find(lambda x: x[0] == reaction, entry[2])
-                if count is not None:
-                    count = count[1]
-                else:
-                    count = 0
-
-                string += (
-                    f"{discord.utils.get(ctx.guild.emojis, name=reaction) or reaction} - {count}\n"
-                )
-
-            embed = discord.Embed(
-                title=f"Results ({view.page_number}/{view.page_count})",
-                description=f"[**Link**]({entry[0]})\n\n{string}",
-            )
-            embed.set_footer(**self.bot.bot_footer)
-
-            return embed
-
-        await paginate(ctx, results, 1, embed_maker)
+        view = PollEditorView(channel, self.bot)
+        await ctx.send("Let's start making your poll", view=view)
 
 
 async def setup(bot):

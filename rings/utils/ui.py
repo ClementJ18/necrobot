@@ -1,45 +1,226 @@
+from __future__ import annotations
 import asyncio
-from typing import Callable, Dict, List
-import discord
+import datetime
+import math
+from dataclasses import dataclass
+from typing import Callable, Dict, List, Tuple
 
-from rings.utils.hunger_game import events
+import discord
+from discord.ext import commands
+from discord.interactions import Interaction
+
 from rings.utils.utils import BotError
 
-import random
-import traceback
+
+class PollSelect(discord.ui.Select):
+    view: PollView
+
+    async def callback(self, interaction: Interaction):
+        await interaction.client.db.query(
+            "DELETE FROM necrobot.PollVotes WHERE user_id = $1 AND poll_id = $2",
+            interaction.user.id,
+            self.view.poll_id,
+        )
+        await interaction.client.db.query(
+            "INSERT INTO necrobot.PollVotes VALUES($1, $2, $3)",
+            ((int(option), interaction.user.id, self.view.poll_id) for option in self.values),
+            many=True,
+        )
+
+        await interaction.response.edit_message(
+            embed=self.view.generate_embed(await self.view.get_values(interaction.client))
+        )
+        await interaction.followup.send(":white_check_mark: | Vote(s) registered", ephemeral=True)
 
 
-class TextInput(discord.ui.TextInput):
-    async def callback(self, interaction):
-        self.view.stop()
-        self.view.clear_items()
+class PollView(discord.ui.View):
+    def __init__(self, title, message, count, options, bot, poll_id=None):
+        super().__init__(timeout=None)
 
-        if self.value.lower() == self.view.answer:
-            self.view.value = True
-            await interaction.response.edit_message(
-                content=":white_check_mark: | Correct! Guess you get to live.",
-                view=self.view,
+        self.poll_id = poll_id
+
+        self.title = title
+        self.message = message
+        self.count = count
+        self.options = options
+
+        self.bot = bot
+        self.closer = None
+
+        select_options = [
+            discord.SelectOption(label=option[1], value=option[0]) for option in options
+        ]
+        self.add_item(
+            PollSelect(
+                options=select_options,
+                min_values=count,
+                max_values=count,
+                custom_id="poll_select",
+                row=0,
             )
-        else:
-            self.view.value = True
-            await interaction.response.edit_message(
-                content=":negative_squared_cross_mark: | Wrong answer! Now you go to feed the fishies!",
-                view=self.view,
+        )
+
+    def generate_embed(self, values):
+        return self.bot.embed_poll(
+            self.title,
+            self.message,
+            self.count,
+            [f"- {value['message']}: {value['total']}" for value in values],
+            self.closer,
+        )
+
+    async def get_values(self, bot):
+        return await bot.db.query(
+            """
+                SELECT po.*, count(pv.*) as total 
+                FROM necrobot.PollOptions AS po 
+                LEFT OUTER JOIN necrobot.PollVotes AS pv ON po.id = pv.option_id 
+                WHERE po.poll_id = $1
+                GROUP BY po.id;
+            """,
+            self.poll_id,
+        )
+
+    @discord.ui.button(label="Close poll", style=discord.ButtonStyle.red, row=1)
+    async def close_poll(self, interaction: discord.Interaction, button: discord.ui.Button):
+        perms = await interaction.client.db.get_permission(
+            interaction.user.id, interaction.guild.id
+        )
+        if perms < 3:
+            return await interaction.response.send_message(
+                ":negative_squared_cross_mark: | You don't have permissions to close a poll",
+                ephemeral=True,
             )
 
-
-class RiddleView(discord.ui.View):
-    def __init__(self, answer, *, timeout=180):
-        self.answer = answer.lower()
-        super().__init__(timeout=timeout)
-        self.add_item(TextInput(style=discord.TextStyle.short, required=True, label="Answer:"))
-
-    async def on_timeout(self):
+        self.closer = (interaction.user, datetime.datetime.now())
         self.stop()
         self.clear_items()
-        await self.message.edit(
-            content=":negative_squared_cross_mark: | Too slow! Now you go to feed the fishies!",
-            view=self,
+        await interaction.response.edit_message(
+            embed=self.generate_embed(await self.get_values(interaction.client)), view=self
+        )
+        await interaction.followup.send(":white_check_mark: | Poll closed", ephemeral=True)
+
+
+class PollEditorModal(discord.ui.Modal):
+    view: PollEditorView
+
+    def __init__(self, view):
+        super().__init__(title="Add option")
+
+        self.name = discord.ui.TextInput(label="Name of the option")
+        self.add_item(self.name)
+        self.view = view
+
+    async def on_submit(self, interaction: Interaction):
+        self.view.options.append(self.name.value)
+        await interaction.response.edit_message(embed=await self.view.generate_embed())
+
+
+class PollEditorView(discord.ui.View):
+    def __init__(self, channel: discord.TextChannel, bot):
+        super().__init__()
+        self.converters = {
+            "title": EmbedStringConverter(),
+            "description": EmbedStringConverter(optional=True),
+            "max_votes": EmbedRangeConverter(default="1", min=1, max=25),
+        }
+        self.attributes = {key: value.default for key, value in self.converters.items()}
+        self.options = []
+        self.channel = channel
+        self.bot = bot
+
+    async def generate_embed(self):
+        return self.bot.embed_poll(
+            self.attributes["title"],
+            self.attributes["description"],
+            self.attributes["max_votes"],
+            [f"- {option}" for option in self.options],
+        )
+
+    @discord.ui.button(label="Add an option", style=discord.ButtonStyle.secondary)
+    async def add_option(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if len(self.options) >= 25:
+            return await interaction.response.send_message(
+                ":negative_squared_cross_mark: | Cannot add more than 25 options"
+            )
+
+        await interaction.response.send_modal(PollEditorModal(self))
+
+    @discord.ui.button(label="Delete last option", style=discord.ButtonStyle.red)
+    async def delete_option(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.options:
+            return await interaction.response.send_message(
+                ":negative_squared_cross_mark: | Cannot delete option"
+            )
+
+        self.options.pop(-1)
+        await interaction.response.edit_message(embed=await self.generate_embed())
+
+    @discord.ui.button(label="Edit poll settings", style=discord.ButtonStyle.secondary)
+    async def send_modal(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(
+            generate_edit_modal(
+                "Poll Settings",
+                self.attributes,
+                list(self.attributes.keys()),
+                self.converters,
+                self,
+            )
+        )
+
+    @discord.ui.button(label="Save", style=discord.ButtonStyle.green)
+    async def save_poll(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.options:
+            return await interaction.response.send_message(
+                ":negative_squared_cross_mark: | Cannot save a poll with no options",
+                ephemeral=True,
+            )
+
+        missing = [
+            convert_key_to_label(key)
+            for key, value in self.attributes.items()
+            if not self.converters[key].optional and value in [None, ""]
+        ]
+        if missing:
+            return await interaction.response.send_message(
+                f"Missing required values: {', '.join(missing)}"
+            )
+
+        self.stop()
+        self.clear_items()
+        await interaction.response.edit_message(content="Poll saved!", view=self)
+
+        msg = await self.channel.send("Placeholder")
+
+        await interaction.client.db.query(
+            "INSERT INTO necrobot.PollsV2(message_id, channel_id, guild_id, message, title, max_votes) VALUES($1, $2, $3, $4, $5, $6)",
+            msg.id,
+            self.channel.id,
+            self.channel.guild.id,
+            self.attributes["description"],
+            self.attributes["title"],
+            int(self.attributes["max_votes"]),
+        )
+
+        ids = await interaction.client.db.query(
+            "INSERT INTO necrobot.PollOptions(poll_id, message) select poll_id, message FROM unnest($1::poll_option[]) RETURNING (id, message);",
+            [(msg.id, option) for option in self.options],
+        )
+
+        poll_view = PollView(
+            self.attributes["title"],
+            self.attributes["description"],
+            int(self.attributes["max_votes"]),
+            [option["row"] for option in ids],
+            self.bot,
+            msg.id,
+        )
+        await msg.edit(
+            content="A new poll has opened!",
+            embed=poll_view.generate_embed(
+                [{"message": option, "total": 0} for option in self.options]
+            ),
+            view=poll_view,
         )
 
 
@@ -222,272 +403,246 @@ class Paginator(discord.ui.View):
         await self.change_page(interaction, 10)
 
 
-class FightError(Exception):
-    def __init__(self, message, event=None, format_dict=None):
-        super().__init__(message)
-
-        self.message = message
-        self.event = event
-        self.format_dict = format_dict
-
-    def embed(self, bot):
-        error_traceback = f"```py\n{traceback.format_exc()}\n```"
-        embed = discord.Embed(
-            title="Fight Error", description=error_traceback, colour=bot.bot_color
-        )
-        embed.add_field(name="Error String", value=self.event["string"], inline=False)
-        embed.add_field(name="Error Tribute Number", value=self.event["tributes"], inline=False)
-        embed.add_field(name="Error Tribute Killed", value=self.event["killed"], inline=False)
-        embed.add_field(name="Error Tributes", value=str(self.format_dict), inline=False)
-        embed.set_footer(**bot.bot_footer)
-
-        return embed
+def convert_key_to_label(key: str):
+    return key.title().replace("_", " ")
 
 
-class HungerGames(discord.ui.View):
-    def __init__(self, bot, tributes, *, timeout=180):
-        super().__init__(timeout=timeout)
+@dataclass
+class EmbedDefaultConverter:
+    default: str = ""
+    optional: bool = False
 
-        self.tributes = tributes
-        self.day = 1
-        self.dead = []
-        self.phases = []
-        self.index = 0
-        self.ongoing = True
-        self.phase = None
-        self.bot = bot
+    def return_value(self, argument):
+        if argument.lower() in ["null", "", None]:
+            return None
 
-    @property
-    def max_index(self):
-        return len(self.phases)
+        return self.convert(argument)
 
-    @discord.ui.button(label="Previous", style=discord.ButtonStyle.blurple)
-    async def previous_page(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.index - 1 < 0:
-            self.index = self.max_index - 1
-        else:
-            self.index -= 1
+    def convert(self, argument):
+        raise NotImplementedError
 
-        await interaction.response.edit_message(embed=self.phases[self.index], view=self)
 
-    @discord.ui.button(label="Stop", style=discord.ButtonStyle.grey)
-    async def stop_fight(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.ongoing = False
-        self.remove_item(self.stop_fight)
-        await interaction.response.edit_message(view=self)
+@dataclass
+class EmbedNumberConverter(EmbedDefaultConverter):
+    def convert(self, argument: str):
+        if not argument.isdigit():
+            raise commands.BadArgument("Not a valid number")
 
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
-    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.index + 1 >= self.max_index:
-            if not self.ongoing:
-                self.index = 0
+        return float(argument)
+
+
+@dataclass
+class EmbedIntegerConverter(EmbedNumberConverter):
+    def convert(self, argument: str):
+        return int(super().convert(argument))
+
+
+@dataclass
+class EmbedBooleanConverter(EmbedDefaultConverter):
+    def convert(self, argument: str):
+        return argument.lower() in ["true", "yes", "y", "1", "t"]
+
+
+@dataclass
+class EmbedStringConverter(EmbedDefaultConverter):
+    def convert(self, argument: str):
+        return argument
+
+
+@dataclass
+class EmbedRangeConverter(EmbedIntegerConverter):
+    max: int = math.inf
+    min: int = -math.inf
+
+    def convert(self, argument):
+        argument = super().convert(argument)
+
+        if argument > self.max:
+            raise commands.BadArgument(f"Number must be less than {self.max}")
+
+        if argument < self.min:
+            raise commands.BadArgument(f"Number must be more than {self.min}")
+
+        return argument
+
+
+@dataclass
+class EmbedChoiceConverter(EmbedDefaultConverter):
+    choices: List[str] = ()
+
+    def convert(self, argument):
+        argument = argument.strip().lower()
+        if argument not in self.choices:
+            raise commands.BadArgument(f"Choice must be one of {', '.join(self.choices)}")
+
+        return argument
+
+
+@dataclass
+class EmbedIterableConverter(EmbedDefaultConverter):
+    separator: str = ","
+
+    def convert(self, argument):
+        return [arg.strip() for arg in argument.split(self.separator)]
+
+
+def generate_edit_modal(
+    title,
+    attributes: dict,
+    keys: List[str],
+    converters: Dict[str, EmbedDefaultConverter],
+    view: "MultiInputEmbedView",
+):
+    class EditModal(discord.ui.Modal, title=title):
+        async def on_submit(self, interaction: discord.Interaction):
+            await interaction.response.defer()
+
+            errors = []
+            for key in keys:
+                text_input = discord.utils.get(self.children, label=convert_key_to_label(key))
+
+                converter = converters[key]
+
+                try:
+                    new_value = converter.return_value(text_input.value)
+                    if converter.default and new_value is None:
+                        attributes[key] = None
+                    else:
+                        attributes[key] = text_input.value
+                except Exception as e:
+                    errors.append(f"- {key}: {str(e)}")
+
+            if not errors:
+                try:
+                    await interaction.followup.edit_message(
+                        interaction.message.id, embed=await view.generate_embed()
+                    )
+                except Exception as e:
+                    await interaction.followup.send(
+                        f"Something went wrong while sending an embed: {e}"
+                    )
+                    await interaction.followup.edit_message(interaction.message.id)
             else:
-                self.index += 1
-                self.prepare_next_phase(self.get_next_phase())
+                errors_str = "\n".join(errors)
+                await interaction.followup.send(
+                    f"Something went wrong with some of the values submitted:\n {errors_str}",
+                    ephemeral=True,
+                )
+                await interaction.followup.edit_message(interaction.message.id)
 
-        else:
-            self.index += 1
-
-        await interaction.response.edit_message(embed=self.phases[self.index], view=self)
-
-    async def on_timeout(self):
-        self.stop()
-        self.clear_items()
-        await self.message.edit(view=self)
-
-    def prepare_next_phase(self, event_name):
-        if event_name == "dead":
-            return self.process_deads()
-
-        if event_name == "victory":
-            return self.process_victory()
-
-        idle_tributes = self.tributes.copy()
-
-        deathless = [event for event in events[event_name] if len(event["killed"]) < 1]
-        idle_events = events[event_name].copy() + deathless.copy()
-
-        embed = discord.Embed(
-            title=f"Hunger Games Simulator ({self.index + 1})",
-            colour=self.bot.bot_color,
-            description=f"{' - '.join(self.tributes)}\nPress :arrow_forward: to proceed",
-        )
-
-        embed.set_footer(**self.bot.bot_footer)
-
-        done_events = []
-        while idle_tributes and len(self.tributes) > 1:
-            tributes = []
-            event = random.choice(
-                [
-                    event
-                    for event in idle_events
-                    if event["tributes"] <= len(idle_tributes)
-                    and len(event["killed"]) < len(self.tributes)
-                ]
+    modal = EditModal()
+    for key in keys:
+        modal.add_item(
+            discord.ui.TextInput(
+                label=convert_key_to_label(key),
+                placeholder=key
+                if not converters[key].optional
+                else "Type NULL to reset the field",
+                required=False,
+                default=attributes[key],
+                max_length=2000,
             )
-            tributes = random.sample(idle_tributes, event["tributes"])
-            idle_tributes = [x for x in idle_tributes if x not in tributes]
-            if event["killed"]:
-                for killed in event["killed"]:
-                    tribute = tributes[int(killed) - 1]
-                    self.tributes.remove(tribute)
-                    self.dead.append(tribute)
-
-            format_dict = {}
-            for tribute in tributes:
-                format_dict["p" + str(tributes.index(tribute) + 1)] = tribute
-
-            try:
-                done_events.append(event["string"].format(**format_dict))
-            except Exception as e:
-                raise FightError("Error formatting event", event, format_dict) from e
-
-        embed.add_field(
-            name=f"{event_name.title()} {self.day}",
-            value="\n".join(done_events),
-            inline=False,
         )
 
-        if event_name == "night":
-            self.day += 1
+    return modal
 
-        self.phases.append(embed)
-        return embed
 
-    def process_deads(self):
-        embed = discord.Embed(
-            title=f"Dead Tributes ({self.index})",
-            description="- " + "\n- ".join(self.dead) if self.dead else "None",
-            colour=self.bot.bot_color,
+def chunker(seq, size):
+    return [seq[pos : pos + size] for pos in range(0, len(seq), size)]
+
+
+class EditModalSelect(discord.ui.Select):
+    def __init__(self, converters, values, title):
+        self.converters = converters
+        self.attributes = values
+        self.chunks = chunker(list(values.keys()), 5)
+        self.title = title
+
+        options = [
+            discord.SelectOption(
+                label=f"Edit - {', '.join(convert_key_to_label(key) for key in chunk)}",
+                value=index,
+            )
+            for index, chunk in enumerate(self.chunks)
+        ]
+
+        super().__init__(options=options, row=1, placeholder="Pick a set of attributes to edit")
+
+    async def callback(self, interaction: discord.Interaction):
+        modal = generate_edit_modal(
+            self.title,
+            self.attributes,
+            self.chunks[int(self.values[0])],
+            self.converters,
+            self.view,
         )
-        embed.set_footer(**self.bot.bot_footer)
-        self.dead = []
+        await interaction.response.send_modal(modal)
 
-        self.phases.append(embed)
-        return embed
 
-    def process_victory(self):
-        self.ongoing = False
-        embed = discord.Embed(
-            title=f"Hunger Game Winner ({self.index})",
-            description=f":tada: {self.tributes[0]} is the Winner! :tada:",
-            colour=self.bot.bot_color,
-        )
-        embed.set_footer(**self.bot.bot_footer)
-
-        self.remove_item(self.stop_fight)
-        self.phases.append(embed)
-        return embed
-
-    def get_next_phase(self):
-        if self.phase is None:
-            self.phase = "bloodbath"
-            return self.phase
-
-        if len(self.tributes) > 1:
-            if self.day % 7 == 0:
-                self.phase = "feast"
-                return self.phase
-
-            if self.phase in ["night", "feast", "bloodbath"]:
-                self.phase = "day"
-                return self.phase
-
-            if self.phase in ["day"]:
-                self.phase = "dead"
-                return self.phase
-
-            if self.phase == "dead":
-                self.phase = "night"
-                return self.phase
-
-        self.phase = "victory"
-        return self.phase
+class EmbedConverterError(Exception):
+    pass
 
 
 class MultiInputEmbedView(discord.ui.View):
     def __init__(
         self,
         embed_maker: Callable,
-        confirm_check: Callable,
-        defaults: Dict,
+        defaults: Dict[str, EmbedDefaultConverter],
         modal_title: str,
-        optionals: List = (),
+        *,
+        extra_confirm_check: Callable = None,
     ):
         super().__init__()
 
         self.embed_maker = embed_maker
-        self.confirm_check = confirm_check
-        self.values = defaults
+        self.extra_confirm_check = extra_confirm_check
+        self.converters = defaults
+        self.values = {key: value.default for key, value in defaults.items()}
         self.message = None
         self.modal_title = modal_title
         self.value = False
-        self.optionals = optionals
+        self.add_item(EditModalSelect(self.converters, self.values, modal_title))
 
     async def generate_embed(self):
+        converted_values = self.convert_values()
         if asyncio.iscoroutinefunction(self.embed_maker):
-            return await self.embed_maker(self.values)
+            return await self.embed_maker(converted_values)
 
-        return self.embed_maker(self.values)
+        return self.embed_maker(converted_values)
 
-    def convert_key_to_label(self, key):
-        return key.title().replace("_", " ")
-
-    def construct_modal(self):
-        class Modal(discord.ui.Modal, title=self.modal_title):
-            async def on_submit(modal, interaction: discord.Interaction):
-                for key in self.values.keys():
-                    text_input = discord.utils.get(
-                        modal.children, label=self.convert_key_to_label(key)
-                    )
-                    if text_input.value.lower() == "null" and key in self.optionals:
-                        self.values[key] = None
-                    elif text_input.value != "":
-                        self.values[key] = text_input.value.strip()
-
-                await interaction.response.defer()
-                try:
-                    await interaction.followup.edit_message(
-                        interaction.message.id, embed=await self.generate_embed()
-                    )
-                except Exception as e:
-                    await interaction.followup.send(
-                        f"Something went wrong with the embed: {e}", ephemeral=True
-                    )
-
-        modal = Modal()
+    def convert_values(self):
+        final_values = {}
         for key, value in self.values.items():
-            modal.add_item(
-                discord.ui.TextInput(
-                    label=self.convert_key_to_label(key),
-                    placeholder=key
-                    if key not in self.optionals
-                    else "Type NULL to reset the field",
-                    required=False,
-                    default=value,
-                    max_length=2000,
-                )
-            )
+            converter = self.converters[key]
+            try:
+                final_values[key] = converter.return_value(value)
+            except Exception as e:
+                raise EmbedConverterError(f"{key}: {e}") from e
 
-        return modal
+        return final_values
 
-    @discord.ui.button(label="Edit", style=discord.ButtonStyle.blurple)
-    async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(self.construct_modal())
+    def confirm_check(self, values):
+        missing = [
+            convert_key_to_label(key)
+            for key, value in values.items()
+            if not self.converters[key].optional and value is None
+        ]
+        if missing:
+            raise BotError(f"Missing required values: {', '.join(missing)}")
+
+        if self.extra_confirm_check is not None:
+            self.extra_confirm_check(values)
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
-            self.confirm_check(self.values)
+            self.confirm_check(self.convert_values())
             self.value = True
             self.stop()
             self.clear_items()
             await interaction.response.edit_message(content="Finishing construction", view=self)
         except BotError as e:
-            await interaction.response.send_message(
-                f"Something wrong with input: {e}", ephemeral=True
-            )
+            await interaction.response.send_message(str(e), ephemeral=True, delete_after=30)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):

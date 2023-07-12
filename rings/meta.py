@@ -1,16 +1,17 @@
-import discord
-from discord.ext import commands
-
-from rings.utils.converters import time_converter
-from rings.utils.config import twitch_id, twitch_secret
-
+import asyncio
+import datetime
 import io
 import re
 import time
+
 import aiohttp
-import asyncio
-import datetime
+import discord
+from discord.ext import commands
 from PIL import Image
+
+from rings.utils.config import twitch_id, twitch_secret
+from rings.utils.converters import time_converter
+from rings.utils.ui import PollView
 
 
 class Meta(commands.Cog):
@@ -210,23 +211,6 @@ class Meta(commands.Cog):
 
             self.bot.counter += 1
 
-    # NEED TO FIND MODULE FOR SH ON WINDOWS
-    # async def check_processes(self):
-    #     if not self.bot.check_enabled or self.bot.user.id == self.bot.TEST_BOT_ID:
-    #         return
-
-    #     ps = sh.grep(sh.ps("-ef"), "python3.8")
-    #     downed = []
-    #     for file, name in self.processes.items():
-    #         if file not in ps:
-    #             downed.append(name)
-
-    #     if downed:
-    #         await self.bot.get_bot_channel().send(
-    #             f":negative_squared_cross_mark: | The following processes are down: {', '.join(downed)}"
-    #         )
-    #         self.bot.check_enabled = False
-
     async def clear_potential_star(self):
         ids = list(self.bot.potential_stars.keys())
         ids.sort()
@@ -378,6 +362,28 @@ class Meta(commands.Cog):
             command = self.bot.get_command(command_name)
             if command is not None:
                 command.enabled = False
+
+        polls = await self.bot.db.query(
+            """
+                SELECT p.*, array_agg((po.id, po.message)) as options 
+                FROM necrobot.PollsV2 as p 
+                JOIN necrobot.PollOptions as po ON p.message_id = po.poll_id
+                WHERE p.open = true
+                GROUP BY p.message_id
+            """
+        )
+        for poll in polls:
+            self.bot.add_view(
+                PollView(
+                    poll["title"],
+                    poll["message"],
+                    poll["max_votes"],
+                    poll["options"],
+                    poll["message_id"],
+                ),
+                self.bot,
+                message_id=poll["message_id"],
+            )
 
         self.bot.maintenance = False
         await msg.edit(content="**Bot Online**")
