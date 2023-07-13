@@ -37,7 +37,7 @@ from .enemies import POTENTIAL_ENEMIES
 from .entities import StattedEntity
 from .fields import POTENTIAL_FIELDS
 from .skills import get_skill
-from .ui import CombatView, EmbedStatConverter
+from .ui import CombatView, EmbedSkillConverter, EmbedStatConverter
 
 LOG_SIZE = 7
 EquipmentSet = namedtuple("EquipmentSet", "character weapon artefact")
@@ -521,7 +521,7 @@ class Flowers(commands.Cog):
         `{pre}characters create John` - Start the creation process.
         """
         defaults = {
-            "description": EmbedStringConverter(),
+            "description": EmbedStringConverter(style=discord.TextStyle.paragraph),
             "image": EmbedStringConverter(optional=True),
             "title": EmbedStringConverter(),
             "tier": EmbedRangeConverter(min=1, max=5),
@@ -533,8 +533,8 @@ class Flowers(commands.Cog):
             "magical_attack": EmbedStatConverter(),
             "physical_defense": EmbedStatConverter(),
             "magical_defense": EmbedStatConverter(),
-            "passive_skill": EmbedStringConverter(optional=True),
-            "active_skill": EmbedStringConverter(optional=True),
+            "passive_skill": EmbedSkillConverter(optional=True, passive=True),
+            "active_skill": EmbedSkillConverter(optional=True),
         }
 
         view = await self.character_editor(ctx, name, None, defaults)
@@ -581,7 +581,9 @@ class Flowers(commands.Cog):
         """
         char_id = char["id"]
         defaults = {
-            "description": EmbedStringConverter(default=char["description"]),
+            "description": EmbedStringConverter(
+                default=char["description"], style=discord.TextStyle.paragraph
+            ),
             "image": EmbedStringConverter(default=char["image_url"], optional=True),
             "title": EmbedStringConverter(default=char["title"]),
             "tier": EmbedRangeConverter(default=char["tier"], min=1, max=5),
@@ -841,7 +843,7 @@ class Flowers(commands.Cog):
             )
 
         defaults = {
-            "description": EmbedStringConverter(),
+            "description": EmbedStringConverter(style=discord.TextStyle.paragraph),
             "image": EmbedStringConverter(optional=True),
             "characters": EmbedIterableConverter(),
             "max_rolls": EmbedRangeConverter(min=0, default="0"),

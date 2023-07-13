@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 import enum
 import time
 from typing import List
 
 import discord
 from discord.interactions import Interaction
+from discord.ext import commands
 
 from rings.utils.ui import EmbedBooleanConverter, EmbedDefaultConverter, EmbedIntegerConverter
 
+from .skills import ActiveSkill, PassiveSkill, get_skill
 from .base import get_symbol, Stat
 from .battle import Battle, BattleOverException, MovementType
 from .entities import Character
@@ -22,6 +25,24 @@ class EmbedStatConverter(EmbedDefaultConverter):
         percent = EmbedBooleanConverter().convert(percent.strip())
 
         return Stat(percent, value)
+
+
+@dataclass
+class EmbedSkillConverter(EmbedDefaultConverter):
+    passive: bool = False
+
+    def convert(self, argument: str):
+        skill = get_skill(argument.strip())
+        if skill is None:
+            raise commands.BadArgument("Not a valid skill")
+
+        if isinstance(skill, PassiveSkill) and not self.passive:
+            raise commands.BadArgument("Not a valid active skill")
+
+        if isinstance(skill, ActiveSkill) and self.passive:
+            raise commands.BadArgument("Not a valid passive skill")
+
+        return argument
 
 
 class ActionType(enum.Enum):
@@ -190,9 +211,11 @@ class CombatView(discord.ui.View):
 
     async def interaction_check(self, interaction: Interaction):
         if not interaction.user == self.author:
-            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            await interaction.response.send_message(
+                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
+            )
             return False
-        
+
         return True
 
     def set_ui(self, ui: CharacterUI):

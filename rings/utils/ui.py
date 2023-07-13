@@ -81,7 +81,9 @@ class PollView(discord.ui.View):
             self.poll_id,
         )
 
-    @discord.ui.button(label="Close poll", style=discord.ButtonStyle.red, row=1, custom_id="poll_end")
+    @discord.ui.button(
+        label="Close poll", style=discord.ButtonStyle.red, row=1, custom_id="poll_end"
+    )
     async def close_poll(self, interaction: discord.Interaction, button: discord.ui.Button):
         perms = await interaction.client.db.get_permission(
             interaction.user.id, interaction.guild.id
@@ -97,7 +99,8 @@ class PollView(discord.ui.View):
         self.clear_items()
         await interaction.response.edit_message(
             content="Poll closed!",
-            embed=self.generate_embed(await self.get_values(interaction.client)), view=self
+            embed=self.generate_embed(await self.get_values(interaction.client)),
+            view=self,
         )
         await interaction.followup.send(":white_check_mark: | Poll closed", ephemeral=True)
 
@@ -130,7 +133,7 @@ class PollEditorView(discord.ui.View):
         super().__init__()
         self.converters = {
             "title": EmbedStringConverter(),
-            "description": EmbedStringConverter(optional=True),
+            "description": EmbedStringConverter(optional=True, style=discord.TextStyle.paragraph),
             "max_votes": EmbedRangeConverter(default="1", min=1, max=25),
         }
         self.attributes = {key: value.default for key, value in self.converters.items()}
@@ -141,9 +144,11 @@ class PollEditorView(discord.ui.View):
 
     async def interaction_check(self, interaction: Interaction):
         if not interaction.user == self.author:
-            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            await interaction.response.send_message(
+                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
+            )
             return False
-        
+
         return True
 
     async def generate_embed(self):
@@ -279,9 +284,11 @@ class SelectView(discord.ui.View):
 
     async def interaction_check(self, interaction: Interaction):
         if not interaction.user == self.author:
-            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            await interaction.response.send_message(
+                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
+            )
             return False
-        
+
         return True
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, row=1)
@@ -317,9 +324,11 @@ class Confirm(discord.ui.View):
 
     async def interaction_check(self, interaction: Interaction):
         if not interaction.user == self.author:
-            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            await interaction.response.send_message(
+                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
+            )
             return False
-        
+
         return True
 
     async def on_timeout(self):
@@ -391,9 +400,11 @@ class Paginator(discord.ui.View):
 
     async def interaction_check(self, interaction: Interaction):
         if not interaction.user == self.author:
-            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            await interaction.response.send_message(
+                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
+            )
             return False
-        
+
         return True
 
     @property
@@ -454,9 +465,11 @@ def convert_key_to_label(key: str):
 class EmbedDefaultConverter:
     default: str = ""
     optional: bool = False
+    style: discord.TextStyle = discord.TextStyle.short
 
     def return_value(self, argument):
-        if argument.lower() in ["null", "", None]:
+        argument = str(argument)
+        if argument.lower() in ["null", "", "none"]:
             return None
 
         return self.convert(argument)
@@ -553,7 +566,7 @@ def generate_edit_modal(
                     else:
                         attributes[key] = text_input.value
                 except Exception as e:
-                    errors.append(f"- {key}: {str(e)}")
+                    errors.append(f"- {convert_key_to_label(key)}: {str(e)}")
 
             if not errors:
                 try:
@@ -568,7 +581,7 @@ def generate_edit_modal(
             else:
                 errors_str = "\n".join(errors)
                 await interaction.followup.send(
-                    f"Something went wrong with some of the values submitted:\n {errors_str}",
+                    f"Something went wrong with some of the values submitted:{errors_str}",
                     ephemeral=True,
                 )
                 await interaction.followup.edit_message(interaction.message.id)
@@ -584,6 +597,7 @@ def generate_edit_modal(
                 required=False,
                 default=attributes[key],
                 max_length=2000,
+                style=converters[key].style,
             )
         )
 
@@ -650,9 +664,11 @@ class MultiInputEmbedView(discord.ui.View):
 
     async def interaction_check(self, interaction: Interaction):
         if not interaction.user == self.author:
-            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            await interaction.response.send_message(
+                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
+            )
             return False
-        
+
         return True
 
     async def generate_embed(self):

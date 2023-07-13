@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import enum
-from typing import Union, TYPE_CHECKING
+from typing import List, Type, Union, TYPE_CHECKING
 
-from .base import DamageInstance, get_distance
-from .base import DamageInstance, StatBlock
+from .base import DamageInstance, get_distance, StatBlock
 
 if TYPE_CHECKING:
     from .battle import Battle
@@ -35,21 +34,21 @@ class Skill:
 
     def on_calculate_attack(
         self, entity: StattedEntity, attackee: StattedEntity, current_attack: int, physical: bool
-    ):
+    ) -> int:
         """This is triggered when calculating stats to determine the final
         attack stat. The returned value is added to the rest."""
         return 0
 
     def on_calculate_defense(
         self, entity: StattedEntity, attacker: StattedEntity, current_defense: int, physical: bool
-    ):
+    ) -> int:
         """This is triggered when calculating stats to determine the final
         defense stat. The returned value is added to the rest."""
         return 0
 
     def on_take_damage(
         self, entity: StattedEntity, attacker: StattedEntity, damage: DamageInstance
-    ):
+    ) -> int:
         """This is triggered when damage is taken. The return of this is the final damage.
 
         This value is not affected by modifier, often called "true" damage.
@@ -58,7 +57,7 @@ class Skill:
 
     def on_deal_damage(
         self, entity: StattedEntity, attackee: StattedEntity, damage: DamageInstance
-    ):
+    ) -> int:
         """This is triggered when damage is dealt. The return of this is the final damage.
 
         This value is not affected by modifier, often called "true" damage."""
@@ -203,7 +202,42 @@ class ChangeDamageType(ActiveSkill):
 
 
 @dataclass
-class DefensiveBuff(Modifier):
+class MapWideAura(PassiveSkill):
+    turns: int = 0
+    stats: StatBlock = None
+    allowed_char: List[str] = ()
+
+    def on_start_turn(self, battle: Battle, entity: StattedEntity):
+        for e in battle.players:
+            if entity == e:
+                continue
+
+            if self.allowed_char and not entity.name in self.allowed_char:
+                continue
+
+            e.add_modifier(GrantBuff(duration=self.turns, stats=self.stats, name=self.name))
+
+
+@dataclass
+class GrantModifierInArea(ActiveSkill):
+    stats: StatBlock = None
+    distance: int = 1
+    turns: int = 0
+    modifier: Type[Modifier] = None
+
+    def on_activation(self, battle: Battle, entity: StattedEntity):
+        for e in battle.players:
+            if entity == e:
+                continue
+
+            if get_distance(e.position, entity.position) <= self.distance:
+                e.add_modifier(
+                    self.modifier(duration=self.turns, stats=self.stats, name=self.name)
+                )
+
+
+@dataclass
+class GrantBuff(Modifier):
     stats: StatBlock = None
 
     def on_calculate_defense(
@@ -216,24 +250,6 @@ class DefensiveBuff(Modifier):
 
         return self.stats.calculate_modifier(stat) * current_defense
 
-
-@dataclass
-class MapWideAura(PassiveSkill):
-    turns: int = 0
-    stats: StatBlock = None
-
-    def on_start_turn(self, battle: Battle, entity: StattedEntity):
-        for e in battle.players:
-            if entity == e:
-                continue
-
-            e.add_modifier(DefensiveBuff(duration=self.turns, stats=self.stats, name=self.name))
-
-
-@dataclass
-class OffensiveBuff(Modifier):
-    stats: StatBlock = None
-
     def on_calculate_attack(
         self, entity: StattedEntity, attacker: StattedEntity, current_attack: int, physical: bool
     ):
@@ -245,21 +261,64 @@ class OffensiveBuff(Modifier):
         return self.stats.calculate_modifier(stat) * current_attack
 
 
+def grant_health(entity: StattedEntity, stats: StatBlock):
+    for stat in ("primary_health", "secondary_health"):
+        secondary = stat == "secondary_health"
+        if stats.stat_is_raw(stat):
+            entity.grant_health(stats.calculate_raw(stat), secondary=secondary)
+        else:
+            entity.grant_health(
+                stats.calculate_modifier(stat) * entity.stats.calculate_raw(stat),
+                secondary=secondary,
+            )
+
+
 @dataclass
-class GrantStatBoost(ActiveSkill):
+class GrantHealth(Modifier):
     stats: StatBlock = None
-    distance: int = 1
-    turns: int = 0
 
-    def on_activation(self, battle: Battle, entity: StattedEntity):
-        for e in battle.players:
-            if entity == e:
-                continue
+    def on_start_turn(self, battle: Battle, entity: StattedEntity):
+        grant_health(entity, self.stats)
 
-            if get_distance(e.position, entity.position) <= self.distance:
-                e.add_modifier(
-                    OffensiveBuff(duration=self.turns, stats=self.stats, name=self.name)
-                )
+
+@dataclass
+class RecoverHealth(PassiveSkill):
+    stats: StatBlock = None
+
+    def on_end_turn(self, battle: Battle, entity: StattedEntity):
+        grant_health(entity, self.stats)
+
+
+@dataclass
+class OnHitModifier(PassiveSkill):
+    stats: StatBlock = None
+    turns: int = 1
+    modifier: Type[Modifier] = None
+
+    def on_attack(self, battle: Battle, entity: StattedEntity, attackee: StattedEntity):
+        return attackee.add_modifier(self.modifier(name=self.name, duration=self.turns))
+
+
+@dataclass
+class Rivalry(PassiveSkill):
+    last_enemy: StattedEntity = None
+    stats: StatBlock = None
+
+    def on_defend(self, battle: Battle, entity: StattedEntity, attacker: StattedEntity):
+        self.last_enemy = attacker
+
+    def on_calculate_attack(
+        self, entity: StattedEntity, attackee: StattedEntity, current_attack: int, physical: bool
+    ):
+        if attackee != self.last_enemy:
+            return 0
+
+        stat = "physical_attack" if physical else "magical_attack"
+
+        if self.stats.stat_is_raw(stat):
+            return self.stats.calculate_raw(stat)
+
+        return self.stats.calculate_modifier(stat) * current_attack
 
 
 def get_skill(name) -> Union[ActiveSkill, PassiveSkill]:
@@ -297,8 +356,64 @@ SKILLS = {
         "description": "The knowledge of the smith boosts the physical defense of all allies on the map",
     },
     "Presence of the Smith": {
-        "values": {"turns": 5, "stats": StatBlock(physical_attack=(True, 15))},
-        "class": GrantStatBoost,
+        "values": {
+            "turns": 5,
+            "stats": StatBlock(physical_attack=(True, 15)),
+            "modifier": GrantBuff,
+        },
+        "class": GrantModifierInArea,
         "description": "When activated, all allies adjacent to the smith gain a long lasting buff to their physical attack",
+    },
+    "Strength of the Heat": {
+        "values": {"turns": 1, "stats": StatBlock(magical_defense=(True, 10))},
+        "class": MapWideAura,
+        "description": "The mere presence of the Nether Dweller reinforces the flow of magic, granting his allies more resistance",
+    },
+    "Fiery Aura": {
+        "values": {
+            "turns": 5,
+            "stats": StatBlock(magical_attack=(True, 15)),
+            "modifier": GrantBuff,
+        },
+        "class": GrantModifierInArea,
+        "description": "The fiery aura of the Nether Dweller flares, envelopping all those around him in it's power and granting them increase magical offense.",
+    },
+    "Refreshing Drinks": {
+        "values": {
+            "turns": 5,
+            "stats": StatBlock(primary_health=(True, 5)),
+            "modifier": GrantHealth,
+        },
+        "class": GrantModifierInArea,
+        "description": "Where ever the Barman goes he bring with him many refreshing drinks that he happily shares",
+    },
+    "Ender Sword": {
+        "values": {
+            "turns": 1,
+            "stats": StatBlock(magical_defense=(True, -50)),
+            "modifier": GrantBuff,
+        },
+        "class": OnHitModifier,
+        "description": "The End Walker's sword is made from material that syphon magic, draining the hit enemies of their magical resistances",
+    },
+    "Merman Leader": {
+        "values": {
+            "turns": 1,
+            "stats": StatBlock(physical_attack=(True, 10), physical_defense=(True, 5)),
+            "modifier": GrantBuff,
+            "allowed_char": ("The Merman",),
+        },
+        "class": MapWideAura,
+        "description": "As leader, the Merman captain provides additionaly physical stats to merman around him.",
+    },
+    "Ghostly Body": {
+        "values": {"stats": StatBlock(secondary_health=(False, 10))},
+        "class": RecoverHealth,
+        "description": "Swirling energies surround and protect the Ghost, striken pierce its mist but never seem to connect.",
+    },
+    "Rivalries": {
+        "values": {"stats": StatBlock(physical_attack=(True, 15), magical_attack=(True, 15))},
+        "class": Rivalry,
+        "description": "The Queen is a resentful person, those who have wronged her do not live long enough to regret it.",
     },
 }

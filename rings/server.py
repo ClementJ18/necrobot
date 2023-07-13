@@ -825,7 +825,7 @@ class Server(commands.Cog):
         """
         check_channel(channel)
         defaults = {
-            "message": EmbedStringConverter(),
+            "message": EmbedStringConverter(style=discord.TextStyle.paragraph),
             "start": EmbedRangeConverter(min=0, max=23),
             "interval": EmbedRangeConverter(default="1", min=1, max=24),
         }
@@ -872,7 +872,9 @@ class Server(commands.Cog):
             raise BotError("No broadcast found with that ID")
 
         defaults = {
-            "message": EmbedStringConverter(default=str(query[0]["message"])),
+            "message": EmbedStringConverter(
+                default=str(query[0]["message"]), style=discord.TextStyle.paragraph
+            ),
             "start": EmbedRangeConverter(default=str(query[0]["start_time"]), min=0, max=23),
             "interval": EmbedRangeConverter(default=str(query[0]["interval"]), min=1, max=24),
         }

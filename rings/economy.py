@@ -109,9 +109,11 @@ class BlackJack(discord.ui.View):
 
     async def interaction_check(self, interaction: Interaction):
         if not interaction.user == self.ctx.author:
-            await interaction.response.send_message(":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True)
+            await interaction.response.send_message(
+                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
+            )
             return False
-        
+
         return True
 
     @property
