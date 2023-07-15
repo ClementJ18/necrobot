@@ -1,8 +1,9 @@
 from __future__ import annotations
-from collections import Counter
+
 import enum
 import logging
 import random
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
@@ -10,9 +11,9 @@ from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 
-from .objectives import Objective, StandardObjective
 from .base import Coords, DamageInstance, Size, get_distance, get_symbol
 from .entities import Character, Enemy, StattedEntity
+from .objectives import Objective, StandardObjective
 
 if TYPE_CHECKING:
     from .battle import Battle

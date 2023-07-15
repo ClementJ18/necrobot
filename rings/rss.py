@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import datetime
 import random
@@ -5,6 +7,7 @@ import re
 import time
 from collections import defaultdict
 from time import mktime
+from typing import TYPE_CHECKING, Dict, List
 
 import discord
 import feedparser
@@ -17,6 +20,10 @@ from rings.utils.converters import WritableChannelConverter
 from rings.utils.ui import paginate
 from rings.utils.utils import BotError
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+    from rings.utils.ui import Paginator
+
 
 def convert(t):
     return datetime.datetime.strptime(t[:-3] + t[-2:], "%Y-%m-%dT%H:%M:%S%z")
@@ -25,7 +32,7 @@ def convert(t):
 class RSS(commands.Cog):
     """Cog for keeping up to date with a bunch of different stuff automatically."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
         self.base_youtube = "https://www.youtube.com/feeds/videos.xml?channel_id={}"
         self.task = None
@@ -163,7 +170,7 @@ class RSS(commands.Cog):
     @has_perms(3)
     async def youtube(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context[NecroBot],
         youtube: str = None,
         *,
         channel: WritableChannelConverter = None,
@@ -181,7 +188,7 @@ class RSS(commands.Cog):
         if youtube is None:
             feeds = await self.bot.db.get_yt_rss(ctx.guild.id)
 
-            def embed_maker(view, entries):
+            def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
                 to_string = [
                     f"[{result[5]}](https://www.youtube.com/channel/{result[2]}): {ctx.guild.get_channel(result[1]).mention} - `{result[4] if result[4] != '' else 'None'}`"
                     for result in entries
@@ -227,7 +234,7 @@ class RSS(commands.Cog):
 
     @youtube.command(name="delete")
     @has_perms(3)
-    async def youtube_delete(self, ctx: commands.Context, *, youtuber_name):
+    async def youtube_delete(self, ctx: commands.Context[NecroBot], *, youtuber_name):
         """This subcommand allows you to unsubscribe from a youtube channel based on the name
 
         {usage}
@@ -251,7 +258,7 @@ class RSS(commands.Cog):
     @youtube.command(name="filters")
     @has_perms(3)
     async def youtube_filters(
-        self, ctx: commands.Context, youtuber_name: str, *, filters: str = ""
+        self, ctx: commands.Context[NecroBot], youtuber_name: str, *, filters: str = ""
     ):
         """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted.
         The filter itself is very rudimentary but will work so that any video that has exactly these words (in
@@ -317,7 +324,7 @@ class RSS(commands.Cog):
     @has_perms(3)
     async def twitch(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context[NecroBot],
         twitch: str = None,
         *,
         channel: WritableChannelConverter = None,
@@ -333,7 +340,7 @@ class RSS(commands.Cog):
         if twitch is None:
             feeds = await self.bot.db.get_tw_rss(ctx.guild.id)
 
-            def embed_maker(view, entries):
+            def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
                 to_string = [
                     f"[{result[5]}](https://www.twitch.tv/{result['twitch_name']}): {ctx.guild.get_channel(result[1]).mention} - `{result[4] if result[4] != '' else 'None'}`"
                     for result in entries
@@ -364,7 +371,7 @@ class RSS(commands.Cog):
 
     @twitch.command(name="delete")
     @has_perms(3)
-    async def twitch_delete(self, ctx: commands.Context, *, twitch_name):
+    async def twitch_delete(self, ctx: commands.Context[NecroBot], *, twitch_name):
         """This subcommand allows you to unsubscribe from a twitch channel based on the name
 
         {usage}
@@ -387,7 +394,7 @@ class RSS(commands.Cog):
 
     @twitch.command(name="filters")
     @has_perms(3)
-    async def twitch_filters(self, ctx: commands.Context, twitch_name: str, *, filters: str = ""):
+    async def twitch_filters(self, ctx: commands.Context[NecroBot], twitch_name: str, *, filters: str = ""):
         """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted.
         The filter itself is very rudimentary but will work so that any video that has exactly these words (in
         any case) in that order in the title will be posted. You can clear filters by calling this command with just

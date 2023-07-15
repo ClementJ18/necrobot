@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import copy
 import itertools
@@ -5,7 +7,7 @@ import json
 import math
 import random
 from collections import namedtuple
-from typing import List, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 import asyncpg
 import discord
@@ -18,10 +20,12 @@ from rings.utils.converters import (
     FlowerConverter,
     GachaBannerConverter,
     GachaCharacterConverter,
+    MemberConverter,
     TimeConverter,
 )
 from rings.utils.ui import (
     Confirm,
+    EmbedDefaultConverter,
     EmbedChoiceConverter,
     EmbedIterableConverter,
     EmbedRangeConverter,
@@ -39,6 +43,9 @@ from .fields import POTENTIAL_FIELDS
 from .skills import get_skill
 from .ui import CombatView, EmbedSkillConverter, EmbedStatConverter
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 LOG_SIZE = 7
 EquipmentSet = namedtuple("EquipmentSet", "character weapon artefact")
 
@@ -46,7 +53,7 @@ EquipmentSet = namedtuple("EquipmentSet", "character weapon artefact")
 class Flowers(commands.Cog):
     """A server specific economy system. Use it to reward/punish users at you heart's content. Also contains a gacha system."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
 
         self.DUD_PERCENT = 0.33
@@ -55,7 +62,7 @@ class Flowers(commands.Cog):
     ## Cog Functions
     #######################################################################
 
-    def cog_check(self, ctx: commands.Context):
+    def cog_check(self, ctx: commands.Context[NecroBot]):
         if ctx.guild:
             return True
 
@@ -65,7 +72,7 @@ class Flowers(commands.Cog):
     ## Functions
     #######################################################################
 
-    async def add_flowers(self, guild_id, user_id, amount):
+    async def add_flowers(self, guild_id: int, user_id: int, amount: int):
         await self.bot.db.query(
             "UPDATE necrobot.Flowers SET flowers = flowers + $3 WHERE guild_id=$1 AND user_id=$2",
             guild_id,
@@ -73,11 +80,11 @@ class Flowers(commands.Cog):
             amount,
         )
 
-    async def transfer_flowers(self, guild_id, payer, payee, amount):
+    async def transfer_flowers(self, guild_id: int, payer: int, payee: int, amount: int):
         await self.add_flowers(guild_id, payer, -amount)
         await self.add_flowers(guild_id, payee, amount)
 
-    async def get_flowers(self, guild_id, user_id):
+    async def get_flowers(self, guild_id: int, user_id: int) -> int:
         flowers = await self.bot.db.query(
             "SELECT flowers FROM necrobot.Flowers WHERE guild_id=$1 AND user_id=$2",
             guild_id,
@@ -86,21 +93,21 @@ class Flowers(commands.Cog):
 
         return flowers[0][0]
 
-    async def get_symbol(self, guild_id):
+    async def get_symbol(self, guild_id: int) -> str:
         symbol = await self.bot.db.query(
             "SELECT symbol FROM necrobot.FlowersGuild WHERE guild_id=$1", guild_id
         )
 
         return symbol[0][0]
 
-    async def update_symbol(self, guild_id, symbol):
+    async def update_symbol(self, guild_id: int, symbol: str):
         await self.bot.db.query(
             "UPDATE necrobot.FlowersGuild SET symbol=$2 WHERE guild_id=$1",
             guild_id,
             symbol,
         )
 
-    async def get_balance(self, ctx, user):
+    async def get_balance(self, ctx: commands.Context[NecroBot], user: discord.Member):
         if user is None:
             user = ctx.author
 
@@ -109,7 +116,7 @@ class Flowers(commands.Cog):
 
         await ctx.send(f":atm: | {user.name} has **{flowers}** {symbol}")
 
-    async def add_characters_to_user(self, guild_id, user_id, char_id):
+    async def add_characters_to_user(self, guild_id: int, user_id: int, char_id: int):
         query = await self.bot.db.query(
             """
             INSERT INTO necrobot.RolledCharacters(guild_id, user_id, char_id) VALUES($1, $2, $3)
@@ -124,7 +131,7 @@ class Flowers(commands.Cog):
 
         return query
 
-    async def remove_character_from_user(self, guild_id, user_id, char_id, amount):
+    async def remove_character_from_user(self, guild_id: int, user_id: int, char_id: int, amount: int):
         conn = await self.bot.db.get_conn()
         async with conn.transaction():
             level = await self.bot.db.query(
@@ -146,7 +153,7 @@ class Flowers(commands.Cog):
 
         return level, deleted
 
-    def convert_exp_to_level(self, exp, tier):
+    def convert_exp_to_level(self, exp: int, tier: int) -> int:
         level = 0
         thresholds = [
             1,
@@ -168,7 +175,7 @@ class Flowers(commands.Cog):
 
         return level, exp, true_threshold
 
-    def calculate_weight(self, tier, modifier, pity):
+    def calculate_weight(self, tier: int, modifier: int, pity: int) -> int:
         weight = (2 ** (1 + (5 - tier))) * modifier
 
         if tier != 5:
@@ -180,7 +187,7 @@ class Flowers(commands.Cog):
 
         return weight
 
-    def embed_character(self, character: dict, admin=False):
+    def embed_character(self, character: dict, admin: bool = False) -> discord.Embed:
         embed = discord.Embed(
             title=character["name"],
             colour=self.bot.bot_color,
@@ -221,13 +228,13 @@ class Flowers(commands.Cog):
         )
         return embed
 
-    def c(self, s):
+    def c(self, s: Any) -> Stat:
         if isinstance(s, asyncpg.Record):
             return Stat.from_db(s)
 
         return s
 
-    def embed_banner(self, banner, admin=False):
+    def embed_banner(self, banner: Dict, admin: bool = False) -> discord.Member:
         embed = discord.Embed(
             title=f"{banner['name']}",
             colour=self.bot.bot_color,
@@ -255,7 +262,7 @@ class Flowers(commands.Cog):
 
         return embed
 
-    async def pay_for_roll(self, guild_id, user_id, cost):
+    async def pay_for_roll(self, guild_id: int, user_id: int, cost: int):
         await self.bot.db.query(
             """
             UPDATE necrobot.Flowers SET flowers = flowers - $3 WHERE user_id = $2 AND guild_id = $1""",
@@ -269,7 +276,7 @@ class Flowers(commands.Cog):
             "SELECT * FROM necrobot.Characters ORDER BY tier DESC, universe ASC, name ASC"
         )
 
-    def pull(self, characters, pity=0, guarantee=False):
+    def pull(self, characters: List[dict], pity: int = 0, guarantee: bool = False):
         duds = [
             random.choice(DUD_TEMPLATES)
             for _ in range(math.ceil(len(characters) * self.DUD_PERCENT))
@@ -298,8 +305,8 @@ class Flowers(commands.Cog):
     @has_perms(3)
     async def flowers(
         self,
-        ctx: commands.Context,
-        member: discord.Member,
+        ctx: commands.Context[NecroBot],
+        member: MemberConverter,
         amount: int,
         *,
         reason: str = None,
@@ -333,7 +340,7 @@ class Flowers(commands.Cog):
 
     @flowers.command(name="symbol")
     @has_perms(4)
-    async def flowers_symbol(self, ctx: commands.Context, symbol: str):
+    async def flowers_symbol(self, ctx: commands.Context[NecroBot], symbol: str):
         """Change the symbol for the flowers for your server. Max 50 char.
 
         {usage}
@@ -349,7 +356,7 @@ class Flowers(commands.Cog):
 
     @flowers.command(name="balance")
     @commands.guild_only()
-    async def flowers_balance(self, ctx: commands.Context, user: discord.Member = None):
+    async def flowers_balance(self, ctx: commands.Context[NecroBot], user: discord.Member = None):
         """Check your or a user's balance of flowers
 
         {usage}
@@ -364,7 +371,7 @@ class Flowers(commands.Cog):
     @has_perms(3)
     async def event(
         self,
-        ctx,
+        ctx: commands.Context[NecroBot],
         channel: Union[discord.Thread, discord.TextChannel],
         amount: int,
         time: TimeConverter = 86400,
@@ -393,13 +400,13 @@ class Flowers(commands.Cog):
             description=f"React with :cherry_blossom: to gain **{amount}** {symbol}. This event will last {time_format}",
         )
         embed.set_footer(**self.bot.bot_footer)
-        msg = await channel.send(embed=embed, delete_after=time)
+        msg: discord.Message = await channel.send(embed=embed, delete_after=time)
         await msg.add_reaction("\N{CHERRY BLOSSOM}")
         self.bot.events[msg.id] = {"users": [], "amount": amount}
 
     @commands.command()
     @commands.guild_only()
-    async def give(self, ctx: commands.Context, member: discord.Member, amount: FlowerConverter):
+    async def give(self, ctx: commands.Context[NecroBot], member: MemberConverter, amount: FlowerConverter):
         """Transfer flowers from one user to another.
 
         {usage}
@@ -415,7 +422,7 @@ class Flowers(commands.Cog):
 
     ###GACHA
     @commands.group(invoke_without_command=True, aliases=["char", "character"])
-    async def characters(self, ctx, for_banner: bool = False):
+    async def characters(self, ctx: commands.Context[NecroBot], for_banner: bool = False):
         """List all possible characters
 
         {usage}
@@ -437,7 +444,7 @@ class Flowers(commands.Cog):
         await paginate(ctx, characters, 1, embed_maker)
 
     @characters.command(name="list")
-    async def characters_list(self, ctx):
+    async def characters_list(self, ctx: commands.Context[NecroBot]):
         """Compact list of characters
 
         {usage}
@@ -466,7 +473,7 @@ class Flowers(commands.Cog):
         await paginate(ctx, characters, 10, embed_maker)
 
     @characters.command(name="get")
-    async def characters_get(self, ctx, character: GachaCharacterConverter):
+    async def characters_get(self, ctx: commands.Context[NecroBot], character: GachaCharacterConverter):
         """Get info on a specific character.
 
         {usage}
@@ -476,7 +483,7 @@ class Flowers(commands.Cog):
         """
         await ctx.send(embed=self.embed_character(character, True))
 
-    async def character_editor(self, ctx, name, char_id, defaults):
+    async def character_editor(self, ctx: commands.Context[NecroBot], name: str, char_id: str, defaults: Dict[str, EmbedDefaultConverter]):
         def embed_maker(values):
             return self.embed_character(
                 {
@@ -512,7 +519,7 @@ class Flowers(commands.Cog):
 
     @characters.command(name="create")
     @has_perms(6)
-    async def characters_create(self, ctx, *, name: str):
+    async def characters_create(self, ctx: commands.Context[NecroBot], *, name: str):
         """Add a new character
 
         {usage}
@@ -569,7 +576,7 @@ class Flowers(commands.Cog):
     @has_perms(6)
     async def characters_edit(
         self,
-        ctx,
+        ctx: commands.Context[NecroBot],
         char: GachaCharacterConverter,
     ):
         """Edit a character's value
@@ -645,7 +652,7 @@ class Flowers(commands.Cog):
 
     @characters.command(name="delete")
     @has_perms(6)
-    async def characters_delete(self, ctx, char: GachaCharacterConverter):
+    async def characters_delete(self, ctx: commands.Context[NecroBot], char: GachaCharacterConverter):
         """Delete a character and remove them from all player's accounts
 
         {usage}
@@ -676,7 +683,7 @@ class Flowers(commands.Cog):
 
     @characters.command(name="toggle")
     @has_perms(6)
-    async def characters_toggle(self, ctx, char: GachaCharacterConverter):
+    async def characters_toggle(self, ctx: commands.Context[NecroBot], char: GachaCharacterConverter):
         """Toggle whether or not a character can be obtained as part of a banner
 
         {usage}
@@ -697,8 +704,8 @@ class Flowers(commands.Cog):
     @has_perms(4)
     async def characters_give(
         self,
-        ctx,
-        user: discord.Member,
+        ctx: commands.Context[NecroBot],
+        user: MemberConverter,
         char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon")),
     ):
         """Add a level of character to a player's account
@@ -729,8 +736,8 @@ class Flowers(commands.Cog):
     @has_perms(4)
     async def characters_take(
         self,
-        ctx,
-        user: discord.Member,
+        ctx: commands.Context[NecroBot],
+        user: MemberConverter,
         char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon")),
         amount: int = 1,
     ):
@@ -767,7 +774,7 @@ class Flowers(commands.Cog):
 
     @commands.group(invoke_without_command=True, aliases=["banner"])
     @commands.guild_only()
-    async def banners(self, ctx, archive: bool = False):
+    async def banners(self, ctx: commands.Context[NecroBot], archive: bool = False):
         """List ongoing banners
 
         {usage}
@@ -811,7 +818,7 @@ class Flowers(commands.Cog):
 
     @banners.command(name="create")
     @has_perms(4)
-    async def banners_create(self, ctx, *, name):
+    async def banners_create(self, ctx: commands.Context[NecroBot], *, name: str):
         """Add a new banner in the guild.
 
         {usage}
@@ -887,7 +894,7 @@ class Flowers(commands.Cog):
 
     @banners.command(name="toggle")
     @has_perms(4)
-    async def banners_toggle(self, ctx, banner: GachaBannerConverter(False)):
+    async def banners_toggle(self, ctx: commands.Context[NecroBot], banner: GachaBannerConverter(False)):
         """Toggle whether or not a banner is currently running
 
         {usage}
@@ -908,7 +915,7 @@ class Flowers(commands.Cog):
     @has_perms(4)
     async def banners_add(
         self,
-        ctx,
+        ctx: commands.Context[NecroBot],
         banner: GachaBannerConverter(False),
         *,
         char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon")),
@@ -938,7 +945,7 @@ class Flowers(commands.Cog):
     @has_perms(4)
     async def banners_remove(
         self,
-        ctx,
+        ctx: commands.Context[NecroBot],
         banner: GachaBannerConverter(False),
         *,
         char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon")),
@@ -969,7 +976,7 @@ class Flowers(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
-    async def gacha(self, ctx):
+    async def gacha(self, ctx: commands.Context[NecroBot]):
         """Get information on the gacha on this server
 
         {usage}
@@ -994,7 +1001,7 @@ class Flowers(commands.Cog):
 
     @gacha.command(name="balance")
     @commands.guild_only()
-    async def gacha_balance(self, ctx: commands.Context, user: discord.Member = None):
+    async def gacha_balance(self, ctx: commands.Context[NecroBot], user: MemberConverter = None):
         """Check your or a user's balance of flowers
 
         {usage}
@@ -1007,7 +1014,7 @@ class Flowers(commands.Cog):
 
     @gacha.command(name="characters", aliases=["char", "character"])
     @commands.guild_only()
-    async def gacha_characters(self, ctx):
+    async def gacha_characters(self, ctx: commands.Context[NecroBot]):
         """List all your characters and their info.
 
         {usage}
@@ -1034,7 +1041,7 @@ class Flowers(commands.Cog):
     @gacha.group(name="roll", invoke_without_command=True, aliases=["pull"])
     @commands.guild_only()
     @commands.max_concurrency(1, per=BucketType.user, wait=True)
-    async def gacha_roll(self, ctx, *, banner: GachaBannerConverter):
+    async def gacha_roll(self, ctx: commands.Context[NecroBot], *, banner: GachaBannerConverter):
         """Roll for a banner.
 
         {usage}
@@ -1158,7 +1165,7 @@ class Flowers(commands.Cog):
 
     @gacha_roll.command(name="cost")
     @has_perms(4)
-    async def gacha_roll_cost(self, ctx, amount: int):
+    async def gacha_roll_cost(self, ctx: commands.Context[NecroBot], amount: int):
         """Change the cost of rolling for a single character, must be at least 1. Default
         is 50.
 
@@ -1179,7 +1186,7 @@ class Flowers(commands.Cog):
 
     @gacha_roll.command(name="guarantee")
     @has_perms(4)
-    async def gacha_roll_guarantee(self, ctx, amount: int):
+    async def gacha_roll_guarantee(self, ctx: commands.Context[NecroBot], amount: int):
         """Change the number of rolls it takes to guarantee a 4 or 3 star characters. Set to 0 to never guarantee.
 
         {usage}
@@ -1198,14 +1205,14 @@ class Flowers(commands.Cog):
         await ctx.send(f":white_check_mark: | Updated guaranteed to **{amount}**")
 
     @commands.group()
-    async def equipment(self, ctx):
+    async def equipment(self, ctx: commands.Context[NecroBot]):
         """{usage}"""
         pass
 
     @equipment.command(name="equip")
     async def equipment_equip(
         self,
-        ctx,
+        ctx: commands.Context[NecroBot],
         character: GachaCharacterConverter(allowed_types=("character",), is_owned=True),
         *equipments: GachaCharacterConverter(allowed_types=("weapon", "artefact"), is_owned=True),
     ):
@@ -1296,7 +1303,7 @@ class Flowers(commands.Cog):
 
     @equipment.command(name="remove")
     async def equipment_remove(
-        self, ctx, character: GachaCharacterConverter(allowed_types=("character",), is_owned=True)
+        self, ctx: commands.Context[NecroBot], character: GachaCharacterConverter(allowed_types=("character",), is_owned=True)
     ):
         """Remove the equipment set of a character so that it can be given to another character.
 
@@ -1379,7 +1386,7 @@ class Flowers(commands.Cog):
         return embed
 
     @equipment.command(name="list")
-    async def equipment_list(self, ctx):
+    async def equipment_list(self, ctx: commands.Context[NecroBot]):
         """List your characters and their equipment.
 
         {usage}
@@ -1497,7 +1504,7 @@ class Flowers(commands.Cog):
 
     @gacha.command(name="battle")
     async def gacha_battle(
-        self, ctx, *chars: GachaCharacterConverter(allowed_types=("character",), is_owned=True)
+        self, ctx: commands.Context[NecroBot], *chars: GachaCharacterConverter(allowed_types=("character",), is_owned=True)
     ):
         if len(chars) != 3:
             raise BotError("Please submit exactly three characters for the battle.")
@@ -1535,7 +1542,7 @@ class Flowers(commands.Cog):
         battle.initialise()
 
         cmd = CombatView(battle, self.embed_battle, ctx.author)
-        cmd.message: discord.Message = await ctx.send(embed=self.embed_battle(battle), view=cmd)
+        cmd.message = await ctx.send(embed=self.embed_battle(battle), view=cmd)
 
         await cmd.wait()
 
@@ -1550,7 +1557,7 @@ class Flowers(commands.Cog):
     #######################################################################
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if payload.user_id in self.bot.settings["blacklist"]:
             return
 

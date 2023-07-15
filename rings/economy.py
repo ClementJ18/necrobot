@@ -1,4 +1,7 @@
-#!/usr/bin/python3.6
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import discord
 from discord.ext import commands
 from discord.interactions import Interaction
@@ -8,6 +11,9 @@ from cards.decks import standard52
 from cards.decks.standard52 import JACK, KING, QUEEN
 from rings.utils.converters import MoneyConverter
 from rings.utils.utils import BotError
+
+if TYPE_CHECKING:
+    from bot import NecroBot
 
 ACE_LOW = 1
 ACE_HIGH = 11
@@ -85,7 +91,7 @@ class Hand(common.Hand):
 
 
 class BlackJack(discord.ui.View):
-    def __init__(self, ctx: commands.Context, bet, *, timeout=180):
+    def __init__(self, ctx: commands.Context[NecroBot], bet, *, timeout=180):
         super().__init__(timeout=timeout)
 
         self.deck = Deck()
@@ -250,7 +256,7 @@ class BlackJack(discord.ui.View):
 
 
 class Economy(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
         self.IS_GAME = []
 
@@ -259,7 +265,7 @@ class Economy(commands.Cog):
     #######################################################################
 
     @commands.command(aliases=["bj"])
-    async def blackjack(self, ctx: commands.Context, bet: MoneyConverter):
+    async def blackjack(self, ctx: commands.Context[NecroBot], bet: MoneyConverter):
         """A simpe game of black jack against NecroBot's dealer. You can either draw a card by click on :black_joker:
         or you can pass your turn by clicking on :stop_button: . If you win you get double the amount of money you
         placed, if you lose you lose it all and if you tie everything is reset. Minimum bet 10 :euro:

@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import ast
 import time
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -12,11 +15,14 @@ from rings.utils.var import tutorial_e
 
 from .var import gdpr_e
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 
 class Support(commands.Cog):
     """All the NecroBot support commands are here to help you enjoy your time with NecroBot"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
         self.bot.tutorial_e = discord.Embed.from_dict(tutorial_e)
         self.bot.gdpr_embed = discord.Embed.from_dict(gdpr_e)
@@ -26,7 +32,7 @@ class Support(commands.Cog):
     #######################################################################
 
     @commands.command(aliases=["support"])
-    async def about(self, ctx: commands.Context):
+    async def about(self, ctx: commands.Context[NecroBot]):
         """Creates a rich embed of the bot's details Also contains link for inviting and support server.
 
         {usage}"""
@@ -54,7 +60,7 @@ class Support(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def report(self, ctx: commands.Context, *, message):
+    async def report(self, ctx: commands.Context[NecroBot], *, message):
         """Report a bug with the bot or send a suggestion . Please be a specific as you can. Any abusive use will result in
         blacklisting.
 
@@ -97,7 +103,7 @@ class Support(commands.Cog):
             await self.bot.get_channel(398894681901236236).send(embed=embed)
 
     @commands.group(invoke_without_command=True)
-    async def news(self, ctx: commands.Context):
+    async def news(self, ctx: commands.Context[NecroBot]):
         """See the latest necrobot news
 
         {usage}
@@ -117,7 +123,7 @@ class Support(commands.Cog):
 
     @news.command("add")
     @has_perms(6)
-    async def news_add(self, ctx: commands.Context, *, news: str):
+    async def news_add(self, ctx: commands.Context[NecroBot], *, news: str):
         """Add a new news item
 
         {usage}"""
@@ -150,7 +156,7 @@ class Support(commands.Cog):
 
     @news.command("delete")
     @has_perms(6)
-    async def news_delete(self, ctx: commands.Context, index: int):
+    async def news_delete(self, ctx: commands.Context[NecroBot], index: int):
         """Remove a news item
 
         {usage}"""
@@ -167,7 +173,7 @@ class Support(commands.Cog):
 
     @news.command("raw")
     @has_perms(6)
-    async def news_raw(self, ctx: commands.Context, index: int):
+    async def news_raw(self, ctx: commands.Context[NecroBot], index: int):
         """Get the raw dict form of the news
 
         {usage}"""
@@ -175,7 +181,7 @@ class Support(commands.Cog):
 
     @news.command("template")
     @has_perms(6)
-    async def news_template(self, ctx: commands.Context):
+    async def news_template(self, ctx: commands.Context[NecroBot]):
         """Prints the template for news
 
         {usage}"""
@@ -184,7 +190,7 @@ class Support(commands.Cog):
         )
 
     @commands.command()
-    async def tutorial(self, ctx: commands.Context):
+    async def tutorial(self, ctx: commands.Context[NecroBot]):
         """Sends an embed with helpful information on Necrobot's features, be warned, it is quite a dense text blob
 
         {usage}"""
@@ -194,7 +200,7 @@ class Support(commands.Cog):
             raise BotError("Looks like you have private messages disabled") from e
 
     @commands.command()
-    async def privacy(self, ctx: commands.Context):
+    async def privacy(self, ctx: commands.Context[NecroBot]):
         """Get information on the data necrobot keeps about you and what steps you can do about it.
 
         {usage}"""

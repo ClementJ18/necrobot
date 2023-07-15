@@ -1,9 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import discord
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 
 def has_perms(level):
-    async def predicate(ctx):
+    async def predicate(ctx: commands.Context[NecroBot]):
         if await ctx.bot.is_owner(ctx.author):
             return True
 
@@ -26,7 +33,7 @@ def has_perms(level):
 
 
 def requires_mute_role():
-    def predicate(ctx):
+    def predicate(ctx: commands.Context[NecroBot]):
         if ctx.guild is None:
             raise commands.CheckFailure("Cannot use this command in DMs")
 
@@ -41,7 +48,7 @@ def requires_mute_role():
 
 
 def leaderboard_enabled():
-    async def predicate(ctx):
+    async def predicate(ctx: commands.Context[NecroBot]):
         if ctx.guild is None:
             raise commands.CheckFailure("Cannot use this command in DMs")
 
@@ -60,7 +67,7 @@ def leaderboard_enabled():
     return commands.check(predicate)
 
 
-def mu_moderator(guild):
+def mu_moderator(guild: discord.Guild):
     if guild is None:
         return []
 
@@ -74,7 +81,7 @@ def mu_moderator(guild):
 
 
 def mu_moderator_check():
-    def predicate(ctx):
+    def predicate(ctx: commands.Context[NecroBot]):
         ids = mu_moderator(ctx.guild)
 
         if ctx.author.id not in ids:
@@ -85,8 +92,8 @@ def mu_moderator_check():
     return commands.check(predicate)
 
 
-def guild_only(guild_id):
-    def predicate(ctx):
+def guild_only(guild_id: int):
+    def predicate(ctx: commands.Context[NecroBot]):
         if ctx.guild is None:
             raise commands.CheckFailure("This command cannot be executed in DMs")
 

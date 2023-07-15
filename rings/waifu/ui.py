@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
 import enum
 import time
+from dataclasses import dataclass
 from typing import List
 
 import discord
-from discord.interactions import Interaction
 from discord.ext import commands
+from discord.interactions import Interaction
 
 from rings.utils.ui import EmbedBooleanConverter, EmbedDefaultConverter, EmbedIntegerConverter
 
-from .skills import ActiveSkill, PassiveSkill, get_skill
-from .base import get_symbol, Stat
+from .base import Stat, get_symbol
 from .battle import Battle, BattleOverException, MovementType
 from .entities import Character
+from .skills import ActiveSkill, PassiveSkill, get_skill
 
 
 class EmbedStatConverter(EmbedDefaultConverter):

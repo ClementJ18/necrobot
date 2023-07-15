@@ -1,7 +1,9 @@
-#!/usr/bin/python3.6
+from __future__ import annotations
+
 import asyncio
 import logging
 import traceback
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -9,9 +11,12 @@ from discord.ext import commands
 from rings.misc.ui import FightError
 from rings.utils.utils import BotError, DatabaseError, build_format_dict
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 
 class Events(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
 
     #######################################################################
@@ -78,7 +83,7 @@ class Events(commands.Cog):
     #######################################################################
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error):
+    async def on_command_error(self, ctx: commands.Context[NecroBot], error):
         """Catches error and sends a message to the user that caused the error with a helpful message."""
         msg = None
         error = getattr(error, "original", error)
@@ -228,7 +233,7 @@ class Events(commands.Cog):
             await self.bot.db.update_permission(after.owner.id, after.id, update=5)
 
     @commands.Cog.listener()
-    async def on_command(self, ctx: commands.Context):
+    async def on_command(self, ctx: commands.Context[NecroBot]):
         try:
             can_run = await ctx.command.can_run(ctx) and ctx.command.enabled
         except commands.CheckFailure:

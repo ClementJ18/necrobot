@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from .base import Coords, DataClass, StatBlock, DamageInstance
-from .skills import Modifier, PassiveSkill, ActiveSkill
+from .base import Coords, DamageInstance, DataClass, StatBlock
+from .skills import ActiveSkill, Modifier, PassiveSkill
 
 
 @dataclass(kw_only=True)

@@ -1,10 +1,11 @@
 from __future__ import annotations
+
 import asyncio
 import datetime
 import math
-from dataclasses import dataclass
 import re
-from typing import Callable, Dict, List, Tuple
+from dataclasses import dataclass
+from typing import Callable, Dict, List
 
 import discord
 from discord.ext import commands
@@ -15,8 +16,10 @@ from rings.utils.utils import BotError
 CUSTOM_EMOJI = r"<:[^\s]+:([0-9]*)>"
 UNICODE_EMOJI = r":\w*:"
 
+
 def strip_emoji(content):
     return re.sub(UNICODE_EMOJI, "", re.sub(CUSTOM_EMOJI, "", content)).strip()
+
 
 class PollSelect(discord.ui.Select):
     view: PollView
@@ -54,7 +57,8 @@ class PollView(discord.ui.View):
         self.closer = None
 
         select_options = [
-            discord.SelectOption(label=strip_emoji(option[1]), value=option[0]) for option in options
+            discord.SelectOption(label=strip_emoji(option[1]), value=option[0])
+            for option in options
         ]
         self.add_item(
             PollSelect(
@@ -117,7 +121,7 @@ class PollEditorModal(discord.ui.Modal):
     def __init__(self, view):
         super().__init__(title="Add up to three options")
 
-        self.option_1 = discord.ui.TextInput(label="Option 1", required=False, max_length=150, required=True)
+        self.option_1 = discord.ui.TextInput(label="Option 1", required=True, max_length=150)
         self.option_2 = discord.ui.TextInput(label="Option 2", required=False, max_length=150)
         self.option_3 = discord.ui.TextInput(label="Option 3", required=False, max_length=150)
         self.add_item(self.option_1)
@@ -133,18 +137,24 @@ class PollEditorModal(discord.ui.Modal):
             if option.value:
                 stripped = strip_emoji(option.value)
                 if not stripped:
-                    errors.append(f"- Option {index} only contains emojis, please also specify text")
+                    errors.append(
+                        f"- Option {index} only contains emojis, please also specify text"
+                    )
                 elif len(stripped) > 100:
-                    errors.append(f"- Option {index} is longer than 100 characters after emoji removal")
+                    errors.append(
+                        f"- Option {index} is longer than 100 characters after emoji removal"
+                    )
                 else:
-                    
+
                     self.view.options.append(option.value)
 
         await interaction.response.edit_message(embed=await self.view.generate_embed())
 
         if errors:
-            stringed_errors = '\n'.join(errors)
-            await interaction.followup.send(f"Could not add some options:\n{stringed_errors}", ephemeral=True)
+            stringed_errors = "\n".join(errors)
+            await interaction.followup.send(
+                f"Could not add some options:\n{stringed_errors}", ephemeral=True
+            )
 
 
 class PollEditorView(discord.ui.View):
@@ -338,7 +348,7 @@ class Confirm(discord.ui.View):
         self.value = None
         self.confirm_msg = confirm_msg
         self.cancel_msg = cancel_msg
-        self.message = None
+        self.message: discord.Message = None
         self.author = author
 
     async def interaction_check(self, interaction: Interaction):

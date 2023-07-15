@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import re
-from typing import List, Literal, Optional, get_args
+from typing import TYPE_CHECKING, Callable, List, Literal, Optional, get_args
 
 import discord
 from discord.ext import commands
@@ -7,11 +9,14 @@ from discord.ext.commands.converter import _get_from_guilds
 
 from rings.utils.utils import BotError, time_converter
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 utils = discord.utils
 _utils_get = utils.get
 
 
-def get_member_named(members, name):
+def get_member_named(members, name) -> Optional[discord.Member]:
     username, _, discriminator = name.rpartition("#")
     if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
         return utils.find(
@@ -19,7 +24,7 @@ def get_member_named(members, name):
             members,
         )
 
-    def pred(m) -> bool:
+    def pred(m: discord.Member) -> bool:
         return (
             m.nick.lower() == name.lower()
             or m.global_name.lower() == name.lower()
@@ -29,7 +34,7 @@ def get_member_named(members, name):
     return utils.find(pred, members)
 
 
-def get_member(guild, user_id):
+def get_member(guild: discord.Guild, user_id: int) -> Optional[discord.Member]:
     """Returns a member with the given ID.
 
     Parameters
@@ -45,7 +50,7 @@ def get_member(guild, user_id):
     return guild._members.get(user_id)
 
 
-def _get_from_guilds(bot, getter, argument):
+def _get_from_guilds(bot: NecroBot, getter: str, argument: str):
     result = None
     for guild in bot.guilds:
         result = getattr(guild, getter)(argument)
@@ -57,7 +62,7 @@ def _get_from_guilds(bot, getter, argument):
 _utils_get = discord.utils.get
 
 
-class MemberConverter(commands.IDConverter):
+class MemberConverter(commands.IDConverter[discord.Member]):
     """Member converter but case insensitive"""
 
     ctx_attr = "author"
@@ -69,12 +74,12 @@ class MemberConverter(commands.IDConverter):
         username, _, discriminator = argument.rpartition("#")
         if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
             lookup = username.lower()
-            predicate = (
+            predicate: Callable[[discord.Member], bool] = (
                 lambda m: m.name.lower() == username.lower() and m.discriminator == discriminator
             )
         else:
             lookup = argument.lower()
-            predicate = (
+            predicate: Callable[[discord.Member], bool] = (
                 lambda m: m.nick.lower() == argument.lower()
                 or m.global_name.lower() == argument.lower()
                 or m.name.lower() == argument.lower()
@@ -84,7 +89,7 @@ class MemberConverter(commands.IDConverter):
         return discord.utils.find(predicate, members)
 
     async def query_member_by_id(
-        self, bot, guild: discord.Guild, user_id: int
+        self, bot: NecroBot, guild: discord.Guild, user_id: int
     ) -> Optional[discord.Member]:
         ws = bot._get_websocket(shard_id=guild.shard_id)
         cache = guild._state.member_cache_flags.joined
@@ -106,7 +111,7 @@ class MemberConverter(commands.IDConverter):
             return None
         return members[0]
 
-    async def convert(self, ctx: commands.Context, argument: str) -> discord.Member:
+    async def convert(self, ctx: commands.Context[NecroBot], argument: str) -> discord.Member:
         bot = ctx.bot
         match = self._get_id_match(argument) or re.match(r"<@!?([0-9]{15,20})>$", argument)
         guild = ctx.guild
@@ -136,17 +141,17 @@ class MemberConverter(commands.IDConverter):
                 result = await self.query_member_named(guild, argument)
 
             if not result:
-                raise discord.errors.MemberNotFound(argument)
+                raise commands.MemberNotFound(argument)
 
         return result
 
 
-class UserConverter(commands.IDConverter):
+class UserConverter(commands.IDConverter[discord.User]):
     """User converter but case insensitive"""
 
     ctx_attr = "author"
 
-    async def convert(self, ctx: commands.Context, argument: str) -> discord.User:
+    async def convert(self, ctx: commands.Context[NecroBot], argument: str) -> discord.User:
         match = self._get_id_match(argument) or re.match(r"<@!?([0-9]{15,20})>$", argument)
         result = None
         state = ctx._state
@@ -158,32 +163,32 @@ class UserConverter(commands.IDConverter):
                 try:
                     result = await ctx.bot.fetch_user(user_id)
                 except discord.HTTPException:
-                    raise discord.errors.UserNotFound(argument) from None
+                    raise commands.UserNotFound(argument) from None
 
             return result  # type: ignore
 
         username, _, discriminator = argument.rpartition("#")
         if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
-            predicate = (
+            predicate: Callable[[discord.User], bool] = (
                 lambda u: u.name.lower() == username.lower() and u.discriminator == discriminator
             )
         else:
-            predicate = (
+            predicate: Callable[[discord.User], bool] = (
                 lambda u: u.global_name.lower() == argument.lower()
                 or u.name.lower() == argument.lower()
             )
 
         result = discord.utils.find(predicate, state._users.values())
         if result is None:
-            raise discord.errors.UserNotFound(argument)
+            raise commands.UserNotFound(argument)
 
         return result
 
 
-class RoleConverter(commands.IDConverter):
+class RoleConverter(commands.IDConverter[discord.Role]):
     """Converts to a role but case insensitive"""
 
-    async def convert(self, ctx: commands.Context, argument):
+    async def convert(self, ctx: commands.Context[NecroBot], argument):
         guild = ctx.guild
         if not guild:
             raise commands.NoPrivateMessage()
@@ -205,8 +210,8 @@ class RoleConverter(commands.IDConverter):
         return result
 
 
-class GuildConverter(commands.IDConverter):
-    async def convert(self, ctx: commands.Context, argument):
+class GuildConverter(commands.IDConverter[discord.Guild]):
+    async def convert(self, ctx: commands.Context[NecroBot], argument: str):
         result = None
         bot = ctx.bot
         guilds = bot.guilds
@@ -225,8 +230,8 @@ class GuildConverter(commands.IDConverter):
         raise commands.BadArgument("Not a known guild")
 
 
-class BadgeConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument):
+class BadgeConverter(commands.Converter[dict]):
+    async def convert(self, ctx: commands.Context[NecroBot], argument: str):
         badge = await ctx.bot.db.get_badge_from_shop(name=argument)
 
         if not badge:
@@ -235,13 +240,13 @@ class BadgeConverter(commands.Converter):
         return badge[0]
 
 
-class TimeConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument):
+class TimeConverter(commands.Converter[int]):
+    async def convert(self, ctx: commands.Context[NecroBot], argument):
         return time_converter(argument)
 
 
-class MoneyConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument):
+class MoneyConverter(commands.Converter[int]):
+    async def convert(self, ctx: commands.Context[NecroBot], argument):
         if not argument.isdigit():
             raise commands.BadArgument("Not a valid integer")
 
@@ -257,8 +262,8 @@ class MoneyConverter(commands.Converter):
         raise commands.BadArgument("You do not have enough money")
 
 
-class FlowerConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument):
+class FlowerConverter(commands.Converter[int]):
+    async def convert(self, ctx: commands.Context[NecroBot], argument):
         if not argument.isdigit():
             raise commands.BadArgument("Not a valid integer")
 
@@ -274,8 +279,8 @@ class FlowerConverter(commands.Converter):
         raise commands.BadArgument("You do not have enough flowers")
 
 
-def RangeConverter(min_v, max_v):
-    def check(argument):
+def RangeConverter(min_v: int, max_v: int):
+    def check(argument: str) -> bool:
         if not argument.isdigit():
             raise commands.BadArgument("Not a valid integer")
 
@@ -290,8 +295,8 @@ def RangeConverter(min_v, max_v):
     return check
 
 
-class Grudge(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument):
+class Grudge(commands.Converter[dict]):
+    async def convert(self, ctx: commands.Context[NecroBot], argument: str):
         if not argument.isdigit():
             raise commands.BadArgument("Please supply a valid id")
 
@@ -305,33 +310,8 @@ class Grudge(commands.Converter):
         return grudge[0]
 
 
-class MUConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument):
-        try:
-            return await MemberConverter().convert(ctx, argument)
-        except commands.BadArgument:
-            pass
-
-        user_id = await ctx.bot.db.query(
-            "SELECT user_id FROM necrobot.MU_Users WHERE username_lower = $1",
-            argument.lower(),
-            fetchval=True,
-        )
-
-        if user_id is None:
-            raise commands.BadArgument(f"Member {argument} does not exist")
-
-        user = ctx.guild.get_member(user_id)
-        if user is None:
-            user = object()
-            user.id = user_id
-            user.display_name = "User Left"
-
-        return user
-
-
-class CoinConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument):
+class CoinConverter(commands.Converter[str]):
+    async def convert(self, ctx: commands.Context[NecroBot], argument: str):
         if argument.lower() in ["h", "head"]:
             return "h"
         if argument.lower() in ["t", "tail"]:
@@ -340,8 +320,8 @@ class CoinConverter(commands.Converter):
         raise commands.BadArgument("Choices must be one of: `t`, `tail`, `h` or `head`")
 
 
-class Tag(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument):
+class Tag(commands.Converter[dict]):
+    async def convert(self, ctx: commands.Context[NecroBot], argument: str):
         argument = argument.lower()
         tag = await ctx.bot.db.query(
             """
@@ -358,9 +338,9 @@ class Tag(commands.Converter):
         return tag[0]
 
 
-class WritableChannelConverter(commands.TextChannelConverter):
-    async def convert(self, ctx: commands.Context, argument):
-        result = await super().convert(ctx, argument)
+class WritableChannelConverter(commands.Converter[discord.TextChannel]):
+    async def convert(self, ctx: commands.Context[NecroBot], argument: str):
+        result = await commands.TextChannelConverter().convert(ctx, argument)
         if not result.permissions_for(result.guild.me).send_messages:
             raise BotError(f"I cannot send messages in {result.mention}")
 
@@ -370,9 +350,13 @@ class WritableChannelConverter(commands.TextChannelConverter):
 CharacterType = Literal["character", "weapon", "artefact", "enemy"]
 
 
-class GachaCharacterConverter(commands.Converter):
+class GachaCharacterConverter(commands.Converter[dict]):
     def __init__(
-        self, *, respect_obtainable=False, allowed_types: List[CharacterType] = (), is_owned=False
+        self,
+        *,
+        respect_obtainable: bool = False,
+        allowed_types: List[CharacterType] = (),
+        is_owned: bool = False,
     ):
         """
         Params
@@ -388,7 +372,7 @@ class GachaCharacterConverter(commands.Converter):
         self.allowed_types = allowed_types
         self.is_owned = is_owned
 
-    async def convert(self, ctx: commands.Context, argument):
+    async def convert(self, ctx: commands.Context[NecroBot], argument: str):
         allowed_types = self.allowed_types if self.allowed_types else get_args(CharacterType)
         char_id = 0
         if argument.isdigit():
@@ -427,11 +411,11 @@ class GachaCharacterConverter(commands.Converter):
         return query[0]
 
 
-class GachaBannerConverter(commands.Converter):
-    def __init__(self, respect_ongoing=True):
+class GachaBannerConverter(commands.Converter[dict]):
+    def __init__(self, respect_ongoing: bool = True):
         self.respect_ongoing = respect_ongoing
 
-    async def convert(self, ctx: commands.Context, argument):
+    async def convert(self, ctx: commands.Context[NecroBot], argument: str):
         banner_id = 0
         if argument.isdigit():
             banner_id = int(argument)

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import enum
-from typing import List, Type, Union, TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, List, Type, Union
 
-from .base import DamageInstance, get_distance, StatBlock
+from .base import DamageInstance, StatBlock, get_distance
 
 if TYPE_CHECKING:
     from .battle import Battle

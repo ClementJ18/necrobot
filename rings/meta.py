@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import asyncio
 import datetime
 import io
 import re
 import time
+from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
@@ -13,9 +16,12 @@ from rings.utils.config import twitch_id, twitch_secret
 from rings.utils.converters import time_converter
 from rings.utils.ui import PollView
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 
 class Meta(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
         self.bot.counter = datetime.datetime.now().hour
         self.hourly_loop = None

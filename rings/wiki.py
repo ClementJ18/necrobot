@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import asyncio
+import datetime
 import re
 import urllib
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 import discord
 from bs4 import BeautifulSoup
@@ -10,8 +13,11 @@ from fuzzywuzzy import process
 
 from rings.utils.utils import BotError
 
+if TYPE_CHECKING:
+    from bot import NecroBot
 
-def _check_error_response(response, query):
+
+def _check_error_response(response: dict, query: str):
     """check for default error messages and throw correct exception"""
     if "error" in response:
         http_error = ["HTTP request timed out.", "Pool queue is full"]
@@ -33,13 +39,13 @@ class Wiki(commands.Cog):
     """A series of wikia-related commands. Used to search the biggest fan-made database of
     information."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
         self.API_URL = "http://tolkiengateway.net/w/api.php"
         self.FANDOM_API_URL = "https://{sub_wikia}.fandom.com/api.php"
         self.RATE_LIMIT = False
         self.RATE_LIMIT_MIN_WAIT = None
-        self.RATE_LIMIT_LAST_CALL = None
+        self.RATE_LIMIT_LAST_CALL: datetime.datetime = None
         self.USER_AGENT = "necrobot (https://github.com/ClementJ18/necrobot)"
         self.LANG = ""
 
@@ -47,7 +53,7 @@ class Wiki(commands.Cog):
     ## Functions
     #######################################################################
 
-    async def _wiki_request(self, params, fandom):
+    async def _wiki_request(self, params: dict, fandom: str):
         """
         Make a request to the Wikia API using the given search parameters.
         Returns a parsed dict of the JSON response.
@@ -64,22 +70,22 @@ class Wiki(commands.Cog):
             self.RATE_LIMIT
             and self.RATE_LIMIT_LAST_CALL
             and self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT
-            > datetime.now(datetime.timezone.utc)
+            > datetime.datetime.now(datetime.timezone.utc)
         ):
 
             # it hasn't been long enough since the last API call
             # so wait until we're in the clear to make the request
 
-            wait_time = (self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT) - datetime.now(
-                datetime.timezone.utc
-            )
+            wait_time = (
+                self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT
+            ) - datetime.datetime.now(datetime.timezone.utc)
             await asyncio.sleep(int(wait_time.total_seconds()))
 
         async with self.bot.session.get(api_url, params=params, headers=headers) as resp:
             r = await resp.json()
 
         if self.RATE_LIMIT:
-            self.RATE_LIMIT_LAST_CALL = datetime.now(datetime.timezone.utc)
+            self.RATE_LIMIT_LAST_CALL = datetime.datetime.now(datetime.timezone.utc)
 
         return r
 
@@ -137,7 +143,9 @@ class Wiki(commands.Cog):
         _check_error_response(request, page_id)
         return request
 
-    async def mediawiki_handler(self, ctx: commands.Context, article, fandom=None):
+    async def mediawiki_handler(
+        self, ctx: commands.Context[NecroBot], article: str, fandom: str = None
+    ):
 
         if fandom is not None:
             base = f"https://{fandom}.wikia.com"
@@ -203,7 +211,7 @@ class Wiki(commands.Cog):
     #######################################################################
 
     @commands.command()
-    async def edain(self, ctx: commands.Context, *, article: str = None):
+    async def edain(self, ctx: commands.Context[NecroBot], *, article: str = None):
         """Performs a search on the Edain Mod Wiki for the give article name. If an article is found then it will
         return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
@@ -216,7 +224,7 @@ class Wiki(commands.Cog):
             await self.mediawiki_handler(ctx, article, "edain")
 
     @commands.command()
-    async def faq(self, ctx: commands.Context, *, question: str = None):
+    async def faq(self, ctx: commands.Context[NecroBot], *, question: str = None):
         """Replies with up to 5 links from the Edain FAQ that have matched close to the initial question.
         {usage}
         __Example__
@@ -224,7 +232,7 @@ class Wiki(commands.Cog):
         """
         await self.faq_handler("edain", ctx, question)
 
-    async def faq_handler(self, mod, ctx, question):
+    async def faq_handler(self, mod: str, ctx: commands.Context[NecroBot], question: str):
         base = f"https://{mod}.wikia.com/wiki/Frequently_Asked_Questions"
         if question is None:
             return await ctx.send(base)
@@ -261,7 +269,7 @@ class Wiki(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def aotr(self, ctx: commands.Context, *, article: str = None):
+    async def aotr(self, ctx: commands.Context[NecroBot], *, article: str = None):
         """Performs a search on the Age of the Ring Wiki for the give article name. If an article is found then it will
         return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
@@ -274,7 +282,7 @@ class Wiki(commands.Cog):
             await self.mediawiki_handler(ctx, article, "aotr")
 
     @commands.command()
-    async def wiki(self, ctx: commands.Context, sub_wiki, *, article: str = None):
+    async def wiki(self, ctx: commands.Context[NecroBot], sub_wiki, *, article: str = None):
         """Performs a search on the given wiki (if valid) for the given article name. If an article is found then it
         will return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
@@ -288,7 +296,7 @@ class Wiki(commands.Cog):
             await self.mediawiki_handler(ctx, article, sub_wiki)
 
     @commands.command()
-    async def lotr(self, ctx: commands.Context, *, article_name: str = None):
+    async def lotr(self, ctx: commands.Context[NecroBot], *, article_name: str = None):
         """Performs a search on the Tolkien Gateway for the give article name. If an article is found then it
         will return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
         {usage}
@@ -299,5 +307,5 @@ class Wiki(commands.Cog):
             await self.mediawiki_handler(ctx, article_name)
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Wiki(bot))

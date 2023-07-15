@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING
 
 import dice
 from discord.ext import commands
@@ -9,18 +12,21 @@ from rings.utils.utils import BotError
 
 from .var import ball8_list
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 
 class Decisions(commands.Cog):
     """Helpful commands to help you make decisions"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
 
     #######################################################################
     ## Commands
     #######################################################################
 
-    async def _choose(self, ctx: commands.Context, choices, count):
+    async def _choose(self, ctx: commands.Context[NecroBot], choices, count):
         choice_sets = choices.split("|")
         final_choices = []
         for choice_set in choice_sets:
@@ -33,7 +39,7 @@ class Decisions(commands.Cog):
         await ctx.send(f"I choose **{' '.join(final_choices)}**")
 
     @commands.group(aliases=["choice"], invoke_without_command=True)
-    async def choose(self, ctx: commands.Context, *, choices):
+    async def choose(self, ctx: commands.Context[NecroBot], *, choices):
         """Returns a single choice from the list of choices given. Use `,` to seperate each of the choices. You can
         make multiple choices with a single command by separating them with `|`.
 
@@ -46,7 +52,7 @@ class Decisions(commands.Cog):
         await self._choose(ctx, choices, 1)
 
     @choose.command(name="multiple", aliases=["mult"])
-    async def choose_mult(self, ctx: commands.Context, count: int, *, choices):
+    async def choose_mult(self, ctx: commands.Context[NecroBot], count: int, *, choices):
         """Similar to the choose command but allows you to specify a number of unique results to return by group.
 
         {usage}
@@ -61,7 +67,7 @@ class Decisions(commands.Cog):
     @commands.cooldown(3, 5, BucketType.user)
     async def coin(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context[NecroBot],
         choice: CoinConverter = None,
         bet: MoneyConverter = 0,
     ):
@@ -92,7 +98,7 @@ class Decisions(commands.Cog):
         await ctx.send(msg)
 
     @commands.command(aliases=["dice"])
-    async def roll(self, ctx: commands.Context, dices: str = "1d6"):
+    async def roll(self, ctx: commands.Context[NecroBot], dices: str = "1d6"):
         """Rolls one or multiple x sided dices and returns the result.
         Structure of the argument: `[number of die]d[number of faces]`.
 
@@ -115,7 +121,7 @@ class Decisions(commands.Cog):
             )
 
     @commands.command(name="8ball")
-    async def ball8(self, ctx: commands.Context, *, message=None):
+    async def ball8(self, ctx: commands.Context[NecroBot], *, message=None):
         """Uses an 8ball system to reply to the user's question.
 
         {usage}"""

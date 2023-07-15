@@ -1,6 +1,6 @@
+import inspect
 from collections import namedtuple
 from dataclasses import dataclass, fields
-import inspect
 from typing import Tuple
 
 Coords = Tuple[int, int]  # (x, y)
@@ -45,7 +45,7 @@ class DamageInstance:
 
 class DataClass:
     @classmethod
-    def from_dict(cls, env):
+    def from_dict(cls, env: dict):
         return cls(**{k: v for k, v in env.items() if k in inspect.signature(cls).parameters})
 
 

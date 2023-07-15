@@ -1,5 +1,5 @@
-from .entities import Enemy
 from .base import StatBlock
+from .entities import Enemy
 
 POTENTIAL_ENEMIES = (
     Enemy(

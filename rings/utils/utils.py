@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 import datetime
 import itertools
 import re
 import traceback
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
+
+if TYPE_CHECKING:
+    from bot import NecroBot
 
 
 class BotError(Exception):
@@ -12,13 +18,13 @@ class BotError(Exception):
 
 
 class DatabaseError(Exception):
-    def __init__(self, message, query=None, args=tuple()):
+    def __init__(self, message: str, query: str = None, args=()):
         super().__init__(message)
         self.message = message
         self.query = query
         self.args = args
 
-    def embed(self, bot):
+    def embed(self, bot: NecroBot):
         formatted = traceback.format_exception(type(self), self, self.__traceback__, chain=False)
         msg = f"```py\n{' '.join(formatted)}\n```"
 
@@ -34,7 +40,7 @@ class DatabaseError(Exception):
         return self.message
 
 
-def check_channel(channel):
+def check_channel(channel: discord.TextChannel):
     if not channel.permissions_for(channel.guild.me).send_messages:
         raise BotError("I need permissions to send messages in this channel")
 
@@ -45,7 +51,7 @@ def format_dt(dt: datetime.datetime, /, style: str = None) -> str:
     return f"<t:{int(dt.timestamp())}:{style}>"
 
 
-def time_string_parser(message):
+def time_string_parser(message: str):
     if "in " in message:
         text, sep, time = message.rpartition("in ")
         sleep = time_converter(time)
@@ -73,7 +79,7 @@ def time_string_parser(message):
     )
 
 
-async def get_pre(bot, message):
+async def get_pre(bot: NecroBot, message: discord.Message):
     """If the guild has set a custom prefix we return that and the ability to mention alongside regular
     admin prefixes if not we return the default list of prefixes and the ability to mention."""
     if not isinstance(message.channel, discord.DMChannel):
@@ -87,7 +93,7 @@ async def get_pre(bot, message):
     return commands.when_mentioned_or(*bot.prefixes)(bot, message)
 
 
-def time_converter(argument):
+def time_converter(argument: str) -> int:
     time = 0
 
     pattern = re.compile(r"([0-9]*(?:\.|\,)?[0-9]*)\s?([dhms])")
@@ -104,7 +110,7 @@ def time_converter(argument):
     return time
 
 
-def date_converter(argument):
+def date_converter(argument: str):
     date_time = argument.split(" ")
     if len(date_time) > 2:
         raise BotError("Invalid date time format")
@@ -190,7 +196,12 @@ class dotdict(dict):
         return self.get("str")
 
 
-def build_format_dict(*, guild=None, member=None, channel=None):
+def build_format_dict(
+    *,
+    guild: discord.Guild = None,
+    member: discord.Member = None,
+    channel: discord.TextChannel = None,
+):
     arg_dict = dict()
 
     if guild is not None:

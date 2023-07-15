@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING
 
 import discord
 from bs4 import BeautifulSoup
@@ -9,11 +12,14 @@ from rings.utils.utils import BotError
 from .ui import RiddleView
 from .var import dad_joke, dex, got_quotes, lotr_list, riddle_list, tarot_list
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 
 class Social(commands.Cog):
     """All of NecroBot's fun commands to keep a user active and entertained"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
 
     #######################################################################
@@ -21,14 +27,14 @@ class Social(commands.Cog):
     #######################################################################
 
     @commands.command(aliases=["sean", "joke", "dad"])
-    async def dadjoke(self, ctx: commands.Context):
+    async def dadjoke(self, ctx: commands.Context[NecroBot]):
         """Send a random dadjoke from a long list.
 
         {usage}"""
         await ctx.send(f":speaking_head: | {random.choice(dad_joke)}")
 
     @commands.command()
-    async def riddle(self, ctx: commands.Context):
+    async def riddle(self, ctx: commands.Context[NecroBot]):
         """Ask a riddle to the user from a long list and waits 30 seconds for the answer. If the
         user fails to answer they go feed Gollum's fishies. To answer the riddle simply type out
         the answer, no need to prefix it with anything.
@@ -43,7 +49,7 @@ class Social(commands.Cog):
         await view.wait()
 
     @commands.command()
-    async def tarot(self, ctx: commands.Context):
+    async def tarot(self, ctx: commands.Context[NecroBot]):
         """Using the mystical art of tarology, NecroBot reads the user's fate in the card and
         returns the explanation for each card. Not to be taken seriously.
 
@@ -54,7 +60,7 @@ class Social(commands.Cog):
         )
 
     @commands.command()
-    async def rr(self, ctx: commands.Context, bullets: int = 1):
+    async def rr(self, ctx: commands.Context[NecroBot], bullets: int = 1):
         """Plays a game of russian roulette with the user. If no number of bullets is entered it will default to one.
 
         {usage}
@@ -74,7 +80,7 @@ class Social(commands.Cog):
         await ctx.send(msg)
 
     @commands.command()
-    async def lotrfact(self, ctx: commands.Context):
+    async def lotrfact(self, ctx: commands.Context[NecroBot]):
         """Prints a random Lord of the Rings fact.
 
         {usage}"""
@@ -84,7 +90,7 @@ class Social(commands.Cog):
         )
 
     @commands.command()
-    async def pokefusion(self, ctx: commands.Context, pokemon1=None, pokemon2=None):
+    async def pokefusion(self, ctx: commands.Context[NecroBot], pokemon1=None, pokemon2=None):
         """Generates a rich embed containing a pokefusion from Gen 1, this can either be a two random pokemons,
         one random pokemon and one chosen pokemon or two chosen pokemons.
 
@@ -127,7 +133,7 @@ class Social(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def got(self, ctx: commands.Context, character=None):
+    async def got(self, ctx: commands.Context[NecroBot], character=None):
         """Posts a random Game of Thrones quote.
 
         {usage}

@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, List
+
 import discord
 import moddb
 from bs4 import BeautifulSoup
@@ -7,13 +11,16 @@ from fuzzywuzzy import process
 from rings.utils.ui import paginate
 from rings.utils.utils import BotError
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+    from rings.utils.ui import Paginator
 
 class Modding(commands.Cog):
     """This module is used to connect to the various modding communities and allow to link and showcase work using
     commands that determine which modding community to piggy back off and then subcommands which decide
     what you want to show."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
 
     #######################################################################
@@ -21,7 +28,7 @@ class Modding(commands.Cog):
     #######################################################################
 
     @commands.command()
-    async def game(self, ctx: commands.Context, *, game: str):
+    async def game(self, ctx: commands.Context[NecroBot], *, game: str):
         """This command takes in a game name from ModDB and returns a rich embed of it. Due to the high variety of
         game formats, embed appearances will vary but it should always return one as long as it is given the name of
         an existing game
@@ -31,7 +38,7 @@ class Modding(commands.Cog):
         __Example__
         `{pre}game battle for middle earth` - creates a rich embed of the BFME ModDB page"""
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
             page = view.page_number
             embed = discord.Embed(
                 title=game.name,
@@ -109,7 +116,7 @@ class Modding(commands.Cog):
         await paginate(ctx, [1, 2, 3], 1, embed_maker)
 
     @commands.command()
-    async def mod(self, ctx: commands.Context, *, mod: str):
+    async def mod(self, ctx: commands.Context[NecroBot], *, name: str):
         """This command takes in a mod name from ModDB and returns a rich embed of it. Due to the high variety of
         mod formats, embed appearances will vary but it should always return one as long as it is given the name of
         an existing mod
@@ -119,7 +126,7 @@ class Modding(commands.Cog):
         __Example__
         `{pre}mod edain mod` - creates a rich embed of the Edain Mod ModDB page"""
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
             page = view.page_number
             embed = discord.Embed(
                 title=mod.name,
@@ -175,13 +182,13 @@ class Modding(commands.Cog):
             return embed
 
         async with self.bot.session.get(
-            f"http://www.moddb.com/mods?filter=t&kw={mod.replace(' ', '+')}&released=&genre=&theme=&players=&timeframe=&mod=&sort=visitstotal-desc"
+            f"http://www.moddb.com/mods?filter=t&kw={name.replace(' ', '+')}&released=&genre=&theme=&players=&timeframe=&mod=&sort=visitstotal-desc"
         ) as resp:
             soup = BeautifulSoup(await resp.text(), "lxml")
 
         try:
             search_return = process.extract(
-                mod, [x.string for x in soup.find("div", class_="table").findAll("h4")]
+                name, [x.string for x in soup.find("div", class_="table").findAll("h4")]
             )[0][0]
         except IndexError as e:
             raise BotError("No mod with that name found") from e
@@ -197,5 +204,5 @@ class Modding(commands.Cog):
         await paginate(ctx, [1, 2, 3], 1, embed_maker)
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Modding(bot))

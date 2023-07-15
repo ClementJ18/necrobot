@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import ast
 import datetime
 import traceback
-from typing import Literal, Union
+from typing import TYPE_CHECKING, Dict, Literal, Union
 
 import discord
 import psutil
 from discord.ext import commands
+from pyparsing import List
 from simpleeval import simple_eval
 
 from rings.utils.checks import has_perms
@@ -21,9 +24,13 @@ from rings.utils.converters import (
 from rings.utils.ui import Confirm, paginate
 from rings.utils.utils import BotError
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+    from rings.utils.ui import Paginator
+
 
 class Admin(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
         self.gates = {}
         self.process = psutil.Process()
@@ -56,7 +63,7 @@ class Admin(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @commands.is_owner()
-    async def grudge(self, ctx: commands.Context, user: UserConverter, *, grudge: str):
+    async def grudge(self, ctx: commands.Context[NecroBot], user: UserConverter, *, grudge: str):
         """Add a grudge
 
         {usage}"""
@@ -78,7 +85,7 @@ class Admin(commands.Cog):
         )
 
     @grudge.command(name="list")
-    async def grudge_list(self, ctx: commands.Context, user: Union[UserConverter, int]):
+    async def grudge_list(self, ctx: commands.Context[NecroBot], user: Union[UserConverter, int]):
         """See all the grudges for a user
 
         {usage}
@@ -90,7 +97,7 @@ class Admin(commands.Cog):
             "SELECT * FROM necrobot.Grudges WHERE user_id = $1", user
         )
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
             if self.bot.get_user(user):
                 name = str(self.bot.get_user(user))
             elif entries:
@@ -114,7 +121,7 @@ class Admin(commands.Cog):
         await paginate(ctx, grudges, 10, embed_maker)
 
     @grudge.command(name="info")
-    async def grudge_info(self, ctx: commands.Context, grudge: Grudge):
+    async def grudge_info(self, ctx: commands.Context[NecroBot], grudge: Grudge):
         """Get the full info about a specific grudge
 
         {usage}"""
@@ -137,7 +144,7 @@ class Admin(commands.Cog):
 
     @grudge.command(name="settle")
     @commands.is_owner()
-    async def grudge_settle(self, ctx: commands.Context, grudge: Grudge, settlement: str = True):
+    async def grudge_settle(self, ctx: commands.Context[NecroBot], grudge: Grudge, settlement: str = True):
         """Mark a grudge as settled
 
         {usage}"""
@@ -152,7 +159,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(7)
-    async def leave(self, ctx: commands.Context, guild: GuildConverter):
+    async def leave(self, ctx: commands.Context[NecroBot], guild: GuildConverter):
         """Leaves the specified server.
 
         {usage}"""
@@ -161,7 +168,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(6)
-    async def add(self, ctx: commands.Context, user: UserConverter, *, equation: str):
+    async def add(self, ctx: commands.Context[NecroBot], user: UserConverter, *, equation: str):
         """Does the given pythonic equations on the given user's NecroBot balance.
         `*` - for multiplication
         `+` - for additions
@@ -200,7 +207,7 @@ class Admin(commands.Cog):
         await self.bot.db.update_money(user.id, update=operation)
 
     @commands.group()
-    async def admin(self, ctx: commands.Context):
+    async def admin(self, ctx: commands.Context[NecroBot]):
         """{usage}"""
         pass
 
@@ -208,7 +215,7 @@ class Admin(commands.Cog):
     @commands.check_any(commands.is_owner(), has_perms(6))
     async def admin_perms(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context[NecroBot],
         guild: GuildConverter,
         user: UserConverter,
         level: int,
@@ -228,7 +235,7 @@ class Admin(commands.Cog):
 
     @admin.command(name="disable")
     @commands.check_any(commands.is_owner(), has_perms(6))
-    async def admin_disable(self, ctx: commands.Context, *, command: str):
+    async def admin_disable(self, ctx: commands.Context[NecroBot], *, command: str):
         """For when regular disable isn't enough. Disables command discord-wide.
 
         {usage}
@@ -243,7 +250,7 @@ class Admin(commands.Cog):
 
     @admin.command(name="enable")
     @commands.check_any(commands.is_owner(), has_perms(6))
-    async def admin_enable(self, ctx: commands.Context, *, command: str):
+    async def admin_enable(self, ctx: commands.Context[NecroBot], *, command: str):
         """For when regular enable isn't enough. Re-enables the command discord-wide.
 
         {usage}
@@ -260,7 +267,7 @@ class Admin(commands.Cog):
     @commands.check_any(commands.is_owner(), has_perms(6))
     async def admin_badges(
         self,
-        ctx,
+        ctx: commands.Context[NecroBot],
         subcommand: Literal["add", "delete"],
         user: UserConverter,
         badge: BadgeConverter,
@@ -292,7 +299,7 @@ class Admin(commands.Cog):
 
     @admin.command(name="blacklist")
     @commands.is_owner()
-    async def admin_blacklist(self, ctx: commands.Context, object_id: int):
+    async def admin_blacklist(self, ctx: commands.Context[NecroBot], object_id: int):
         """Blacklist a user
 
         {usage}
@@ -306,7 +313,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(6)
-    async def pm(self, ctx: commands.Context, user: UserConverter, *, message: str):
+    async def pm(self, ctx: commands.Context[NecroBot], user: UserConverter, *, message: str):
         """Sends the given message to the user of the given id. It will then wait for an answer and
         print it to the channel it was called it.
 
@@ -328,7 +335,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(6)
-    async def get(self, ctx: commands.Context, obj_id: int):
+    async def get(self, ctx: commands.Context[NecroBot], obj_id: int):
         """Returns the name of the user or server based on the given id. Used to debug errors.
 
         {usage}
@@ -373,7 +380,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def invites(self, ctx: commands.Context, *, guild: GuildConverter = None):
+    async def invites(self, ctx: commands.Context[NecroBot], *, guild: GuildConverter = None):
         """Returns invites (if the bot has valid permissions) for each server the bot is on if no guild id is specified.
 
         {usage}"""
@@ -392,7 +399,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def debug(self, ctx: commands.Context, *, cmd: str):
+    async def debug(self, ctx: commands.Context[NecroBot], *, cmd: str):
         """Evaluates code.
 
         {usage}
@@ -444,7 +451,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(6)
-    async def logs(self, ctx: commands.Context, *arguments):
+    async def logs(self, ctx: commands.Context[NecroBot], *arguments):
         """Get a list of commands. SQL arguments can be passed to filter the output.
 
         {usage}"""
@@ -456,7 +463,7 @@ class Admin(commands.Cog):
 
         results = await self.bot.db.query(sql)
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
 
             embed = discord.Embed(
                 title="Command Log",
@@ -479,7 +486,7 @@ class Admin(commands.Cog):
 
     @commands.command(name="as")
     @commands.is_owner()
-    async def _as(self, ctx: commands.Context, user: MemberConverter, *, message: str):
+    async def _as(self, ctx: commands.Context[NecroBot], user: MemberConverter, *, message: str):
         """Call a command as another user, used for debugging purposes
 
         {usage}
@@ -500,7 +507,7 @@ class Admin(commands.Cog):
     @has_perms(6)
     async def gate(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context[NecroBot],
         channel: Union[discord.TextChannel, discord.Thread, UserConverter],
     ):
         """Connects two channels with a magic gate so that users on both servers can communicate. Magic:tm:
@@ -538,7 +545,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def reset(self, ctx: commands.Context):
+    async def reset(self, ctx: commands.Context[NecroBot]):
         """{usage}"""
         self.bot.check_enabled = True
         await ctx.send(":white_check_mark: | Process checks re-enabled")

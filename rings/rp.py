@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import datetime
-from typing import Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 import discord
 from discord.ext import commands
@@ -7,21 +9,25 @@ from discord.ext import commands
 from rings.utils.ui import paginate
 from rings.utils.utils import time_converter
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+    from rings.utils.ui import Paginator
+
 
 class RP(commands.Cog):
     """Contains commands made specifically for RP purposes."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
 
-    def cog_check(self, ctx: commands.Context):
+    def cog_check(self, ctx: commands.Context[NecroBot]):
         if ctx.guild:
             return True
 
         raise commands.CheckFailure("This command cannot be used in private messages.")
 
-    async def _activity(self, ctx: commands.Context, duration, channels):
-        def is_active(ch):
+    async def _activity(self, ctx: commands.Context[NecroBot], duration: int, channels: List[Tuple[discord.TextChannel, int]]):
+        def is_active(ch: discord.TextChannel):
             if getattr(ch, "last_message_id", None) is None:
                 return False
 
@@ -40,7 +46,7 @@ class RP(commands.Cog):
         ]
         filtered_channels.sort(key=lambda x: (now - discord.utils.snowflake_time(x[1])).seconds)
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Tuple[discord.TextChannel, datetime.datetime]]):
             formatted_channels = "\n".join(
                 [
                     f"{channel.mention} - {(now - discord.utils.snowflake_time(last_message_id)).seconds // 60} minute(s) ago"
@@ -61,7 +67,7 @@ class RP(commands.Cog):
         await paginate(ctx, filtered_channels, 10, embed_maker)
 
     @commands.group(invoke_without_command=True)
-    async def activity(self, ctx: commands.Context, *, duration: str = None):
+    async def activity(self, ctx: commands.Context[NecroBot], *, duration: str = None):
         """Get a list of channels that have had a message in the last amount of time specified.
         The following times can be used: days (d), hours (h), minutes (m), seconds (s).
 
@@ -79,7 +85,7 @@ class RP(commands.Cog):
     @activity.command(name="ignore")
     async def activity_ignore(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context[NecroBot],
         ignored: commands.Greedy[
             Union[discord.TextChannel, discord.CategoryChannel, discord.Thread]
         ],

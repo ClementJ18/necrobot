@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING, Dict
 
 import aiohttp
 import discord
@@ -9,21 +12,25 @@ from rings.utils.config import dictionnary_key
 from rings.utils.ui import paginate
 from rings.utils.utils import BotError
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+    from rings.utils.ui import Paginator
+
 
 class Literature(commands.Cog):
     """Commands related to words and literature"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
 
     @commands.command(name="ud", aliases=["urbandictionary"])
-    async def udict(self, ctx: commands.Context, *, word: str):
-        """Searches for the given word on urban dictionnary
+    async def udict(self, ctx: commands.Context[NecroBot], *, word: str):
+        """Searches for the given word on urban dictionary
 
         {usage}
 
         __Example__
-        `{pre}ud pimp` - searches for pimp on Urban dictionnary"""
+        `{pre}ud pimp` - searches for pimp on Urban dictionary"""
         async with self.bot.session.get(
             f"http://api.urbandictionary.com/v0/define?term={word.lower()}"
         ) as r:
@@ -32,7 +39,7 @@ class Literature(commands.Cog):
         if not definitions:
             raise BotError("No definition found for this word.")
 
-        def embed_maker(view, entry):
+        def embed_maker(view: Paginator, entry: Dict[str, str]):
             definition = entry["definition"][:2048].replace("[", "").replace("]", "")
             embed = discord.Embed(
                 title=f"{word.title()} ({view.page_number}/{view.page_count})",
@@ -52,7 +59,7 @@ class Literature(commands.Cog):
 
         await paginate(ctx, definitions, 1, embed_maker)
 
-    async def get_def(self, word):
+    async def get_def(self, word: str) -> dict:
         url = f"https://www.dictionaryapi.com/api/v3/references/collegiate/json/{word}?key={dictionnary_key}"
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
@@ -62,7 +69,7 @@ class Literature(commands.Cog):
 
     @commands.command()
     @commands.cooldown(3, 60, BucketType.user)
-    async def define(self, ctx: commands.Context, *, word: str):
+    async def define(self, ctx: commands.Context[NecroBot], *, word: str):
         """Defines the given word, a high cooldown command so use carefully.
 
         {usage}
@@ -83,7 +90,7 @@ class Literature(commands.Cog):
         if isinstance(definitions[0], str):
             raise BotError(f"Could not find the word, similar matches: {', '.join(definitions)}")
 
-        def embed_maker(view, entry):
+        def embed_maker(view: Paginator, entry: Dict[str, str]):
             description = "\n -".join(entry["shortdef"])
             embed = discord.Embed(
                 title=f"{word.title()} ({view.page_number}/{view.page_count})",
@@ -98,7 +105,7 @@ class Literature(commands.Cog):
         await paginate(ctx, definitions, 1, embed_maker)
 
     @commands.command()
-    async def shuffle(self, ctx: commands.Context, *, sentence):
+    async def shuffle(self, ctx: commands.Context[NecroBot], *, sentence: str):
         """Shuffles every word in a sentence
 
         {usage}
@@ -119,5 +126,5 @@ class Literature(commands.Cog):
         await ctx.send(" ".join(shuffled))
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Literature(bot))

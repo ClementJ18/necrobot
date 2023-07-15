@@ -1,5 +1,6 @@
-import traceback
-from datetime import datetime
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import asyncpg
 import discord
@@ -10,9 +11,12 @@ from psycopg2.extras import RealDictCursor
 from rings.utils.config import dbpass, dbusername
 from rings.utils.utils import DatabaseError
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 
 class Database(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
 
     def math_builder(self, arg, pos, update, add):
@@ -30,7 +34,7 @@ class Database(commands.Cog):
 
         return f"AND guild_id = ${pos}"
 
-    async def create_pool(self):
+    async def create_pool(self) -> asyncpg.pool.Pool:
         self.bot.pool = await asyncpg.create_pool(
             database="postgres", user=dbusername, password=dbpass
         )

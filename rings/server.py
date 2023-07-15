@@ -1,8 +1,8 @@
-import re
-from typing import Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, Union
 
 import discord
-import emoji
 from discord.ext import commands
 
 from rings.utils.checks import has_perms
@@ -15,6 +15,7 @@ from rings.utils.converters import (
 )
 from rings.utils.ui import (
     Confirm,
+    EmbedDefaultConverter,
     EmbedRangeConverter,
     EmbedStringConverter,
     MultiInputEmbedView,
@@ -23,20 +24,23 @@ from rings.utils.ui import (
 )
 from rings.utils.utils import BotError, DatabaseError, build_format_dict, check_channel
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 
 class Server(commands.Cog):
     """Contains all the commands related to customising Necrobot's behavior on your server and to your server members. Contains
     commands for stuff such as setting broadcast, giving users permissions, ignoring users, getting info on your current settings,
     ect..."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
 
     #######################################################################
     ## Cog Functions
     #######################################################################
 
-    def cog_check(self, ctx: commands.Context):
+    def cog_check(self, ctx: commands.Context[NecroBot]):
         if ctx.guild:
             return True
 
@@ -46,7 +50,7 @@ class Server(commands.Cog):
     ## Functions
     #######################################################################
 
-    def get_all(self, ctx: commands.Context, entries):
+    def get_all(self, ctx: commands.Context[NecroBot], entries):
         l = []
         for x in entries:
             channel = ctx.guild.get_channel(x)
@@ -105,7 +109,7 @@ class Server(commands.Cog):
     @has_perms(4)
     async def permissions(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context[NecroBot],
         user: MemberConverter = None,
         level: RangeConverter(0, 7) = None,
     ):
@@ -171,7 +175,7 @@ class Server(commands.Cog):
 
     @permissions.command(name="commands")
     @has_perms(1)
-    async def permissions_commands(self, ctx: commands.Context, level: RangeConverter(1, 7)):
+    async def permissions_commands(self, ctx: commands.Context[NecroBot], level: RangeConverter(1, 7)):
         """See what permission level has access to which commands
 
         {usage}
@@ -205,7 +209,7 @@ class Server(commands.Cog):
     @has_perms(4)
     async def permissions_bind(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context[NecroBot],
         level: RangeConverter(1, 4) = None,
         role: RoleConverter = None,
     ):
@@ -328,7 +332,7 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(4)
-    async def promote(self, ctx: commands.Context, member: MemberConverter):
+    async def promote(self, ctx: commands.Context[NecroBot], member: MemberConverter):
         """Promote a member by one on the Necrobot hierarchy scale. Gaining access to additional commands.
 
         {usage}
@@ -341,7 +345,7 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(4)
-    async def demote(self, ctx: commands.Context, member: MemberConverter):
+    async def demote(self, ctx: commands.Context[NecroBot], member: MemberConverter):
         """Demote a member by one on the Necrobot hierarchy scale. Losing access to certain commands.
 
         {usage}
@@ -356,7 +360,7 @@ class Server(commands.Cog):
     @has_perms(4)
     async def automod(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context[NecroBot],
         *mentions: Union[MemberConverter, discord.TextChannel, RoleConverter],
     ):
         """Used to manage the list of channels and user ignored by the bot's automoderation system. If no mentions are
@@ -414,7 +418,7 @@ class Server(commands.Cog):
     @automod.command(name="channel")
     @has_perms(4)
     async def automod_channel(
-        self, ctx: commands.Context, channel: Union[discord.TextChannel, str] = None
+        self, ctx: commands.Context[NecroBot], channel: Union[discord.TextChannel, str] = None
     ):
         """Sets the automoderation channel to [channel], [channel] argument should be a channel mention. All the
         auto-moderation related messages will be sent there.
@@ -445,7 +449,7 @@ class Server(commands.Cog):
     @has_perms(4)
     async def ignore(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context[NecroBot],
         *mentions: Union[MemberConverter, discord.TextChannel, RoleConverter],
     ):
         """Used to manage the list of channels and user ignored by the bot's command system. If no mentions are
@@ -508,7 +512,7 @@ class Server(commands.Cog):
 
     @commands.command(aliases=["setting"])
     @has_perms(4)
-    async def settings(self, ctx: commands.Context):
+    async def settings(self, ctx: commands.Context[NecroBot]):
         """Creates a rich embed of the server settings
 
         {usage}"""
@@ -574,7 +578,7 @@ class Server(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @has_perms(4)
-    async def welcome(self, ctx: commands.Context, *, message: str = ""):
+    async def welcome(self, ctx: commands.Context[NecroBot], *, message: str = ""):
         """Sets the message that will be sent to the designated channel everytime a member joins the server. You
         can use special keywords to replace certain words by stuff like the name of the member or a mention.
         List of keywords:
@@ -611,7 +615,7 @@ class Server(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @has_perms(4)
-    async def farewell(self, ctx: commands.Context, *, message: str = ""):
+    async def farewell(self, ctx: commands.Context[NecroBot], *, message: str = ""):
         """Sets the message that will be sent to the designated channel everytime a member leaves the server. You
         can use special keywords to replace certain words by stuff like the name of the member or a mention.
         List of keywords:
@@ -645,7 +649,7 @@ class Server(commands.Cog):
 
         await self.bot.db.update_farewell_message(ctx.guild.id, message)
 
-    async def channel_set(self, ctx: commands.Context, channel):
+    async def channel_set(self, ctx: commands.Context[NecroBot], channel):
         if not channel:
             await self.bot.db.update_greeting_channel(ctx.guild.id)
             await ctx.send(":white_check_mark: | Welcome/Farewell messages **disabled**")
@@ -658,7 +662,7 @@ class Server(commands.Cog):
 
     @welcome.command(name="channel")
     @has_perms(4)
-    async def welcome_channel(self, ctx: commands.Context, channel: discord.TextChannel = 0):
+    async def welcome_channel(self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = 0):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention/name/id. The welcome
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use
         the same channel, calling the command with both parent commands but different channel will not make
@@ -674,7 +678,7 @@ class Server(commands.Cog):
 
     @farewell.command(name="channel")
     @has_perms(4)
-    async def farewell_channel(self, ctx: commands.Context, channel: discord.TextChannel = 0):
+    async def farewell_channel(self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = 0):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention. The welcome
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use
         the same channel, calling the command with both parent commands but different channel will not make
@@ -690,7 +694,7 @@ class Server(commands.Cog):
 
     @commands.command(name="prefix")
     @has_perms(4)
-    async def prefix(self, ctx: commands.Context, *, prefix=""):
+    async def prefix(self, ctx: commands.Context[NecroBot], *, prefix=""):
         r"""Sets the bot to only respond to the given prefix. If no prefix is given it will reset it to NecroBot's deafult
         list of prefixes: `n!`, `N!` or `@NecroBot `. The prefix can't be longer than 15 characters.
 
@@ -717,7 +721,7 @@ class Server(commands.Cog):
     @commands.command(name="auto-role")
     @has_perms(4)
     async def auto_role(
-        self, ctx: commands.Context, role: RoleConverter = 0, time: TimeConverter = 0
+        self, ctx: commands.Context[NecroBot], role: RoleConverter = 0, time: TimeConverter = 0
     ):
         """Sets the auto-role for this server to the given role. Auto-role will assign the role to the member when they join.
         The following times can be used: days (d), hours (h), minutes (m), seconds (s).
@@ -746,7 +750,7 @@ class Server(commands.Cog):
 
     @commands.group(invoke_without_command=True, aliases=["broadcasts"])
     @has_perms(4)
-    async def broadcast(self, ctx: commands.Context):
+    async def broadcast(self, ctx: commands.Context[NecroBot]):
         """See all the broadcasts currently set up on the server. Root command for setting up other broadcasts
 
         {usage}
@@ -780,7 +784,7 @@ class Server(commands.Cog):
 
         await paginate(ctx, broadcasts, 1, embed_maker)
 
-    async def broadcast_editor(self, defaults, channel, ctx) -> MultiInputEmbedView:
+    async def broadcast_editor(self, defaults: Dict[str, EmbedDefaultConverter], channel: discord.TextChannel, ctx: commands.Context[NecroBot]) -> MultiInputEmbedView:
         def embed_maker(values):
             embed = discord.Embed(
                 title="New Broadcast!", description=values["message"], colour=self.bot.bot_color
@@ -809,7 +813,7 @@ class Server(commands.Cog):
     @has_perms(4)
     async def broadcast_add(
         self,
-        ctx,
+        ctx: commands.Context[NecroBot],
         channel: discord.TextChannel,
     ):
         """Start the process for adding a new broadcast.
@@ -853,7 +857,7 @@ class Server(commands.Cog):
     @has_perms(4)
     async def broadcast_edit(
         self,
-        ctx,
+        ctx: commands.Context[NecroBot],
         broadcast_id: int,
     ):
         """Edit a broadcast's settings
@@ -899,7 +903,7 @@ class Server(commands.Cog):
 
     @broadcast.command(name="delete")
     @has_perms(4)
-    async def broadcast_del(self, ctx: commands.Context, broadcast_id: int):
+    async def broadcast_del(self, ctx: commands.Context[NecroBot], broadcast_id: int):
         """Delete a broadcast permanently
 
         {usage}
@@ -918,7 +922,7 @@ class Server(commands.Cog):
 
     @broadcast.command(name="toggle")
     @has_perms(4)
-    async def broadcast_toggle(self, ctx: commands.Context, broadcast_id: int):
+    async def broadcast_toggle(self, ctx: commands.Context[NecroBot], broadcast_id: int):
         """Toggle a broadcast on/off. Turning a broadcast off retains the data but stops the message
         from broadcasting.
 
@@ -943,7 +947,7 @@ class Server(commands.Cog):
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
-    async def giveme(self, ctx: commands.Context, *, role: RoleConverter = None):
+    async def giveme(self, ctx: commands.Context[NecroBot], *, role: RoleConverter = None):
         """Gives the user the role if it is part of this Server's list of self assignable roles. If the user already
         has the role it will remove it. **Roles names are case sensitive** If no role name is given then it will list
         the self-assignable roles for the server
@@ -985,7 +989,7 @@ class Server(commands.Cog):
 
     @giveme.command(name="add")
     @has_perms(4)
-    async def giveme_add(self, ctx: commands.Context, *, role: RoleConverter):
+    async def giveme_add(self, ctx: commands.Context[NecroBot], *, role: RoleConverter):
         """Adds [role] to the list of the server's self assignable roles.
 
         {usage}
@@ -1002,7 +1006,7 @@ class Server(commands.Cog):
 
     @giveme.command(name="delete")
     @has_perms(4)
-    async def giveme_delete(self, ctx: commands.Context, *, role: RoleConverter):
+    async def giveme_delete(self, ctx: commands.Context[NecroBot], *, role: RoleConverter):
         """Removes [role] from the list of the server's self assignable roles.
 
         {usage}
@@ -1020,7 +1024,7 @@ class Server(commands.Cog):
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @has_perms(4)
-    async def starboard(self, ctx: commands.Context, channel: discord.TextChannel = None):
+    async def starboard(self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = None):
         """Sets a channel for the starboard messages, required in order for starboard to be enabled. Call the command
         without a channel to disable starboard.
 
@@ -1042,7 +1046,7 @@ class Server(commands.Cog):
 
     @starboard.command(name="limit")
     @has_perms(4)
-    async def starboard_limit(self, ctx: commands.Context, limit: int):
+    async def starboard_limit(self, ctx: commands.Context[NecroBot], limit: int):
         """Sets the amount of stars required to the given intenger. Must be more than 0.
 
         {usage}
@@ -1060,7 +1064,7 @@ class Server(commands.Cog):
 
     @starboard.command(name="force")
     @has_perms(3)
-    async def starboard_force(self, ctx: commands.Context, message_id: int):
+    async def starboard_force(self, ctx: commands.Context[NecroBot], message_id: int):
         """Allows to manually star a message that either has failed to be sent to starboard or doesn't
         have the amount of stars required.
 
@@ -1093,7 +1097,7 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(3)
-    async def poll(self, ctx: commands.Context, channel: WritableChannelConverter):
+    async def poll(self, ctx: commands.Context[NecroBot], channel: WritableChannelConverter):
         """Create a reaction poll for your server in the specified channel. This will also ask you to specify a
         maximum number of reactions. This number will limit how many options users can vote for.
 

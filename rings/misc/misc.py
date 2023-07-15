@@ -1,16 +1,18 @@
+from __future__ import annotations
+
 import asyncio
 import functools
 import itertools
 import random
 import re
 from io import BytesIO
+from typing import TYPE_CHECKING
 
 import aiohttp
 import discord
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pds
-from bs4 import BeautifulSoup
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
@@ -24,11 +26,14 @@ import matplotlib.pyplot as plt
 
 from .ui import HungerGames
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 
 class Misc(commands.Cog):
     """A cog for all bunch commands that don't have a specific category they can stick to."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
         self.faction_regex = r"(gondor|rohan|isengard|mordor|ered luin|angmar|erebor|iron hills|lothlorien|imladris|misty mountains)"
 
@@ -51,7 +56,7 @@ class Misc(commands.Cog):
 
     @commands.command()
     @commands.cooldown(3, 5, BucketType.channel)
-    async def cat(self, ctx: commands.Context):
+    async def cat(self, ctx: commands.Context[NecroBot]):
         """Posts a random cat picture from random.cat
 
         {usage}"""
@@ -74,7 +79,7 @@ class Misc(commands.Cog):
                     ) from e
 
     @commands.command()
-    async def dog(self, ctx: commands.Context):
+    async def dog(self, ctx: commands.Context[NecroBot]):
         """Posts a random dog picture from random.dog
 
         {usage}"""
@@ -84,7 +89,7 @@ class Misc(commands.Cog):
                 await ctx.send(embed=discord.Embed().set_image(url=res["url"]))
 
     @commands.command()
-    async def fight(self, ctx: commands.Context, *, tributes):
+    async def fight(self, ctx: commands.Context[NecroBot], *, tributes):
         """Takes in a list of tributes separated by `,` and simulates a hunger games based on Bransteele's Hunger Game
         Simulator. More than one tribute needs to be supplied. Duplicate names will be supressed.
 
@@ -106,7 +111,7 @@ class Misc(commands.Cog):
 
     @commands.group(invoke_without_command=True, aliases=["matchup"])
     @guild_only(496617962334060545)
-    async def matchups(self, ctx: commands.Context, *, arguments=None):
+    async def matchups(self, ctx: commands.Context[NecroBot], *, arguments=None):
         """Get data about the results of matchups stored in the bot. You can pass either a faction name, a sorting key
         or both.
 
@@ -223,7 +228,7 @@ class Misc(commands.Cog):
     @commands.check_any(
         commands.has_role(497009979857960963), has_perms(6)
     )  # has Admin role on server or is Bot Admin
-    async def matchups_reset(self, ctx: commands.Context):
+    async def matchups_reset(self, ctx: commands.Context[NecroBot]):
         """Reset the counters
 
         {usage}
@@ -250,7 +255,7 @@ class Misc(commands.Cog):
     @commands.check_any(
         commands.has_role(497009979857960963), has_perms(6)
     )  # has Admin role on server or is Bot Admin
-    async def matchups_logs(self, ctx: commands.Context, *, args=None):
+    async def matchups_logs(self, ctx: commands.Context[NecroBot], *, args=None):
         """Check who submitted what results, can be filtered using arguments.
 
         user=[user]
@@ -338,7 +343,7 @@ class Misc(commands.Cog):
     @commands.check_any(
         commands.has_role(497009979857960963), has_perms(6)
     )  # has Admin role on server or is Bot Admin
-    async def matchups_delete(self, ctx: commands.Context, log_id: int):
+    async def matchups_delete(self, ctx: commands.Context[NecroBot], log_id: int):
         """Delete a log to remove the entry and remove it from the counters. Get the log_id
         from the `matchup logs` command.
 
@@ -430,7 +435,7 @@ class Misc(commands.Cog):
 
     @matchups.command(name="stats")
     @guild_only(496617962334060545)
-    async def matchups_stats(self, ctx: commands.Context, *, arguments: str):
+    async def matchups_stats(self, ctx: commands.Context[NecroBot], *, arguments: str):
         """Get specific stats over time for a faction W/L
 
         {usage}

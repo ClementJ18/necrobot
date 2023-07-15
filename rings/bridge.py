@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 import traceback
+from typing import TYPE_CHECKING
 
 import discord
 from bs4 import BeautifulSoup
@@ -9,11 +12,14 @@ from robobrowser.forms.form import Form
 
 from rings.utils.config import MU_Password, MU_Username
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 
 class Bridge(commands.Cog):
     """A cog for all commands specific to certain servers."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: NecroBot):
         self.bot = bot
         self.TEST_CHANNEL = 722040731946057789
         self.mu_channels = (self.TEST_CHANNEL, 722474242762997868)
