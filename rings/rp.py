@@ -108,5 +108,5 @@ class RP(commands.Cog):
         await self._activity(ctx, duration, channels)
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(RP(bot))

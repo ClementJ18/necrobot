@@ -280,5 +280,5 @@ class Bridge(commands.Cog):
         await self.bot.queued_posts.put(post)
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Bridge(bot))

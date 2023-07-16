@@ -424,7 +424,7 @@ class Paginator(discord.ui.View):
         self.index = 0
         self.max_index = max(0, ((len(entries) - 1) // page_size))
         self.page_size = page_size
-        self.message = None
+        self.message: discord.Message = None
         self.author = author
 
     async def interaction_check(self, interaction: Interaction):
@@ -453,7 +453,7 @@ class Paginator(discord.ui.View):
         subset = self.entries[self.index * self.page_size : (self.index + 1) * self.page_size]
         return subset[0] if self.page_size == 1 else subset
 
-    async def change_page(self, interaction, change):
+    async def change_page(self, interaction: discord.Interaction, change):
         if self.index + change > self.max_index:
             new_change = (change - 1) - (self.max_index - self.index)
             self.index = 0

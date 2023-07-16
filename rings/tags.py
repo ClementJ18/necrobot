@@ -329,5 +329,5 @@ class Tags(commands.Cog):
             await ctx.invoke(command, tag=tag)
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Tags(bot))

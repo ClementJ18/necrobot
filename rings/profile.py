@@ -610,5 +610,5 @@ class Profile(commands.Cog):
         await paginate(ctx, results, 15, embed_maker)
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Profile(bot))

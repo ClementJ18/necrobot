@@ -282,5 +282,5 @@ class Economy(commands.Cog):
         await bj.wait()
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Economy(bot))

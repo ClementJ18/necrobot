@@ -1111,5 +1111,5 @@ class Server(commands.Cog):
         await ctx.send("Let's start making your poll", view=view)
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Server(bot))

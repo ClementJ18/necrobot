@@ -131,31 +131,6 @@ class Utilities(commands.Cog):
         `{pre}today births` - prints births that happened today
         `{pre}today births 14/02` - prints births that happened on the 14th of February"""
 
-        if date:
-            r_date = date.split("/")
-            date = f"/{r_date[1]}/{r_date[0]}"
-            url = f"https://history.muffinlabs.com/date{date}"
-        else:
-            url = "https://history.muffinlabs.com/date"
-
-        if choice:
-            choice = choice.lower().title()
-            if choice[-1] != "s":
-                choice += "s"
-        else:
-            choice = random.choice(["Deaths", "Births", "Events"])
-
-        if choice not in ["Deaths", "Births", "Events"]:
-            raise BotError(
-                "Not a correct choice. Correct choices are `Deaths`, `Births` or `Events`."
-            )
-
-        async with self.bot.session.get(url, headers={"Connection": "keep-alive"}) as r:
-            try:
-                res = await r.json()
-            except aiohttp.ClientResponseError:
-                res = await r.json(content_type="application/javascript")
-
         def embed_maker(view, entries):
             embed = discord.Embed(
                 title=res["date"],
@@ -193,6 +168,32 @@ class Utilities(commands.Cog):
                     pass
 
             return embed
+
+        if date:
+            r_date = date.split("/")
+            date = f"/{r_date[1]}/{r_date[0]}"
+            url = f"https://history.muffinlabs.com/date{date}"
+        else:
+            url = "https://history.muffinlabs.com/date"
+
+        if choice:
+            choice = choice.lower().title()
+            if choice[-1] != "s":
+                choice += "s"
+        else:
+            choice = random.choice(["Deaths", "Births", "Events"])
+
+        if choice not in ["Deaths", "Births", "Events"]:
+            raise BotError(
+                "Not a correct choice. Correct choices are `Deaths`, `Births` or `Events`."
+            )
+
+        async with ctx.typing():
+            async with self.bot.session.get(url, headers={"Connection": "keep-alive"}) as r:
+                try:
+                    res = await r.json()
+                except aiohttp.ClientResponseError:
+                    res = await r.json(content_type="application/javascript")
 
         await paginate(ctx, res["data"][choice], 5, embed_maker)
 
@@ -768,5 +769,5 @@ class Utilities(commands.Cog):
             del self.ongoing_giveaways[payload.message_id]
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Utilities(bot))

@@ -418,5 +418,5 @@ class RSS(commands.Cog):
             )
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(RSS(bot))

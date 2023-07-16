@@ -775,5 +775,5 @@ class SyncDatabase:
         return guilds
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Database(bot))

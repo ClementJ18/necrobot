@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import importlib
 import json
 import logging
+import sys
 import time
 import traceback
 from typing import TYPE_CHECKING, Any, Callable, List, Literal, Optional, Tuple
@@ -373,7 +375,7 @@ async def load(ctx: commands.Context[NecroBot], *extension_names: str):
             await ctx.send(f"{extension_name} loaded.")
         except commands.ExtensionFailed as e:
             await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
-        except commands.ExtensionNotFound:
+        except (commands.ExtensionNotFound, commands.ExtensionAlreadyLoaded):
             pass
 
 
@@ -399,20 +401,17 @@ async def reload(ctx: commands.Context[NecroBot], *extension_names: str):
     """Unload and loads the extension name if in NecroBot's list of rings.
 
     {usage}"""
+    modules = [v for k, v in sys.modules.items() if k.startswith("rings.utils")]
+    for v in modules:
+        importlib.reload(v)
+
     for extension_name in extension_names:
         try:
-            await bot.unload_extension(f"rings.{extension_name}")
-        except commands.ExtensionFailed as e:
-            await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
-        except commands.ExtensionNotLoaded:
-            pass
-
-        try:
-            await bot.load_extension(f"rings.{extension_name}")
+            await bot.reload_extension(f"rings.{extension_name}")
             await ctx.send(f"{extension_name} reloaded.")
         except commands.ExtensionFailed as e:
             await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
-        except commands.ExtensionNotFound:
+        except (commands.ExtensionNotLoaded, commands.ExtensionNotFound):
             pass
 
 

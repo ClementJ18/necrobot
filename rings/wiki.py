@@ -226,7 +226,9 @@ class Wiki(commands.Cog):
     @commands.command()
     async def faq(self, ctx: commands.Context[NecroBot], *, question: str = None):
         """Replies with up to 5 links from the Edain FAQ that have matched close to the initial question.
+
         {usage}
+
         __Example__
         `{pre}faq mirkwood faction` - will reply with links on why Mirkwood isn't its own faction
         """
@@ -299,7 +301,9 @@ class Wiki(commands.Cog):
     async def lotr(self, ctx: commands.Context[NecroBot], *, article_name: str = None):
         """Performs a search on the Tolkien Gateway for the give article name. If an article is found then it
         will return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
+
         {usage}
+
         __Example__
         `{pre}lotr Finrod` - creates an embed of Finrod Felagund
         `{pre}lotr Fellowship` - searches for 'Fellowship' and returns the first result"""

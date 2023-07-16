@@ -680,5 +680,5 @@ class Moderation(commands.Cog):
                 await member.guild.get_channel(automod).send(embed=embed)
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Moderation(bot))

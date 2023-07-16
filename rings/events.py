@@ -529,5 +529,5 @@ class Events(commands.Cog):
             del self.bot.potential_stars[payload.message_id]
 
 
-async def setup(bot):
+async def setup(bot: NecroBot):
     await bot.add_cog(Events(bot))
