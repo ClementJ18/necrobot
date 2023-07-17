@@ -112,6 +112,7 @@ class BlackJack(discord.ui.View):
         self.status = "Ongoing"
         self.actions = ["Game started"]
         self.index = 0
+        self.message: discord.Message = None
 
     async def interaction_check(self, interaction: Interaction):
         if not interaction.user == self.ctx.author:

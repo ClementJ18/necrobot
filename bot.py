@@ -19,7 +19,7 @@ from rings.db import SyncDatabase
 from rings.utils.config import token
 from rings.utils.help import NecrobotHelp
 from rings.utils.ui import Confirm
-from rings.utils.utils import default_settings, get_pre
+from rings.utils.utils import Event, Giveaway, Guild, PendingPost, default_settings, get_pre
 
 if TYPE_CHECKING:
     from rings.bridge import Bridge
@@ -83,7 +83,7 @@ class NecroBot(commands.Bot):
         self.url_pattern = (
             r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
         )
-        self.extension_names = exts
+        self.extension_names: List[str] = exts
 
         self.session: aiohttp.ClientSession = None
         self.pool: asyncpg.pool.Pool = None
@@ -95,18 +95,16 @@ class NecroBot(commands.Bot):
         self.TEST_BOT_ID = 339330190742126595
 
         sync_db = SyncDatabase()
-        self.guild_data = sync_db.load_guilds()
+        self.guild_data: Dict[int, Guild] = sync_db.load_guilds()
 
-        self.cat_cache = []
-        self.ignored_messages = []
-        self.starred = []
+        self.cat_cache: List[str] = []
+        self.starred: List[int] = []
         self.potential_stars: List[PotentialStar] = {}
         self.reminders: Dict[int, asyncio.Task] = {}
-        self.pending_posts = {}
-        self.denied_posts = []
-        self.events = {}
-        self.ongoing_giveaways = {}
-        self.queued_posts = None
+        self.pending_posts: Dict[int, PendingPost] = {}
+        self.events: Dict[int, Event] = {}
+        self.ongoing_giveaways: Dict[int, Giveaway] = {}
+        self.queued_posts: asyncio.Queue = None
         self.twitch_token: Dict[str, Union[str, int]] = {}
 
         self.tutorial_e: discord.Embed = None
@@ -115,16 +113,12 @@ class NecroBot(commands.Bot):
         with open("rings/utils/data/settings.json", "rb") as infile:
             self.settings = {**default_settings(), **json.load(infile)}
 
-    def clear(self):
-        self._closed = False
-        self._ready.clear()
-        # self._connection.clear()
-        self.http.recreate()
-
-    def get_bot_channel(self) -> discord.TextChannel:
+    @property
+    def bot_channel(self) -> discord.TextChannel:
         return self.get_channel(self.BOT_CHANNEL)
 
-    def get_error_channel(self) -> discord.TextChannel:
+    @property
+    def error_channel(self) -> discord.TextChannel:
         return self.get_channel(self.ERROR_CHANNEL)
 
     def blacklist_check(self, object_id) -> bool:
@@ -245,7 +239,7 @@ class NecroBot(commands.Bot):
         """Something has gone wrong so we just try to send a helpful traceback to the channel. If
         the traceback is too big we just send the method/event that errored out and hope that
         the error is obvious."""
-        channel = self.get_error_channel()
+        channel = self.error_channel
 
         if isinstance(event, Exception):
             error_traceback = " ".join(
@@ -465,7 +459,7 @@ async def off(ctx: commands.Context[NecroBot]):
     await bot.session.close()
     await bot.pool.close()
 
-    await bot.get_bot_channel().send("**Bot Offline**")
+    await bot.bot_channel.send("**Bot Offline**")
     await bot.close()
 
 

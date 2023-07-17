@@ -102,16 +102,20 @@ class Utilities(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def avatar(self, ctx: commands.Context[NecroBot], *, user: MemberConverter = None):
+    async def avatar(
+        self,
+        ctx: commands.Context[NecroBot],
+        *,
+        user: discord.Member = commands.parameter(
+            converter=MemberConverter, default=commands.Author
+        ),
+    ):
         """Returns a link to the given user's profile pic
 
         {usage}
 
         __Example__
         `{pre}avatar @NecroBot` - return the link to NecroBot's avatar"""
-        if user is None:
-            user = ctx.author
-
         avatar = user.display_avatar.replace(format="png")
         await ctx.send(embed=discord.Embed().set_image(url=avatar))
 
@@ -263,7 +267,7 @@ class Utilities(commands.Cog):
         await ctx.send(":white_check_mark: | Reminder cancelled")
 
     @remindme.command(name="list")
-    async def remindme_list(self, ctx: commands.Context[NecroBot], user: MemberConverter = None):
+    async def remindme_list(self, ctx: commands.Context[NecroBot]):
         """List all the reminder you currently have in necrobot's typical paginator. All the reminders include their
         position on the remindme list which can be given to `remindme delete` to cancel a reminder.
 
@@ -271,8 +275,8 @@ class Utilities(commands.Cog):
 
         __Exampes__
         `{pre}remindme list` - lists all of your reminders
-        `{pre}remindme list @NecroBot` - list all of NecroBot's reminder
         """
+        user = ctx.author
 
         def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             embed = discord.Embed(
@@ -293,9 +297,6 @@ class Utilities(commands.Cog):
                 embed.add_field(name=f'{reminder["id"]}: {stamp}', value=text, inline=False)
 
             return embed
-
-        if not user:
-            user = ctx.author
 
         reminders = await self.bot.db.get_reminders(user.id)
         await paginate(ctx, reminders, 10, embed_maker)
@@ -483,7 +484,10 @@ class Utilities(commands.Cog):
     @has_perms(2)
     @leaderboard_enabled()
     async def leaderboard_award(
-        self, ctx: commands.Context[NecroBot], user: MemberConverter, points: int
+        self,
+        ctx: commands.Context[NecroBot],
+        user: discord.Member = commands.parameter(converter=MemberConverter),
+        points: int = commands.parameter(),
     ):
         """Add remove some points. (Permission level of 2+)
 
@@ -699,7 +703,7 @@ class Utilities(commands.Cog):
 
     @commands.command()
     @commands.max_concurrency(1)
-    async def shortcuts(self, ctx: commands.Context[NecroBot], *, new_shortcuts):
+    async def shortcuts(self, ctx: commands.Context[NecroBot], *, new_shortcuts: str):
         """Customise your edain shortcuts. Pass a mapping of shortcuts to replace. At
         the moment this is only available for the english version of Edain and only for
         a single version. Current version: 4.5.5
@@ -736,7 +740,7 @@ class Utilities(commands.Cog):
         )
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if payload.message_id not in self.bot.ongoing_giveaways:
             return
 
@@ -750,7 +754,7 @@ class Utilities(commands.Cog):
             self.bot.ongoing_giveaways[payload.message_id]["entries"].append(payload.user_id)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_remove(self, payload):
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
         if payload.message_id not in self.bot.ongoing_giveaways:
             return
 
@@ -767,9 +771,9 @@ class Utilities(commands.Cog):
             self.bot.ongoing_giveaways[payload.message_id]["entries"].remove(payload.user_id)
 
     @commands.Cog.listener()
-    async def on_raw_message_delete(self, payload):
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         if payload.message_id in self.bot.ongoing_giveaways:
-            del self.ongoing_giveaways[payload.message_id]
+            del self.bot.ongoing_giveaways[payload.message_id]
 
 
 async def setup(bot: NecroBot):

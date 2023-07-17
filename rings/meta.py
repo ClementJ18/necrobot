@@ -35,7 +35,6 @@ class Meta(commands.Cog):
         self.tasks_daily = [
             self.clear_potential_star,
             self.clear_temporary_invites,
-            self.clear_old_denied,
         ]
 
         self.processes = {
@@ -245,17 +244,6 @@ class Meta(commands.Cog):
                 ids,
             )
 
-    async def clear_old_denied(self):
-        posts = list(self.bot.denied_posts)
-        posts.sort()
-
-        for post in posts:
-            limit = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=30)
-            timestamp = discord.utils.snowflake_time(post["message"].id)
-
-            if timestamp < limit:
-                self.bot.denied_posts.remove(post)
-
     async def rotate_status(self):
         status = self.bot.statuses.pop(0)
         self.bot.statuses.append(status)
@@ -327,7 +315,7 @@ class Meta(commands.Cog):
         await self.bot.db.create_pool()
         self.bot.session = aiohttp.ClientSession(loop=self.bot.loop)
 
-        msg = await self.bot.get_bot_channel().send("**Initiating Bot**")
+        msg = await self.bot.bot_channel.send("**Initiating Bot**")
         for guild in self.bot.guilds:
             await self.new_guild(guild.id)
             await self.guild_checker(guild)
@@ -484,7 +472,7 @@ class Meta(commands.Cog):
             except discord.Forbidden:
                 pass
             except Exception as e:
-                await self.bot.get_error_channel().send(
+                await self.bot.error_channel.send(
                     f"Broadcast error with guild {broadcast[1]}\n{e}"
                 )
 

@@ -39,7 +39,7 @@ def requires_mute_role():
 
         if not ctx.bot.guild_data[ctx.guild.id]["mute"]:
             raise commands.CheckFailure(
-                "Please set up the mute role with `n!mute role [rolename]` first."
+                f"Please set up the mute role with `{ctx.prefix}mute role [rolename]` first."
             )
 
         return True

@@ -83,7 +83,7 @@ class Events(commands.Cog):
     #######################################################################
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context[NecroBot], error):
+    async def on_command_error(self, ctx: commands.Context[NecroBot], error: Exception):
         """Catches error and sends a message to the user that caused the error with a helpful message."""
         msg = None
         error = getattr(error, "original", error)
@@ -116,7 +116,7 @@ class Events(commands.Cog):
             msg = f"I need {', '.join(error.missing_perms)} to be able to run this command"
         elif isinstance(error, (DatabaseError, FightError)):
             msg = str(error)
-            await self.bot.get_error_channel().send(embed=error.embed(self.bot))
+            await self.bot.error_channel.send(embed=error.embed(self.bot))
         elif isinstance(error, commands.CommandNotFound):
             return
         elif isinstance(error, commands.MaxConcurrencyReached):
@@ -150,7 +150,7 @@ class Events(commands.Cog):
             embed.add_field(name="Message", value=ctx.message.content[:1024], inline=False)
 
             try:
-                await self.bot.get_error_channel().send(embed=embed)
+                await self.bot.error_channel.send(embed=embed)
             except discord.HTTPException:
                 logging.error(error_traceback)
 
@@ -165,7 +165,7 @@ class Events(commands.Cog):
                 pass
 
     @commands.Cog.listener()
-    async def on_guild_join(self, guild):
+    async def on_guild_join(self, guild: discord.Guild):
         if self.bot.blacklist_check(guild.id):
             return await guild.leave()
 
@@ -178,11 +178,11 @@ class Events(commands.Cog):
         await guild.owner.send(embed=self.bot.tutorial_e)
 
     @commands.Cog.listener()
-    async def on_guild_remove(self, guild):
+    async def on_guild_remove(self, guild: discord.Guild):
         await self.bot.meta.delete_guild(guild.id)
 
     @commands.Cog.listener()
-    async def on_guild_channel_delete(self, channel):
+    async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
         guild_id = channel.guild.id
         guild = self.bot.guild_data[guild_id]
 
@@ -202,7 +202,7 @@ class Events(commands.Cog):
         )
 
     @commands.Cog.listener()
-    async def on_guild_role_delete(self, role):
+    async def on_guild_role_delete(self, role: discord.Role):
         guild_id = role.guild.id
         guild = self.bot.guild_data[guild_id]
 
@@ -224,7 +224,7 @@ class Events(commands.Cog):
         await self.bot.db.query("DELETE FROM necrobot.PermissionRoles WHERE role_id=$1", role.id)
 
     @commands.Cog.listener()
-    async def on_guild_update(self, before, after):
+    async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
         if before.owner.id != after.owner.id:
             after_perms = (
                 4 if after.get_member(before.owner.id).guild_permissions.administrator else 0
@@ -258,15 +258,15 @@ class Events(commands.Cog):
         )
 
     @commands.Cog.listener()
-    async def on_invite_create(self, invite):
+    async def on_invite_create(self, invite: discord.Invite):
         await self.bot.db.insert_invite(invite)
 
     @commands.Cog.listener()
-    async def on_invite_delete(self, invite):
+    async def on_invite_delete(self, invite: discord.Invite):
         await self.bot.db.delete_invite(invite)
 
     @commands.Cog.listener()
-    async def on_message_delete(self, message):
+    async def on_message_delete(self, message: discord.Message):
         if message.guild is None or message.author.bot:
             return
 
@@ -300,7 +300,7 @@ class Events(commands.Cog):
                 pass
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
         if before.guild is None or before.author.bot or before.content == after.content:
             return
 
@@ -340,7 +340,7 @@ class Events(commands.Cog):
                 pass
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
         if len(before.roles) == len(after.roles):
             return
 
@@ -395,7 +395,7 @@ class Events(commands.Cog):
             )
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         await self.bot.db.delete_permission(member.id, member.guild.id)
         await self.bot.db.delete_automod_ignore(member.guild.id, member.id)
 

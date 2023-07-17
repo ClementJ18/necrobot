@@ -90,7 +90,7 @@ class Misc(commands.Cog):
                 await ctx.send(embed=discord.Embed().set_image(url=res["url"]))
 
     @commands.command()
-    async def fight(self, ctx: commands.Context[NecroBot], *, tributes):
+    async def fight(self, ctx: commands.Context[NecroBot], *, tributes: str):
         """Takes in a list of tributes separated by `,` and simulates a hunger games based on Bransteele's Hunger Game
         Simulator. More than one tribute needs to be supplied. Duplicate names will be supressed.
 

@@ -44,7 +44,14 @@ class Profile(commands.Cog):
     #######################################################################
 
     @commands.group(invoke_without_command=True)
-    async def balance(self, ctx: commands.Context[NecroBot], *, user: MemberConverter = None):
+    async def balance(
+        self,
+        ctx: commands.Context[NecroBot],
+        *,
+        user: discord.Member = commands.parameter(
+            converter=MemberConverter, default=commands.Author
+        ),
+    ):
         """Prints the given user's NecroBot balance, if no user is supplied then it will print your own NecroBot balance.
 
         {usage}
@@ -52,7 +59,7 @@ class Profile(commands.Cog):
         __Example__
         `{pre}balance @NecroBot` - prints NecroBot's balance
         `{pre}balance` - prints your own balance"""
-        if user:
+        if user != ctx.author:
             money = await self.bot.db.get_money(user.id)
             await ctx.send(
                 f":atm: | **{user.display_name}** has **{'{:,}'.format(money)}** :euro:"
@@ -133,7 +140,14 @@ class Profile(commands.Cog):
 
     @commands.command(name="daily", cooldown_after_parsing=True)
     @commands.cooldown(1, 60, BucketType.user)
-    async def daily(self, ctx: commands.Context[NecroBot], *, member: MemberConverter = None):
+    async def daily(
+        self,
+        ctx: commands.Context[NecroBot],
+        *,
+        member: discord.Member = commands.parameter(
+            converter=MemberConverter, default=commands.Author
+        ),
+    ):
         """Adds your daily 200 :euro: to your NecroBot balance. This can be used at anytime once every GMT day. Can
         also be gifted to a user for some extra cash.
 
@@ -156,9 +170,6 @@ class Profile(commands.Cog):
                 f"You have already claimed your daily today. You can claim it again in **{int(hours)} hours, {int(minutes)} minutes and {int(seconds)} seconds**"
             )
 
-        if member is None:
-            member = ctx.author
-
         if member.id == ctx.author.id:
             amount = 200
             message = "You have received your daily **200** :euro:"
@@ -171,7 +182,10 @@ class Profile(commands.Cog):
 
     @commands.command()
     async def pay(
-        self, ctx: commands.Context[NecroBot], payee: MemberConverter, amount: MoneyConverter
+        self,
+        ctx: commands.Context[NecroBot],
+        payee: discord.Member = commands.parameter(converter=MemberConverter),
+        amount: MoneyConverter = commands.parameter(),
     ):
         """Transfers the given amount of money to the given user's NecroBot bank account.
 
@@ -208,7 +222,14 @@ class Profile(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def info(self, ctx: commands.Context[NecroBot], *, user: MemberConverter = None):
+    async def info(
+        self,
+        ctx: commands.Context[NecroBot],
+        *,
+        user: discord.Member = commands.parameter(
+            converter=MemberConverter, default=commands.Author
+        ),
+    ):
         """Returns a rich embed of the given user's info. If no user is provided it will return your own info.
 
         {usage}
@@ -216,9 +237,6 @@ class Profile(commands.Cog):
         __Example__
         `{pre}info @NecroBot` - returns the NecroBot info for NecroBot
         `{pre}info` - returns your own NecroBot info"""
-        if not user:
-            user = ctx.author
-
         embed = discord.Embed(
             title=user.display_name,
             colour=self.bot.bot_color,
@@ -248,7 +266,14 @@ class Profile(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def profile(self, ctx: commands.Context[NecroBot], *, user: MemberConverter = None):
+    async def profile(
+        self,
+        ctx: commands.Context[NecroBot],
+        *,
+        user: discord.Member = commands.parameter(
+            converter=MemberConverter, default=commands.Author
+        ),
+    ):
         """Shows your profile information in a picture
 
         {usage}
@@ -298,9 +323,6 @@ class Profile(commands.Cog):
             return ifile
 
         async with ctx.channel.typing():
-            if not user:
-                user = ctx.author
-
             image_bytes = await user.display_avatar.replace(format="png").read()
             money = await self.bot.db.get_money(user.id)
             level = await self.bot.db.get_permission(user.id, ctx.guild.id)
@@ -506,7 +528,7 @@ class Profile(commands.Cog):
         can change order with keywords:
             - stars : order by highest star
 
-        **Old star command has been move to n!starboard force**
+        **Old star command has been move to {pre}starboard force**
 
         {usage}
 

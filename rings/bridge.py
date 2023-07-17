@@ -188,7 +188,7 @@ class Bridge(commands.Cog):
         del form.fields["preview"]
 
         if pending["message"].channel.id == self.TEST_CHANNEL:
-            await self.bot.get_bot_channel().send(
+            await self.bot.bot_channel.send(
                 f"Payload sent. {form.serialize().data}"
             )  # dud debug test
         else:
@@ -202,7 +202,7 @@ class Bridge(commands.Cog):
     #######################################################################
 
     @commands.Cog.listener()
-    async def on_raw_message_edit(self, payload):
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         if payload.message_id in self.bot.pending_posts:
             self.bot.pending_posts[payload.message_id]["message"]._update(payload.data)
             self.bot.pending_posts[payload.message_id]["content"] = self.bot.pending_posts[
@@ -210,22 +210,17 @@ class Bridge(commands.Cog):
             ]["message"].content
 
     @commands.Cog.listener()
-    async def on_raw_message_delete(self, payload):
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         if payload.message_id in self.bot.pending_posts:
             del self.bot.pending_posts[payload.message_id]
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if message.channel.id not in self.mu_channels:
             return
 
         if message.author.bot:
             return
-
-        # registered = await self.bot.db.query(
-        #     "SELECT active FROM necrobot.MU_Users WHERE user_id=$1",
-        #     message.author.id, fetchval=True
-        # )
 
         if message.reference:
             if message.reference.message_id in self.bot.pending_posts:
@@ -249,7 +244,7 @@ class Bridge(commands.Cog):
                 pass
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if self.bot.blacklist_check(payload.user_id):
             return
 

@@ -109,9 +109,6 @@ class Flowers(commands.Cog):
         )
 
     async def get_balance(self, ctx: commands.Context[NecroBot], user: discord.Member):
-        if user is None:
-            user = ctx.author
-
         flowers = await self.get_flowers(ctx.guild.id, user.id)
         symbol = await self.get_symbol(ctx.guild.id)
 
@@ -309,8 +306,8 @@ class Flowers(commands.Cog):
     async def flowers(
         self,
         ctx: commands.Context[NecroBot],
-        member: MemberConverter,
-        amount: int,
+        member: discord.Member = commands.parameter(converter=MemberConverter),
+        amount: int = commands.parameter(),
         *,
         reason: str = None,
     ):
@@ -359,7 +356,13 @@ class Flowers(commands.Cog):
 
     @flowers.command(name="balance")
     @commands.guild_only()
-    async def flowers_balance(self, ctx: commands.Context[NecroBot], user: discord.Member = None):
+    async def flowers_balance(
+        self,
+        ctx: commands.Context[NecroBot],
+        user: discord.Member = commands.parameter(
+            converter=MemberConverter, default=commands.Author
+        ),
+    ):
         """Check your or a user's balance of flowers
 
         {usage}
@@ -410,7 +413,10 @@ class Flowers(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def give(
-        self, ctx: commands.Context[NecroBot], member: MemberConverter, amount: FlowerConverter
+        self,
+        ctx: commands.Context[NecroBot],
+        member: discord.Member = commands.parameter(converter=MemberConverter),
+        amount: FlowerConverter = commands.parameter(),
     ):
         """Transfer flowers from one user to another.
 
@@ -543,7 +549,7 @@ class Flowers(commands.Cog):
         defaults = {
             "description": EmbedStringConverter(style=discord.TextStyle.paragraph),
             "image": EmbedStringConverter(optional=True),
-            "title": EmbedStringConverter(),
+            "title": EmbedStringConverter(optional=True),
             "tier": EmbedRangeConverter(min=1, max=5),
             "universe": EmbedStringConverter(),
             "type": EmbedChoiceConverter(choices=["character", "weapon", "artefact"]),
@@ -605,7 +611,7 @@ class Flowers(commands.Cog):
                 default=char["description"], style=discord.TextStyle.paragraph
             ),
             "image": EmbedStringConverter(default=char["image_url"], optional=True),
-            "title": EmbedStringConverter(default=char["title"]),
+            "title": EmbedStringConverter(default=char["title"], optional=True),
             "tier": EmbedRangeConverter(default=char["tier"], min=1, max=5),
             "universe": EmbedStringConverter(default=char["universe"]),
             "type": EmbedChoiceConverter(
@@ -722,8 +728,10 @@ class Flowers(commands.Cog):
     async def characters_give(
         self,
         ctx: commands.Context[NecroBot],
-        user: MemberConverter,
-        char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon")),
+        user: discord.Member = commands.parameter(converter=MemberConverter),
+        char: GachaCharacterConverter(
+            allowed_types=("character", "artefact", "weapon")
+        ) = commands.parameter(),
     ):
         """Add a level of character to a player's account
 
@@ -754,8 +762,10 @@ class Flowers(commands.Cog):
     async def characters_take(
         self,
         ctx: commands.Context[NecroBot],
-        user: MemberConverter,
-        char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon")),
+        user: discord.Member = commands.parameter(converter=MemberConverter),
+        char: GachaCharacterConverter(
+            allowed_types=("character", "artefact", "weapon")
+        ) = commands.parameter(),
         amount: int = 1,
     ):
         """Remove a level of character to a player's account
@@ -1020,7 +1030,13 @@ class Flowers(commands.Cog):
 
     @gacha.command(name="balance")
     @commands.guild_only()
-    async def gacha_balance(self, ctx: commands.Context[NecroBot], user: MemberConverter = None):
+    async def gacha_balance(
+        self,
+        ctx: commands.Context[NecroBot],
+        user: discord.Member = commands.parameter(
+            converter=MemberConverter, default=commands.Author
+        ),
+    ):
         """Check your or a user's balance of flowers
 
         {usage}

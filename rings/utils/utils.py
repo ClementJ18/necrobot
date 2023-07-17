@@ -21,6 +21,41 @@ class PotentialStar(TypedDict):
     message: discord.Message
     count: int
 
+class PendingPost(TypedDict):
+    message: discord.Message
+    content: str
+    replies: List[discord.Message]
+
+class Event(TypedDict):
+    users: List[int] 
+    amount: int
+
+class Giveaway(TypedDict):
+    limit: datetime.datetime
+    winners: int
+    reward: str
+    msg: discord.Message
+    entries: List[int]
+
+Guild = TypedDict(
+    "Guild", {
+    "mute": int,
+    "automod": int,
+    "welcome-channel": int,
+    "welcome": str,
+    "goodbye": str,
+    "prefix": str,
+    "starboard-channel": int,
+    "starboard-limit": int,
+    "auto-role": int,
+    "auto-role-timer": int,
+    "pm-warning": bool,
+    "ignore-command": List[int],
+    "ignore-automod": List[int],
+    "disabled": List[str],
+    "self-roles": List[int],
+    "mutes": List[int],
+})
 
 class DatabaseError(Exception):
     def __init__(self, message: str, query: Optional[str] = None, args: List[Any] = ()):

@@ -1,20 +1,26 @@
+from __future__ import annotations
+
 import random
 import traceback
+from typing import TYPE_CHECKING, List
 
 import discord
 
 from .hunger_game import events
 
+if TYPE_CHECKING:
+    from bot import NecroBot
+
 
 class FightError(Exception):
-    def __init__(self, message, event=None, format_dict=None):
+    def __init__(self, message: str, event=None, format_dict=None):
         super().__init__(message)
 
         self.message = message
         self.event = event
         self.format_dict = format_dict
 
-    def embed(self, bot):
+    def embed(self, bot: NecroBot):
         error_traceback = f"```py\n{traceback.format_exc()}\n```"
         embed = discord.Embed(
             title="Fight Error", description=error_traceback, colour=bot.bot_color
@@ -29,21 +35,22 @@ class FightError(Exception):
 
 
 class HungerGames(discord.ui.View):
-    def __init__(self, bot, tributes, author, *, timeout=180):
+    def __init__(self, bot: NecroBot, tributes, author: discord.User, *, timeout:int = 180):
         super().__init__(timeout=timeout)
 
         self.tributes = tributes
-        self.day = 1
-        self.dead = []
-        self.phases = []
-        self.index = 0
-        self.ongoing = True
-        self.phase = None
+        self.day: int = 1
+        self.dead: List[str] = []
+        self.phases: List[str] = []
+        self.index: int = 0
+        self.ongoing: bool = True
+        self.phase: str = None
         self.bot = bot
         self.author = author
+        self.message: discord.Message = None
 
     async def interaction_check(self, interaction: discord.Interaction):
-        if not interaction.user == self.ctx.author:
+        if not interaction.user == self.author:
             await interaction.response.send_message(
                 ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
             )

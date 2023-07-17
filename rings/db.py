@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import asyncpg
 import discord
@@ -39,7 +39,7 @@ class Database(commands.Cog):
             database="postgres", user=dbusername, password=dbpass
         )
 
-    async def get_conn(self):
+    async def get_conn(self) -> asyncpg.Connection:
         if self.bot.pool is None:
             await self.create_pool()
 
@@ -283,7 +283,7 @@ class Database(commands.Cog):
     # mixup with column names
     # - 'starred' in the code is the message that has received the stars
     # - 'starred' in the db is the message that ctx.send to the starboard
-    async def add_star(self, starred, message, stars):
+    async def add_star(self, starred: discord.Message, message: discord.Message, stars: int):
         await self.query(
             "INSERT INTO necrobot.Starred VALUES ($1, $2, $3, $4, $5, $6);",
             starred.id,
@@ -459,7 +459,7 @@ class Database(commands.Cog):
             x for x in self.bot.guild_data[guild_id]["self-roles"] if x not in roles_id
         ]
 
-    async def insert_invite(self, invite):
+    async def insert_invite(self, invite: discord.Invite):
         await self.query(
             "INSERT INTO necrobot.Invites VALUES($1, $2, $3, $4, $5)",
             invite.id,
@@ -469,12 +469,12 @@ class Database(commands.Cog):
             invite.inviter.id if invite.inviter else 000,
         )
 
-    async def delete_invite(self, invite):
+    async def delete_invite(self, invite: discord.Invite):
         await self.query("DELETE FROM necrobot.Invites WHERE id=$1", invite.id)
 
-    async def update_invites(self, guild):
+    async def update_invites(self, guild: discord.Guild):
         try:
-            invites = sorted(await guild.invites(), key=lambda x: x.created_at)
+            invites: List[discord.Invite] = sorted(await guild.invites(), key=lambda x: x.created_at)
         except discord.Forbidden:
             return
 
@@ -491,9 +491,9 @@ class Database(commands.Cog):
 
         return return_invite
 
-    async def sync_invites(self, guild):
+    async def sync_invites(self, guild: discord.Guild):
         try:
-            invites = sorted(await guild.invites(), key=lambda x: x.created_at)
+            invites: List[discord.Invite] = sorted(await guild.invites(), key=lambda x: x.created_at)
         except discord.Forbidden:
             return
 

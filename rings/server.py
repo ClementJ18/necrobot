@@ -111,7 +111,7 @@ class Server(commands.Cog):
     async def permissions(
         self,
         ctx: commands.Context[NecroBot],
-        user: MemberConverter = None,
+        user: discord.Member = commands.parameter(converter=MemberConverter, default=None),
         level: RangeConverter(0, 7) = None,
     ):
         """Sets the NecroBot permission level of the given user, you can only set permission levels lower than your own.
@@ -214,7 +214,7 @@ class Server(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         level: RangeConverter(1, 4) = None,
-        role: RoleConverter = None,
+        role: discord.Role = commands.parameter(converter=RoleConverter, default=None),
     ):
         """See current bindings, create a binding or remove a binding. Bindings between a role and a level mean that
         the bot automatically assigns that permission level to the users when they are given the role (if it is higher
@@ -335,7 +335,11 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(4)
-    async def promote(self, ctx: commands.Context[NecroBot], member: MemberConverter):
+    async def promote(
+        self,
+        ctx: commands.Context[NecroBot],
+        member: discord.Member = commands.parameter(converter=MemberConverter),
+    ):
         """Promote a member by one on the Necrobot hierarchy scale. Gaining access to additional commands.
 
         {usage}
@@ -348,7 +352,11 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(4)
-    async def demote(self, ctx: commands.Context[NecroBot], member: MemberConverter):
+    async def demote(
+        self,
+        ctx: commands.Context[NecroBot],
+        member: discord.Member = commands.parameter(converter=MemberConverter),
+    ):
         """Demote a member by one on the Necrobot hierarchy scale. Losing access to certain commands.
 
         {usage}
@@ -666,7 +674,7 @@ class Server(commands.Cog):
     @welcome.command(name="channel")
     @has_perms(4)
     async def welcome_channel(
-        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = 0
+        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = commands.Parameter(converter=WritableChannelConverter, default=0)
     ):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention/name/id. The welcome
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use
@@ -684,7 +692,7 @@ class Server(commands.Cog):
     @farewell.command(name="channel")
     @has_perms(4)
     async def farewell_channel(
-        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = 0
+        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = commands.Parameter(converter=WritableChannelConverter, default=0)
     ):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention. The welcome
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use
@@ -701,8 +709,8 @@ class Server(commands.Cog):
 
     @commands.command(name="prefix")
     @has_perms(4)
-    async def prefix(self, ctx: commands.Context[NecroBot], *, prefix=""):
-        r"""Sets the bot to only respond to the given prefix. If no prefix is given it will reset it to NecroBot's deafult
+    async def prefix(self, ctx: commands.Context[NecroBot], *, prefix: str = ""):
+        r"""Sets the bot to only respond to the given prefix. If no prefix is given it will reset it to NecroBot's default
         list of prefixes: `n!`, `N!` or `@NecroBot `. The prefix can't be longer than 15 characters.
 
         If you want your prefix to have a whitespace between the prefix and the command then end it with \w
@@ -728,7 +736,10 @@ class Server(commands.Cog):
     @commands.command(name="auto-role")
     @has_perms(4)
     async def auto_role(
-        self, ctx: commands.Context[NecroBot], role: RoleConverter = 0, time: TimeConverter = 0
+        self,
+        ctx: commands.Context[NecroBot],
+        role: discord.Role = commands.parameter(converter=RoleConverter, default=0),
+        time: TimeConverter = 0,
     ):
         """Sets the auto-role for this server to the given role. Auto-role will assign the role to the member when they join.
         The following times can be used: days (d), hours (h), minutes (m), seconds (s).
@@ -769,7 +780,7 @@ class Server(commands.Cog):
         `{pre}broadcast edit channel 2 #another-channel` - change the channel that broadcast 2 is broadcasting to
         """
 
-        def embed_maker(view, entry):
+        def embed_maker(view: Paginator, entry):
             embed = discord.Embed(
                 title=f"Broadcast ({view.page_number}/{view.page_count})",
                 description=entry[5],
@@ -826,7 +837,7 @@ class Server(commands.Cog):
     async def broadcast_add(
         self,
         ctx: commands.Context[NecroBot],
-        channel: discord.TextChannel,
+        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter),
     ):
         """Start the process for adding a new broadcast.
 
@@ -839,7 +850,6 @@ class Server(commands.Cog):
         __Examples__
         `{pre}broadcast add #lounge` - start the process of adding a broadcast to lounge
         """
-        check_channel(channel)
         defaults = {
             "message": EmbedStringConverter(style=discord.TextStyle.paragraph),
             "start": EmbedRangeConverter(min=0, max=23),
@@ -959,7 +969,12 @@ class Server(commands.Cog):
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
-    async def giveme(self, ctx: commands.Context[NecroBot], *, role: RoleConverter = None):
+    async def giveme(
+        self,
+        ctx: commands.Context[NecroBot],
+        *,
+        role: discord.Role = commands.parameter(converter=RoleConverter, default=None),
+    ):
         """Gives the user the role if it is part of this Server's list of self assignable roles. If the user already
         has the role it will remove it. **Roles names are case sensitive** If no role name is given then it will list
         the self-assignable roles for the server
@@ -1001,7 +1016,12 @@ class Server(commands.Cog):
 
     @giveme.command(name="add")
     @has_perms(4)
-    async def giveme_add(self, ctx: commands.Context[NecroBot], *, role: RoleConverter):
+    async def giveme_add(
+        self,
+        ctx: commands.Context[NecroBot],
+        *,
+        role: discord.Role = commands.parameter(converter=RoleConverter),
+    ):
         """Adds [role] to the list of the server's self assignable roles.
 
         {usage}
@@ -1018,7 +1038,12 @@ class Server(commands.Cog):
 
     @giveme.command(name="delete")
     @has_perms(4)
-    async def giveme_delete(self, ctx: commands.Context[NecroBot], *, role: RoleConverter):
+    async def giveme_delete(
+        self,
+        ctx: commands.Context[NecroBot],
+        *,
+        role: discord.Role = commands.parameter(converter=RoleConverter),
+    ):
         """Removes [role] from the list of the server's self assignable roles.
 
         {usage}
@@ -1037,7 +1062,7 @@ class Server(commands.Cog):
     @commands.guild_only()
     @has_perms(4)
     async def starboard(
-        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = None
+        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=None)
     ):
         """Sets a channel for the starboard messages, required in order for starboard to be enabled. Call the command
         without a channel to disable starboard.
@@ -1111,7 +1136,11 @@ class Server(commands.Cog):
 
     @commands.command()
     @has_perms(3)
-    async def poll(self, ctx: commands.Context[NecroBot], channel: WritableChannelConverter):
+    async def poll(
+        self,
+        ctx: commands.Context[NecroBot],
+        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter),
+    ):
         """Create a reaction poll for your server in the specified channel. This will also ask you to specify a
         maximum number of reactions. This number will limit how many options users can vote for.
 

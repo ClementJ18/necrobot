@@ -63,7 +63,13 @@ class Admin(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @commands.is_owner()
-    async def grudge(self, ctx: commands.Context[NecroBot], user: UserConverter, *, grudge: str):
+    async def grudge(
+        self,
+        ctx: commands.Context[NecroBot],
+        user: discord.User = commands.parameter(converter=UserConverter),
+        *,
+        grudge: str = commands.parameter(),
+    ):
         """Add a grudge
 
         {usage}"""
@@ -161,7 +167,11 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(7)
-    async def leave(self, ctx: commands.Context[NecroBot], guild: GuildConverter):
+    async def leave(
+        self,
+        ctx: commands.Context[NecroBot],
+        guild: discord.Guild = commands.parameter(converter=GuildConverter),
+    ):
         """Leaves the specified server.
 
         {usage}"""
@@ -170,7 +180,13 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(6)
-    async def add(self, ctx: commands.Context[NecroBot], user: UserConverter, *, equation: str):
+    async def add(
+        self,
+        ctx: commands.Context[NecroBot],
+        user: discord.User = commands.parameter(converter=UserConverter),
+        *,
+        equation: str = commands.parameter(),
+    ):
         """Does the given pythonic equations on the given user's NecroBot balance.
         `*` - for multiplication
         `+` - for additions
@@ -218,9 +234,9 @@ class Admin(commands.Cog):
     async def admin_perms(
         self,
         ctx: commands.Context[NecroBot],
-        guild: GuildConverter,
-        user: UserConverter,
-        level: int,
+        guild: discord.Guild = commands.parameter(converter=GuildConverter),
+        user: discord.User = commands.parameter(converter=UserConverter),
+        level: int = commands.parameter(),
     ):
         """For when regular perms isn't enough.
 
@@ -271,8 +287,8 @@ class Admin(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         subcommand: Literal["add", "delete"],
-        user: UserConverter,
-        badge: BadgeConverter,
+        user: discord.User = commands.parameter(converter=UserConverter),
+        badge: BadgeConverter = commands.parameter(),
         spot: RangeConverter(1, 8) = None,
     ):
         """Used to grant special badges to users. Uses add/delete subcommand
@@ -315,7 +331,13 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_perms(6)
-    async def pm(self, ctx: commands.Context[NecroBot], user: UserConverter, *, message: str):
+    async def pm(
+        self,
+        ctx: commands.Context[NecroBot],
+        user: discord.User = commands.parameter(converter=UserConverter),
+        *,
+        message: str = commands.parameter(),
+    ):
         """Sends the given message to the user of the given id. It will then wait for an answer and
         print it to the channel it was called it.
 
@@ -382,7 +404,12 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def invites(self, ctx: commands.Context[NecroBot], *, guild: GuildConverter = None):
+    async def invites(
+        self,
+        ctx: commands.Context[NecroBot],
+        *,
+        guild: discord.Guild = commands.parameter(converter=GuildConverter, default=None),
+    ):
         """Returns invites (if the bot has valid permissions) for each server the bot is on if no guild id is specified.
 
         {usage}"""
@@ -488,13 +515,19 @@ class Admin(commands.Cog):
 
     @commands.command(name="as")
     @commands.is_owner()
-    async def _as(self, ctx: commands.Context[NecroBot], user: MemberConverter, *, message: str):
+    async def _as(
+        self,
+        ctx: commands.Context[NecroBot],
+        user: discord.Member = commands.parameter(converter=MemberConverter),
+        *,
+        message: str = commands.parameter(),
+    ):
         """Call a command as another user, used for debugging purposes
 
         {usage}
 
         __Examples__
-        `{pre}as NecroBot n!balance` - calls the balance command as though necrobot had called it (displaying its balance).
+        `{pre}as NecroBot {pre}balance` - calls the balance command as though necrobot had called it (displaying its balance).
 
         """
         if ctx.command == "as":

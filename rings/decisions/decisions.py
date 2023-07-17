@@ -26,7 +26,7 @@ class Decisions(commands.Cog):
     ## Commands
     #######################################################################
 
-    async def _choose(self, ctx: commands.Context[NecroBot], choices, count):
+    async def _choose(self, ctx: commands.Context[NecroBot], choices: str, count: int):
         choice_sets = choices.split("|")
         final_choices = []
         for choice_set in choice_sets:
@@ -39,7 +39,7 @@ class Decisions(commands.Cog):
         await ctx.send(f"I choose **{' '.join(final_choices)}**")
 
     @commands.group(aliases=["choice"], invoke_without_command=True)
-    async def choose(self, ctx: commands.Context[NecroBot], *, choices):
+    async def choose(self, ctx: commands.Context[NecroBot], *, choices: str):
         """Returns a single choice from the list of choices given. Use `,` to seperate each of the choices. You can
         make multiple choices with a single command by separating them with `|`.
 
@@ -52,7 +52,7 @@ class Decisions(commands.Cog):
         await self._choose(ctx, choices, 1)
 
     @choose.command(name="multiple", aliases=["mult"])
-    async def choose_mult(self, ctx: commands.Context[NecroBot], count: int, *, choices):
+    async def choose_mult(self, ctx: commands.Context[NecroBot], count: int, *, choices: str):
         """Similar to the choose command but allows you to specify a number of unique results to return by group.
 
         {usage}
@@ -121,7 +121,7 @@ class Decisions(commands.Cog):
             )
 
     @commands.command(name="8ball")
-    async def ball8(self, ctx: commands.Context[NecroBot], *, message=None):
+    async def ball8(self, ctx: commands.Context[NecroBot], *, message: str = None):
         """Uses an 8ball system to reply to the user's question.
 
         {usage}"""
