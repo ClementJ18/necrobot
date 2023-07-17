@@ -118,7 +118,9 @@ class Moderation(commands.Cog):
     @commands.command()
     @has_perms(1)
     @commands.bot_has_permissions(manage_nicknames=True)
-    async def rename(self, ctx: commands.Context[NecroBot], user: MemberConverter, *, nickname=None):
+    async def rename(
+        self, ctx: commands.Context[NecroBot], user: MemberConverter, *, nickname=None
+    ):
         """Nicknames a user, use to clean up offensive or vulgar names or just to prank your friends. Will return
         an error message if the user cannot be renamed due to permission issues.
 
@@ -159,7 +161,9 @@ class Moderation(commands.Cog):
     @has_perms(2)
     @requires_mute_role()
     @commands.bot_has_permissions(manage_roles=True)
-    async def mute(self, ctx: commands.Context[NecroBot], user: MemberConverter, time: TimeConverter = None):
+    async def mute(
+        self, ctx: commands.Context[NecroBot], user: MemberConverter, time: TimeConverter = None
+    ):
         """Blocks the user from writing in channels by giving it the server's mute role. Make sure an admin has set a
         mute role using `{pre}mute role`. The user can either be muted for the given amount of seconds or indefinitely
         if no amount is given. The following times can be used: days (d), hours (h), minutes (m), seconds (s).

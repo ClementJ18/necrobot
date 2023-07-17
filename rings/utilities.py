@@ -5,7 +5,7 @@ import datetime
 import io
 import random
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import aiohttp
 import discord
@@ -21,6 +21,7 @@ from rings.utils.utils import BotError, format_dt, time_converter, time_string_p
 
 if TYPE_CHECKING:
     from bot import NecroBot
+    from rings.utils.ui import Paginator
 
 
 class Utilities(commands.Cog):
@@ -41,11 +42,11 @@ class Utilities(commands.Cog):
 
     @commands.command()
     async def calc(self, ctx: commands.Context[NecroBot], *, equation: str):
-        """Evaluates a pythonics mathematical equation, use the following to build your mathematical equations:
+        """Evaluates a pythonic mathematical equation, use the following to build your mathematical equations:
         `*` - for multiplication
         `+` - for additions
-        `-` - for substractions
-        `/` - for divisons
+        `-` - for subtractions
+        `/` - for divisions
         `**` - for exponents
         `%` - for modulo
         More symbols can be used, simply research 'python math symbols'
@@ -131,7 +132,7 @@ class Utilities(commands.Cog):
         `{pre}today births` - prints births that happened today
         `{pre}today births 14/02` - prints births that happened on the 14th of February"""
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             embed = discord.Embed(
                 title=res["date"],
                 colour=self.bot.bot_color,
@@ -273,7 +274,7 @@ class Utilities(commands.Cog):
         `{pre}remindme list @NecroBot` - list all of NecroBot's reminder
         """
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             embed = discord.Embed(
                 title=f"Reminders ({view.page_number}/{view.page_count})",
                 description=f"Here is the list of **{user.display_name}**'s currently active reminders.",
@@ -307,7 +308,7 @@ class Utilities(commands.Cog):
 
         {usage}"""
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             embed = discord.Embed(
                 title=f"Queue ({view.page_number}/{view.page_count})",
                 description="Here is the list of members currently queued:\n- {}".format(
@@ -420,7 +421,7 @@ class Utilities(commands.Cog):
             ctx.guild.id,
         )
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             users = []
             for result in entries:
                 user = ctx.guild.get_member(result[0])
@@ -481,7 +482,9 @@ class Utilities(commands.Cog):
     @leaderboard.command(name="award")
     @has_perms(2)
     @leaderboard_enabled()
-    async def leaderboard_award(self, ctx: commands.Context[NecroBot], user: MemberConverter, points: int):
+    async def leaderboard_award(
+        self, ctx: commands.Context[NecroBot], user: MemberConverter, points: int
+    ):
         """Add remove some points. (Permission level of 2+)
 
         {usage}
@@ -629,7 +632,7 @@ class Utilities(commands.Cog):
         ]
         ga_entries.sort(key=lambda x: x["limit"])
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             ga = "\n".join(
                 [
                     f"- **{entry['msg'].id}**: {format_dt(entry['limit'])} ([Link]({entry['msg'].jump_url}))"

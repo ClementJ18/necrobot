@@ -6,7 +6,7 @@ import itertools
 import random
 import re
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import aiohttp
 import discord
@@ -28,6 +28,7 @@ from .ui import HungerGames
 
 if TYPE_CHECKING:
     from bot import NecroBot
+    from rings.utils.ui import Paginator
 
 
 class Misc(commands.Cog):
@@ -145,7 +146,7 @@ class Misc(commands.Cog):
 
         """
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             entries.sort(**sort.get(sort_key, sort["name"]))
             description = ""
             intro = ""
@@ -269,7 +270,7 @@ class Misc(commands.Cog):
         `{pre}matchups user=@Necrobot` - get the logs of all the matches where necrobot won
         """
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             description = ""
             for entry in entries:
                 submitter = self.bot.get_user(entry["user_id"])

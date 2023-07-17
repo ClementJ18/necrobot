@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import discord
 from discord.ext import commands
@@ -13,6 +13,7 @@ from rings.utils.utils import BotError, DatabaseError, build_format_dict
 
 if TYPE_CHECKING:
     from bot import NecroBot
+    from rings.utils.ui import Paginator
 
 
 class Tags(commands.Cog):
@@ -245,7 +246,7 @@ class Tags(commands.Cog):
             "SELECT alias from necrobot.Aliases WHERE guild_id = $1", ctx.guild.id
         )
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             tag_str = "- " + "\n- ".join(entries)
             embed = discord.Embed(
                 title=f"Tags on this server ({view.page_number}/{view.page_count})",

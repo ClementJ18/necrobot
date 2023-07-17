@@ -23,7 +23,7 @@ class Events(commands.Cog):
     ## Functions
     #######################################################################
 
-    async def dm_reaction_handler(self, payload):
+    async def dm_reaction_handler(self, payload: discord.RawReactionActionEvent):
         if payload.emoji.name == "\N{WASTEBASKET}":
             try:
                 await self.bot._connection.http.delete_message(
@@ -32,7 +32,7 @@ class Events(commands.Cog):
             except (discord.Forbidden, discord.HTTPException):
                 pass
 
-    async def starred_reaction_handler(self, payload):
+    async def starred_reaction_handler(self, payload: discord.RawReactionActionEvent):
         await self.bot.db.update_stars(payload.message_id, payload.user_id, 1)
 
         if not self.is_starrable(payload.guild_id, payload.channel_id, payload.message_id):
@@ -488,7 +488,7 @@ class Events(commands.Cog):
                     pass
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if self.bot.blacklist_check(payload.user_id):
             return
 
@@ -499,7 +499,7 @@ class Events(commands.Cog):
             return await self.starred_reaction_handler(payload)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_remove(self, payload):
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
         if payload.user_id in self.bot.settings["blacklist"] or payload.guild_id is None:
             return
 
@@ -513,18 +513,18 @@ class Events(commands.Cog):
             await self.bot.db.update_stars(payload.message_id, payload.user_id, -1)
 
     @commands.Cog.listener()
-    async def on_raw_message_edit(self, payload):
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         if payload.message_id in self.bot.potential_stars:
-            message = self.bot.potential_stars[payload.message_id]["message"]
+            message: discord.Message = self.bot.potential_stars[payload.message_id]["message"]
             message._update(payload.data)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_clear(self, payload):
+    async def on_raw_reaction_clear(self, payload: discord.RawReactionClearEvent):
         if payload.message_id in self.bot.potential_stars:
             self.bot.potential_stars[payload.message_id]["count"] = 0
 
     @commands.Cog.listener()
-    async def on_raw_message_delete(self, payload):
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         if payload.message_id in self.bot.potential_stars:
             del self.bot.potential_stars[payload.message_id]
 

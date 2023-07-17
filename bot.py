@@ -8,7 +8,7 @@ import logging
 import sys
 import time
 import traceback
-from typing import TYPE_CHECKING, Any, Callable, List, Literal, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import aiohttp
 import asyncpg
@@ -22,8 +22,11 @@ from rings.utils.ui import Confirm
 from rings.utils.utils import default_settings, get_pre
 
 if TYPE_CHECKING:
+    from rings.bridge import Bridge
     from rings.db import Database
     from rings.meta import Meta
+    from rings.rss import RSS
+    from rings.utils.utils import PotentialStar
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(message)s", filename="discord.log", level=logging.ERROR
@@ -97,13 +100,14 @@ class NecroBot(commands.Bot):
         self.cat_cache = []
         self.ignored_messages = []
         self.starred = []
-        self.potential_stars = {}
-        self.reminders = {}
+        self.potential_stars: List[PotentialStar] = {}
+        self.reminders: Dict[int, asyncio.Task] = {}
         self.pending_posts = {}
         self.denied_posts = []
         self.events = {}
         self.ongoing_giveaways = {}
         self.queued_posts = None
+        self.twitch_token: Dict[str, Union[str, int]] = {}
 
         self.tutorial_e: discord.Embed = None
         self.gdpr_embed: discord.Embed = None
@@ -449,8 +453,12 @@ async def off(ctx: commands.Context[NecroBot]):
         json.dump(bot.settings, file)
 
     bot.meta.hourly_loop.cancel()
-    bot.get_cog("RSS").task.cancel()
-    bot.get_cog("Bridge").task.cancel()
+    rss_cog: RSS = bot.get_cog("RSS")
+    rss_cog.task.cancel()
+
+    bridge_cog: Bridge = bot.get_cog("Bridge")
+    bridge_cog.task.cancel()
+
     for reminder in bot.reminders.values():
         reminder.cancel()
 

@@ -170,7 +170,9 @@ class Profile(commands.Cog):
         await ctx.send(f":m: | {message}")
 
     @commands.command()
-    async def pay(self, ctx: commands.Context[NecroBot], payee: MemberConverter, amount: MoneyConverter):
+    async def pay(
+        self, ctx: commands.Context[NecroBot], payee: MemberConverter, amount: MoneyConverter
+    ):
         """Transfers the given amount of money to the given user's NecroBot bank account.
 
         {usage}

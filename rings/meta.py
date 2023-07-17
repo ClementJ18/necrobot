@@ -5,7 +5,7 @@ import datetime
 import io
 import re
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union
 
 import aiohttp
 import discord
@@ -56,7 +56,7 @@ class Meta(commands.Cog):
     ## Functions
     #######################################################################
 
-    async def bmp_converter(self, message):
+    async def bmp_converter(self, message: discord.Message):
         attachment = message.attachments[0]
         f = io.BytesIO()
         await attachment.save(f)
@@ -114,7 +114,9 @@ class Meta(commands.Cog):
         del self.bot.guild_data[guild_id]
         await self.bot.db.query("DELETE FROM necrobot.Guilds WHERE guild_id = $1", guild_id)
 
-    async def new_member(self, user, guild=None):
+    async def new_member(
+        self, user: Union[discord.Member, discord.User], guild: Optional[discord.Guild] = None
+    ):
         await self.bot.db.query(
             "INSERT INTO necrobot.Users(user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
             user.id,
@@ -150,7 +152,7 @@ class Meta(commands.Cog):
             user.id,
         )
 
-    async def star_message(self, message):
+    async def star_message(self, message: discord.Message):
         if self.bot.blacklist_check(message.author.id):
             return
 
@@ -394,7 +396,7 @@ class Meta(commands.Cog):
         self.bot.maintenance = False
         await msg.edit(content="**Bot Online**")
 
-    async def guild_checker(self, guild):
+    async def guild_checker(self, guild: discord.Guild):
         channels = [channel.id for channel in guild.channels]
         roles = [role.id for role in guild.roles]
         members = [member.id for member in guild.members]

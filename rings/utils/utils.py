@@ -4,7 +4,7 @@ import datetime
 import itertools
 import re
 import traceback
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, List, Optional, TypedDict
 
 import discord
 from discord.ext import commands
@@ -17,8 +17,13 @@ class BotError(Exception):
     pass
 
 
+class PotentialStar(TypedDict):
+    message: discord.Message
+    count: int
+
+
 class DatabaseError(Exception):
-    def __init__(self, message: str, query: str = None, args=()):
+    def __init__(self, message: str, query: Optional[str] = None, args: List[Any] = ()):
         super().__init__(message)
         self.message = message
         self.query = query

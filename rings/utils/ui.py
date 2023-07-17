@@ -5,13 +5,15 @@ import datetime
 import math
 import re
 from dataclasses import dataclass
-from typing import Callable, Dict, List
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, TypeVar
 
 import discord
 from discord.ext import commands
-from discord.interactions import Interaction
 
 from rings.utils.utils import BotError
+
+if TYPE_CHECKING:
+    from bot import NecroBot
 
 CUSTOM_EMOJI = r"<:[^\s]+:([0-9]*)>"
 UNICODE_EMOJI = r":\w*:"
@@ -24,7 +26,7 @@ def strip_emoji(content):
 class PollSelect(discord.ui.Select):
     view: PollView
 
-    async def callback(self, interaction: Interaction):
+    async def callback(self, interaction: discord.Interaction[NecroBot]):
         await interaction.client.db.query(
             "DELETE FROM necrobot.PollVotes WHERE user_id = $1 AND poll_id = $2",
             interaction.user.id,
@@ -43,7 +45,15 @@ class PollSelect(discord.ui.Select):
 
 
 class PollView(discord.ui.View):
-    def __init__(self, title, message, count, options, bot, poll_id=None):
+    def __init__(
+        self,
+        title: str,
+        message: str,
+        count: int,
+        options: List[str],
+        bot: NecroBot,
+        poll_id: int = None,
+    ):
         super().__init__(timeout=None)
 
         self.poll_id = poll_id
@@ -70,7 +80,7 @@ class PollView(discord.ui.View):
             )
         )
 
-    def generate_embed(self, values):
+    def generate_embed(self, values: Dict[str, Any]):
         return self.bot.embed_poll(
             self.title,
             self.message,
@@ -79,7 +89,7 @@ class PollView(discord.ui.View):
             self.closer,
         )
 
-    async def get_values(self, bot):
+    async def get_values(self, bot: NecroBot):
         return await bot.db.query(
             """
                 SELECT po.*, count(pv.*) as total 
@@ -94,7 +104,7 @@ class PollView(discord.ui.View):
     @discord.ui.button(
         label="Close poll", style=discord.ButtonStyle.red, row=1, custom_id="poll_end"
     )
-    async def close_poll(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def close_poll(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         perms = await interaction.client.db.get_permission(
             interaction.user.id, interaction.guild.id
         )
@@ -116,21 +126,20 @@ class PollView(discord.ui.View):
 
 
 class PollEditorModal(discord.ui.Modal):
-    view: PollEditorView
-
-    def __init__(self, view):
+    def __init__(self, view: PollEditorView):
         super().__init__(title="Add up to three options")
 
         self.option_1 = discord.ui.TextInput(label="Option 1", required=True, max_length=150)
         self.option_2 = discord.ui.TextInput(label="Option 2", required=False, max_length=150)
         self.option_3 = discord.ui.TextInput(label="Option 3", required=False, max_length=150)
+
         self.add_item(self.option_1)
         self.add_item(self.option_2)
         self.add_item(self.option_3)
 
         self.view = view
 
-    async def on_submit(self, interaction: Interaction):
+    async def on_submit(self, interaction: discord.Interaction[NecroBot]):
         errors = []
 
         for index, option in enumerate([self.option_1, self.option_2, self.option_3]):
@@ -158,20 +167,22 @@ class PollEditorModal(discord.ui.Modal):
 
 
 class PollEditorView(discord.ui.View):
-    def __init__(self, channel: discord.TextChannel, bot, author):
+    def __init__(self, channel: discord.TextChannel, bot: NecroBot, author: discord.Member):
         super().__init__()
-        self.converters = {
+        self.converters: Dict[str, EmbedDefaultConverter] = {
             "title": EmbedStringConverter(),
             "description": EmbedStringConverter(optional=True, style=discord.TextStyle.paragraph),
             "max_votes": EmbedRangeConverter(default="1", min=1, max=25),
         }
-        self.attributes = {key: value.default for key, value in self.converters.items()}
+        self.attributes: Dict[str, str] = {
+            key: value.default for key, value in self.converters.items()
+        }
         self.options = []
         self.channel = channel
         self.bot = bot
         self.author = author
 
-    async def interaction_check(self, interaction: Interaction):
+    async def interaction_check(self, interaction: discord.Interaction[NecroBot]):
         if not interaction.user == self.author:
             await interaction.response.send_message(
                 ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
@@ -189,7 +200,7 @@ class PollEditorView(discord.ui.View):
         )
 
     @discord.ui.button(label="Add options", style=discord.ButtonStyle.secondary)
-    async def add_option(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def add_option(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         if len(self.options) >= 25:
             return await interaction.response.send_message(
                 ":negative_squared_cross_mark: | Cannot add more than 25 options"
@@ -198,7 +209,9 @@ class PollEditorView(discord.ui.View):
         await interaction.response.send_modal(PollEditorModal(self))
 
     @discord.ui.button(label="Delete last option", style=discord.ButtonStyle.red)
-    async def delete_option(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def delete_option(
+        self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button
+    ):
         if not self.options:
             return await interaction.response.send_message(
                 ":negative_squared_cross_mark: | Cannot delete option"
@@ -208,19 +221,19 @@ class PollEditorView(discord.ui.View):
         await interaction.response.edit_message(embed=await self.generate_embed())
 
     @discord.ui.button(label="Edit poll settings", style=discord.ButtonStyle.secondary)
-    async def send_modal(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def send_modal(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await interaction.response.send_modal(
-            generate_edit_modal(
-                "Poll Settings",
-                self.attributes,
-                list(self.attributes.keys()),
-                self.converters,
-                self,
+            EditModal(
+                title="Poll Settings",
+                attributes=self.attributes,
+                keys=list(self.attributes.keys()),
+                converters=self.converters,
+                view=self,
             )
         )
 
     @discord.ui.button(label="Save", style=discord.ButtonStyle.green)
-    async def save_poll(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def save_poll(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         if not self.options:
             return await interaction.response.send_message(
                 ":negative_squared_cross_mark: | Cannot save a poll with no options",
@@ -276,7 +289,9 @@ class PollEditorView(discord.ui.View):
 
 
 class Select(discord.ui.Select):
-    async def callback(self, interaction):
+    view: SelectView
+
+    async def callback(self, interaction: discord.Interaction[NecroBot]):
         self.view.value = True
         self.view.stop()
         self.view.clear_items()
@@ -289,14 +304,16 @@ class Select(discord.ui.Select):
 class SelectView(discord.ui.View):
     def __init__(
         self,
-        options,
-        author,
+        options: List[str],
+        author: discord.Member,
         *,
-        min_values=1,
-        max_values=1,
-        placeholder="Select...",
-        timeout=180,
+        min_values: int = 1,
+        max_values: int = 1,
+        placeholder: str = "Select...",
+        timeout: int = 180,
     ):
+        super().__init__(timeout=timeout)
+
         self.options = [discord.SelectOption(label=x) for x in options]
         self.value = False
         self.author = author
@@ -307,11 +324,11 @@ class SelectView(discord.ui.View):
             options=self.options,
             row=0,
         )
-        super().__init__(timeout=timeout)
+        self.message: discord.Message = None
 
         self.add_item(self.select)
 
-    async def interaction_check(self, interaction: Interaction):
+    async def interaction_check(self, interaction: discord.Interaction[NecroBot]):
         if not interaction.user == self.author:
             await interaction.response.send_message(
                 ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
@@ -321,7 +338,7 @@ class SelectView(discord.ui.View):
         return True
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, row=1)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def cancel(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         self.value = False
         self.stop()
         self.clear_items()
@@ -338,11 +355,11 @@ class SelectView(discord.ui.View):
 class Confirm(discord.ui.View):
     def __init__(
         self,
-        author,
-        confirm_msg=":white_check_mark: | Confirmed",
-        cancel_msg=":negative_squared_cross_mark: | Cancelled",
+        author: discord.Member,
+        confirm_msg: str = ":white_check_mark: | Confirmed",
+        cancel_msg: str = ":negative_squared_cross_mark: | Cancelled",
         *,
-        timeout=180,
+        timeout: int = 180,
     ):
         super().__init__(timeout=timeout)
         self.value = None
@@ -351,7 +368,7 @@ class Confirm(discord.ui.View):
         self.message: discord.Message = None
         self.author = author
 
-    async def interaction_check(self, interaction: Interaction):
+    async def interaction_check(self, interaction: discord.Interaction[NecroBot]):
         if not interaction.user == self.author:
             await interaction.response.send_message(
                 ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
@@ -369,7 +386,7 @@ class Confirm(discord.ui.View):
             view=self,
         )
 
-    async def confirm_action(self, interaction):
+    async def confirm_action(self, interaction: discord.Interaction[NecroBot]):
         self.value = True
         self.stop()
         self.clear_items()
@@ -379,7 +396,7 @@ class Confirm(discord.ui.View):
         else:
             await interaction.response.edit_message(content=self.confirm_msg, view=self)
 
-    async def cancel_action(self, interaction):
+    async def cancel_action(self, interaction: discord.Interaction[NecroBot]):
         self.value = False
         self.stop()
         self.clear_items()
@@ -390,15 +407,22 @@ class Confirm(discord.ui.View):
             await interaction.response.edit_message(content=self.cancel_msg, view=self)
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
-    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def confirm(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.confirm_action(interaction)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def cancel(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.cancel_action(interaction)
 
 
-async def paginate(ctx, entries, page_size, embed_maker, *, timeout=300):
+async def paginate(
+    ctx: commands.Context[NecroBot],
+    entries: List[Any],
+    page_size: int,
+    embed_maker: Callable[[Paginator, List[Any]], discord.Embed],
+    *,
+    timeout: int = 300,
+):
     if not entries:
         raise BotError("No entries in this list")
 
@@ -416,7 +440,15 @@ async def paginate(ctx, entries, page_size, embed_maker, *, timeout=300):
 
 
 class Paginator(discord.ui.View):
-    def __init__(self, embed_maker, page_size, entries, author, *, timeout=180):
+    def __init__(
+        self,
+        embed_maker: Callable[[Dict[str, Any]], discord.Embed],
+        page_size: int,
+        entries: List[Any],
+        author: discord.Member,
+        *,
+        timeout: int = 180,
+    ):
         super().__init__(timeout=timeout)
 
         self.embed_maker = embed_maker
@@ -427,7 +459,7 @@ class Paginator(discord.ui.View):
         self.message: discord.Message = None
         self.author = author
 
-    async def interaction_check(self, interaction: Interaction):
+    async def interaction_check(self, interaction: discord.Interaction[NecroBot]):
         if not interaction.user == self.author:
             await interaction.response.send_message(
                 ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
@@ -453,7 +485,7 @@ class Paginator(discord.ui.View):
         subset = self.entries[self.index * self.page_size : (self.index + 1) * self.page_size]
         return subset[0] if self.page_size == 1 else subset
 
-    async def change_page(self, interaction: discord.Interaction, change):
+    async def change_page(self, interaction: discord.Interaction[NecroBot], change: int):
         if self.index + change > self.max_index:
             new_change = (change - 1) - (self.max_index - self.index)
             self.index = 0
@@ -470,19 +502,21 @@ class Paginator(discord.ui.View):
         )
 
     @discord.ui.button(label="-10", style=discord.ButtonStyle.grey)
-    async def first_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def first_page(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.change_page(interaction, -10)
 
     @discord.ui.button(label="-1", style=discord.ButtonStyle.blurple)
-    async def previous_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def previous_page(
+        self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button
+    ):
         await self.change_page(interaction, -1)
 
     @discord.ui.button(label="+1", style=discord.ButtonStyle.blurple)
-    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def next_page(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.change_page(interaction, 1)
 
     @discord.ui.button(label="+10", style=discord.ButtonStyle.grey)
-    async def last_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def last_page(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.change_page(interaction, 10)
 
 
@@ -496,20 +530,20 @@ class EmbedDefaultConverter:
     optional: bool = False
     style: discord.TextStyle = discord.TextStyle.short
 
-    def return_value(self, argument):
+    def convert(self, argument: str) -> Any:
+        raise NotImplementedError
+
+    def return_value(self, argument: str) -> Any:
         argument = str(argument)
         if argument.lower() in ["null", "", "none"]:
             return None
 
         return self.convert(argument)
 
-    def convert(self, argument):
-        raise NotImplementedError
-
 
 @dataclass
 class EmbedNumberConverter(EmbedDefaultConverter):
-    def convert(self, argument: str):
+    def convert(self, argument: str) -> float:
         if not argument.isdigit():
             raise commands.BadArgument("Not a valid number")
 
@@ -518,19 +552,19 @@ class EmbedNumberConverter(EmbedDefaultConverter):
 
 @dataclass
 class EmbedIntegerConverter(EmbedNumberConverter):
-    def convert(self, argument: str):
+    def convert(self, argument: str) -> int:
         return int(super().convert(argument))
 
 
 @dataclass
 class EmbedBooleanConverter(EmbedDefaultConverter):
-    def convert(self, argument: str):
+    def convert(self, argument: str) -> bool:
         return argument.lower() in ["true", "yes", "y", "1", "t"]
 
 
 @dataclass
 class EmbedStringConverter(EmbedDefaultConverter):
-    def convert(self, argument: str):
+    def convert(self, argument: str) -> str:
         return argument
 
 
@@ -539,7 +573,7 @@ class EmbedRangeConverter(EmbedIntegerConverter):
     max: int = math.inf
     min: int = -math.inf
 
-    def convert(self, argument):
+    def convert(self, argument: str) -> int:
         argument = super().convert(argument)
 
         if argument > self.max:
@@ -555,7 +589,7 @@ class EmbedRangeConverter(EmbedIntegerConverter):
 class EmbedChoiceConverter(EmbedDefaultConverter):
     choices: List[str] = ()
 
-    def convert(self, argument):
+    def convert(self, argument: str) -> str:
         argument = argument.strip().lower()
         if argument not in self.choices:
             raise commands.BadArgument(f"Choice must be one of {', '.join(self.choices)}")
@@ -567,78 +601,91 @@ class EmbedChoiceConverter(EmbedDefaultConverter):
 class EmbedIterableConverter(EmbedDefaultConverter):
     separator: str = ","
 
-    def convert(self, argument):
+    def convert(self, argument) -> List:
         return [arg.strip() for arg in argument.split(self.separator)]
 
 
-def generate_edit_modal(
-    title,
-    attributes: dict,
-    keys: List[str],
-    converters: Dict[str, EmbedDefaultConverter],
-    view: "MultiInputEmbedView",
-):
-    class EditModal(discord.ui.Modal, title=title):
-        async def on_submit(self, interaction: discord.Interaction):
-            await interaction.response.defer()
+class EditModal(discord.ui.Modal):
+    def __init__(
+        self,
+        *,
+        title: str,
+        keys: List[str],
+        converters: Dict[str, EmbedDefaultConverter],
+        attributes: Dict[str, str],
+        view: MultiInputEmbedView,
+    ) -> None:
+        super().__init__(title=title)
 
-            errors = []
-            for key in keys:
-                text_input = discord.utils.get(self.children, label=convert_key_to_label(key))
+        self.keys = keys
+        self.converters = converters
+        self.attributes = attributes
+        self.view = view
 
-                converter = converters[key]
+        for key in keys:
+            self.add_item(
+                discord.ui.TextInput(
+                    label=convert_key_to_label(key),
+                    placeholder=key
+                    if not converters[key].optional
+                    else "Type NULL to reset the field",
+                    required=False,
+                    default=attributes[key],
+                    max_length=2000,
+                    style=converters[key].style,
+                )
+            )
 
-                try:
-                    new_value = converter.return_value(text_input.value)
-                    if converter.default and new_value is None:
-                        attributes[key] = None
-                    else:
-                        attributes[key] = text_input.value
-                except Exception as e:
-                    errors.append(f"- {convert_key_to_label(key)}: {str(e)}")
+    async def on_submit(self, interaction: discord.Interaction[NecroBot]):
+        await interaction.response.defer()
 
-            if not errors:
-                try:
-                    await interaction.followup.edit_message(
-                        interaction.message.id, embed=await view.generate_embed()
-                    )
-                except Exception as e:
-                    await interaction.followup.send(
-                        f"Something went wrong while sending an embed: {e}"
-                    )
-                    await interaction.followup.edit_message(interaction.message.id)
-            else:
-                errors_str = "\n".join(errors)
+        errors = []
+        for key in self.keys:
+            text_input: discord.TextInput = discord.utils.get(
+                self.children, label=convert_key_to_label(key)
+            )
+
+            converter = self.converters[key]
+
+            try:
+                new_value = converter.return_value(text_input.value)
+                if converter.default and new_value is None:
+                    self.attributes[key] = None
+                else:
+                    self.attributes[key] = text_input.value
+            except Exception as e:
+                errors.append(f"- {convert_key_to_label(key)}: {e}")
+
+        if not errors:
+            try:
+                await interaction.followup.edit_message(
+                    interaction.message.id, embed=await self.view.generate_embed()
+                )
+            except Exception as e:
                 await interaction.followup.send(
-                    f"Something went wrong with some of the values submitted:{errors_str}",
-                    ephemeral=True,
+                    f"Something went wrong while sending an embed: {e}"
                 )
                 await interaction.followup.edit_message(interaction.message.id)
-
-    modal = EditModal()
-    for key in keys:
-        modal.add_item(
-            discord.ui.TextInput(
-                label=convert_key_to_label(key),
-                placeholder=key
-                if not converters[key].optional
-                else "Type NULL to reset the field",
-                required=False,
-                default=attributes[key],
-                max_length=2000,
-                style=converters[key].style,
+        else:
+            errors_str = "\n".join(errors)
+            await interaction.followup.send(
+                f"Something went wrong with some of the values submitted:{errors_str}",
+                ephemeral=True,
             )
-        )
-
-    return modal
+            await interaction.followup.edit_message(interaction.message.id)
 
 
-def chunker(seq, size):
+D = TypeVar("")
+
+
+def chunker(seq: List[D], size: int) -> List[D]:
     return [seq[pos : pos + size] for pos in range(0, len(seq), size)]
 
 
 class EditModalSelect(discord.ui.Select):
-    def __init__(self, converters, values, title):
+    def __init__(
+        self, converters: Dict[str, EmbedDefaultConverter], values: Dict[str, str], title: str
+    ):
         self.converters = converters
         self.attributes = values
         self.chunks = chunker(list(values.keys()), 5)
@@ -654,13 +701,13 @@ class EditModalSelect(discord.ui.Select):
 
         super().__init__(options=options, row=1, placeholder="Pick a set of attributes to edit")
 
-    async def callback(self, interaction: discord.Interaction):
-        modal = generate_edit_modal(
-            self.title,
-            self.attributes,
-            self.chunks[int(self.values[0])],
-            self.converters,
-            self.view,
+    async def callback(self, interaction: discord.Interaction[NecroBot]):
+        modal = EditModal(
+            title=self.title,
+            keys=self.chunks[int(self.values[0])],
+            converters=self.converters,
+            attributes=self.attributes,
+            view=self.view,
         )
         await interaction.response.send_modal(modal)
 
@@ -672,7 +719,7 @@ class EmbedConverterError(Exception):
 class MultiInputEmbedView(discord.ui.View):
     def __init__(
         self,
-        embed_maker: Callable,
+        embed_maker: Callable[[Paginator, List[Any]], discord.Embed],
         defaults: Dict[str, EmbedDefaultConverter],
         modal_title: str,
         author,
@@ -691,7 +738,7 @@ class MultiInputEmbedView(discord.ui.View):
         self.author = author
         self.add_item(EditModalSelect(self.converters, self.values, modal_title))
 
-    async def interaction_check(self, interaction: Interaction):
+    async def interaction_check(self, interaction: discord.Interaction[NecroBot]):
         if not interaction.user == self.author:
             await interaction.response.send_message(
                 ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
@@ -718,7 +765,7 @@ class MultiInputEmbedView(discord.ui.View):
 
         return final_values
 
-    def confirm_check(self, values):
+    def confirm_check(self, values: Dict[str, Any]):
         missing = [
             convert_key_to_label(key)
             for key, value in values.items()
@@ -731,7 +778,7 @@ class MultiInputEmbedView(discord.ui.View):
             self.extra_confirm_check(values)
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
-    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def confirm(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         try:
             self.confirm_check(self.convert_values())
             self.value = True
@@ -742,7 +789,7 @@ class MultiInputEmbedView(discord.ui.View):
             await interaction.response.send_message(str(e), ephemeral=True, delete_after=30)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def cancel(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         self.value = False
         self.stop()
         self.clear_items()

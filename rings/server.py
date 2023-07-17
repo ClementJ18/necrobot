@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 import discord
 from discord.ext import commands
@@ -26,6 +26,7 @@ from rings.utils.utils import BotError, DatabaseError, build_format_dict, check_
 
 if TYPE_CHECKING:
     from bot import NecroBot
+    from rings.utils.ui import Paginator
 
 
 class Server(commands.Cog):
@@ -133,7 +134,7 @@ class Server(commands.Cog):
                 ctx.guild.id,
             )
 
-            def embed_maker(view, entries):
+            def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
                 string = ""
                 for member in entries:
                     name = ctx.guild.get_member(member[0]).mention
@@ -175,7 +176,9 @@ class Server(commands.Cog):
 
     @permissions.command(name="commands")
     @has_perms(1)
-    async def permissions_commands(self, ctx: commands.Context[NecroBot], level: RangeConverter(1, 7)):
+    async def permissions_commands(
+        self, ctx: commands.Context[NecroBot], level: RangeConverter(1, 7)
+    ):
         """See what permission level has access to which commands
 
         {usage}
@@ -192,7 +195,7 @@ class Server(commands.Cog):
             if perms_check is not None and perms_check.level <= level:
                 c.append(f"- {command.name} ({perms_check.level}+)")
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             string = "\n".join(entries)
             embed = discord.Embed(
                 title=f"Commands for {self.bot.perms_name[level]} {level}+ ({view.page_number}/{view.page_count})",
@@ -381,7 +384,7 @@ class Server(commands.Cog):
         `{pre}automod @ARole` - adds role ARole to the list of roles ignored by automoderation
         """
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             string = "\n- ".join(entries)
             embed = discord.Embed(
                 title=f"Ignored by Automod ({view.page_number}/{view.page_count})",
@@ -470,7 +473,7 @@ class Server(commands.Cog):
         if not mentions:
             ignored = self.bot.guild_data[ctx.guild.id]["ignore-command"]
 
-            def embed_maker(view, entries):
+            def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
                 string = "\n- ".join(entries)
                 embed = discord.Embed(
                     title=f"Ignored by command ({view.page_number}/{view.page_count})",
@@ -662,7 +665,9 @@ class Server(commands.Cog):
 
     @welcome.command(name="channel")
     @has_perms(4)
-    async def welcome_channel(self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = 0):
+    async def welcome_channel(
+        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = 0
+    ):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention/name/id. The welcome
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use
         the same channel, calling the command with both parent commands but different channel will not make
@@ -678,7 +683,9 @@ class Server(commands.Cog):
 
     @farewell.command(name="channel")
     @has_perms(4)
-    async def farewell_channel(self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = 0):
+    async def farewell_channel(
+        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = 0
+    ):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention. The welcome
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use
         the same channel, calling the command with both parent commands but different channel will not make
@@ -784,7 +791,12 @@ class Server(commands.Cog):
 
         await paginate(ctx, broadcasts, 1, embed_maker)
 
-    async def broadcast_editor(self, defaults: Dict[str, EmbedDefaultConverter], channel: discord.TextChannel, ctx: commands.Context[NecroBot]) -> MultiInputEmbedView:
+    async def broadcast_editor(
+        self,
+        defaults: Dict[str, EmbedDefaultConverter],
+        channel: discord.TextChannel,
+        ctx: commands.Context[NecroBot],
+    ) -> MultiInputEmbedView:
         def embed_maker(values):
             embed = discord.Embed(
                 title="New Broadcast!", description=values["message"], colour=self.bot.bot_color
@@ -964,7 +976,7 @@ class Server(commands.Cog):
                 if x.id in self.bot.guild_data[ctx.guild.id]["self-roles"]
             ]
 
-            def embed_maker(view, entries):
+            def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
                 embed = discord.Embed(
                     title=f"Self Assignable Roles ({view.page_number}/{view.page_count})",
                     description="- " + "\n- ".join(entries),
@@ -1024,7 +1036,9 @@ class Server(commands.Cog):
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @has_perms(4)
-    async def starboard(self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = None):
+    async def starboard(
+        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = None
+    ):
         """Sets a channel for the starboard messages, required in order for starboard to be enabled. Call the command
         without a channel to disable starboard.
 

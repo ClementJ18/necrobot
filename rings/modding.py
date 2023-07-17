@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from bot import NecroBot
     from rings.utils.ui import Paginator
 
+
 class Modding(commands.Cog):
     """This module is used to connect to the various modding communities and allow to link and showcase work using
     commands that determine which modding community to piggy back off and then subcommands which decide

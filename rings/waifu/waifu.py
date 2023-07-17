@@ -25,8 +25,8 @@ from rings.utils.converters import (
 )
 from rings.utils.ui import (
     Confirm,
-    EmbedDefaultConverter,
     EmbedChoiceConverter,
+    EmbedDefaultConverter,
     EmbedIterableConverter,
     EmbedRangeConverter,
     EmbedStringConverter,
@@ -45,6 +45,7 @@ from .ui import CombatView, EmbedSkillConverter, EmbedStatConverter
 
 if TYPE_CHECKING:
     from bot import NecroBot
+    from rings.utils.ui import Paginator
 
 LOG_SIZE = 7
 EquipmentSet = namedtuple("EquipmentSet", "character weapon artefact")
@@ -131,7 +132,9 @@ class Flowers(commands.Cog):
 
         return query
 
-    async def remove_character_from_user(self, guild_id: int, user_id: int, char_id: int, amount: int):
+    async def remove_character_from_user(
+        self, guild_id: int, user_id: int, char_id: int, amount: int
+    ):
         conn = await self.bot.db.get_conn()
         async with conn.transaction():
             level = await self.bot.db.query(
@@ -406,7 +409,9 @@ class Flowers(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def give(self, ctx: commands.Context[NecroBot], member: MemberConverter, amount: FlowerConverter):
+    async def give(
+        self, ctx: commands.Context[NecroBot], member: MemberConverter, amount: FlowerConverter
+    ):
         """Transfer flowers from one user to another.
 
         {usage}
@@ -454,7 +459,7 @@ class Flowers(commands.Cog):
         """
         characters = await self.get_characters()
 
-        def embed_maker(view, entries):
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             description = "\n".join(
                 [
                     f"- {entry['id']} - {entry['name']} ({entry['universe']}): **{entry['tier']}**:star:"
@@ -473,7 +478,9 @@ class Flowers(commands.Cog):
         await paginate(ctx, characters, 10, embed_maker)
 
     @characters.command(name="get")
-    async def characters_get(self, ctx: commands.Context[NecroBot], character: GachaCharacterConverter):
+    async def characters_get(
+        self, ctx: commands.Context[NecroBot], character: GachaCharacterConverter
+    ):
         """Get info on a specific character.
 
         {usage}
@@ -483,7 +490,13 @@ class Flowers(commands.Cog):
         """
         await ctx.send(embed=self.embed_character(character, True))
 
-    async def character_editor(self, ctx: commands.Context[NecroBot], name: str, char_id: str, defaults: Dict[str, EmbedDefaultConverter]):
+    async def character_editor(
+        self,
+        ctx: commands.Context[NecroBot],
+        name: str,
+        char_id: str,
+        defaults: Dict[str, EmbedDefaultConverter],
+    ):
         def embed_maker(values):
             return self.embed_character(
                 {
@@ -652,7 +665,9 @@ class Flowers(commands.Cog):
 
     @characters.command(name="delete")
     @has_perms(6)
-    async def characters_delete(self, ctx: commands.Context[NecroBot], char: GachaCharacterConverter):
+    async def characters_delete(
+        self, ctx: commands.Context[NecroBot], char: GachaCharacterConverter
+    ):
         """Delete a character and remove them from all player's accounts
 
         {usage}
@@ -683,7 +698,9 @@ class Flowers(commands.Cog):
 
     @characters.command(name="toggle")
     @has_perms(6)
-    async def characters_toggle(self, ctx: commands.Context[NecroBot], char: GachaCharacterConverter):
+    async def characters_toggle(
+        self, ctx: commands.Context[NecroBot], char: GachaCharacterConverter
+    ):
         """Toggle whether or not a character can be obtained as part of a banner
 
         {usage}
@@ -894,7 +911,9 @@ class Flowers(commands.Cog):
 
     @banners.command(name="toggle")
     @has_perms(4)
-    async def banners_toggle(self, ctx: commands.Context[NecroBot], banner: GachaBannerConverter(False)):
+    async def banners_toggle(
+        self, ctx: commands.Context[NecroBot], banner: GachaBannerConverter(False)
+    ):
         """Toggle whether or not a banner is currently running
 
         {usage}
@@ -1303,7 +1322,9 @@ class Flowers(commands.Cog):
 
     @equipment.command(name="remove")
     async def equipment_remove(
-        self, ctx: commands.Context[NecroBot], character: GachaCharacterConverter(allowed_types=("character",), is_owned=True)
+        self,
+        ctx: commands.Context[NecroBot],
+        character: GachaCharacterConverter(allowed_types=("character",), is_owned=True),
     ):
         """Remove the equipment set of a character so that it can be given to another character.
 
@@ -1504,7 +1525,9 @@ class Flowers(commands.Cog):
 
     @gacha.command(name="battle")
     async def gacha_battle(
-        self, ctx: commands.Context[NecroBot], *chars: GachaCharacterConverter(allowed_types=("character",), is_owned=True)
+        self,
+        ctx: commands.Context[NecroBot],
+        *chars: GachaCharacterConverter(allowed_types=("character",), is_owned=True),
     ):
         if len(chars) != 3:
             raise BotError("Please submit exactly three characters for the battle.")

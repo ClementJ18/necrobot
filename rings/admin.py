@@ -144,7 +144,9 @@ class Admin(commands.Cog):
 
     @grudge.command(name="settle")
     @commands.is_owner()
-    async def grudge_settle(self, ctx: commands.Context[NecroBot], grudge: Grudge, settlement: str = True):
+    async def grudge_settle(
+        self, ctx: commands.Context[NecroBot], grudge: Grudge, settlement: str = True
+    ):
         """Mark a grudge as settled
 
         {usage}"""
@@ -528,7 +530,7 @@ class Admin(commands.Cog):
         self.gates[ctx.channel.id] = channel
         self.gates[channel.id] = ctx.channel
 
-        def check(message):
+        def check(message: discord.Message):
             return (
                 message.author == ctx.author
                 and message.channel == ctx.channel
@@ -555,7 +557,7 @@ class Admin(commands.Cog):
     #######################################################################
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if message.channel.id in self.gates:
             channel = self.gates[message.channel.id]
         elif message.author.id in self.gates:

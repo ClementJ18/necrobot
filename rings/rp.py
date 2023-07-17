@@ -26,7 +26,12 @@ class RP(commands.Cog):
 
         raise commands.CheckFailure("This command cannot be used in private messages.")
 
-    async def _activity(self, ctx: commands.Context[NecroBot], duration: int, channels: List[Tuple[discord.TextChannel, int]]):
+    async def _activity(
+        self,
+        ctx: commands.Context[NecroBot],
+        duration: int,
+        channels: List[Tuple[discord.TextChannel, int]],
+    ):
         def is_active(ch: discord.TextChannel):
             if getattr(ch, "last_message_id", None) is None:
                 return False
@@ -46,7 +51,9 @@ class RP(commands.Cog):
         ]
         filtered_channels.sort(key=lambda x: (now - discord.utils.snowflake_time(x[1])).seconds)
 
-        def embed_maker(view: Paginator, entries: List[Tuple[discord.TextChannel, datetime.datetime]]):
+        def embed_maker(
+            view: Paginator, entries: List[Tuple[discord.TextChannel, datetime.datetime]]
+        ):
             formatted_channels = "\n".join(
                 [
                     f"{channel.mention} - {(now - discord.utils.snowflake_time(last_message_id)).seconds // 60} minute(s) ago"

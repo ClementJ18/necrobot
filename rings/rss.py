@@ -394,7 +394,9 @@ class RSS(commands.Cog):
 
     @twitch.command(name="filters")
     @has_perms(3)
-    async def twitch_filters(self, ctx: commands.Context[NecroBot], twitch_name: str, *, filters: str = ""):
+    async def twitch_filters(
+        self, ctx: commands.Context[NecroBot], twitch_name: str, *, filters: str = ""
+    ):
         """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted.
         The filter itself is very rudimentary but will work so that any video that has exactly these words (in
         any case) in that order in the title will be posted. You can clear filters by calling this command with just

@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 import time
 from datetime import timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import discord
 from discord.ext import commands
@@ -17,6 +17,7 @@ from .var import gdpr_e
 
 if TYPE_CHECKING:
     from bot import NecroBot
+    from rings.utils.ui import Paginator
 
 
 class Support(commands.Cog):
@@ -116,8 +117,8 @@ class Support(commands.Cog):
         if not news:
             raise BotError("No news available")
 
-        def embed_maker(view, entries):
-            return discord.Embed.from_data(news[view.page_number])
+        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
+            return discord.Embed.from_dict(news[view.page_number])
 
         await paginate(ctx, len(news) - 1, embed_maker)
 
@@ -143,7 +144,7 @@ class Support(commands.Cog):
             "type": "rich",
         }
         news_e = {**news, **base_d}
-        embed = discord.Embed.from_data(news_e)
+        embed = discord.Embed.from_dict(news_e)
         view = Confirm(ctx.author)
         view.message = await ctx.send(embed=embed, view=view)
         await view.wait()
