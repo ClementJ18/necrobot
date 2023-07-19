@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, List
 
 import discord
 from discord.ext import commands
@@ -9,8 +9,8 @@ if TYPE_CHECKING:
     from bot import NecroBot
 
 
-def has_perms(level):
-    async def predicate(ctx: commands.Context[NecroBot]):
+def has_perms(level: int) -> Callable[[commands.Context[NecroBot]], bool]:
+    async def predicate(ctx: commands.Context[NecroBot]) -> bool:
         if await ctx.bot.is_owner(ctx.author):
             return True
 
@@ -32,8 +32,8 @@ def has_perms(level):
     return commands.check(predicate)
 
 
-def requires_mute_role():
-    def predicate(ctx: commands.Context[NecroBot]):
+def requires_mute_role() -> Callable[[commands.Context[NecroBot]], bool]:
+    def predicate(ctx: commands.Context[NecroBot]) -> bool:
         if ctx.guild is None:
             raise commands.CheckFailure("Cannot use this command in DMs")
 
@@ -47,8 +47,8 @@ def requires_mute_role():
     return commands.check(predicate)
 
 
-def leaderboard_enabled():
-    async def predicate(ctx: commands.Context[NecroBot]):
+def leaderboard_enabled() -> Callable[[commands.Context[NecroBot]], bool]:
+    async def predicate(ctx: commands.Context[NecroBot]) -> bool:
         if ctx.guild is None:
             raise commands.CheckFailure("Cannot use this command in DMs")
 
@@ -67,7 +67,7 @@ def leaderboard_enabled():
     return commands.check(predicate)
 
 
-def mu_moderator(guild: discord.Guild):
+def mu_moderator(guild: discord.Guild) -> List[int]:
     if guild is None:
         return []
 
@@ -80,8 +80,8 @@ def mu_moderator(guild: discord.Guild):
     return ids
 
 
-def mu_moderator_check():
-    def predicate(ctx: commands.Context[NecroBot]):
+def mu_moderator_check() -> Callable[[commands.Context[NecroBot]], bool]:
+    def predicate(ctx: commands.Context[NecroBot]) -> bool:
         ids = mu_moderator(ctx.guild)
 
         if ctx.author.id not in ids:
@@ -92,8 +92,8 @@ def mu_moderator_check():
     return commands.check(predicate)
 
 
-def guild_only(guild_id: int):
-    def predicate(ctx: commands.Context[NecroBot]):
+def guild_only(guild_id: int) -> Callable[[commands.Context[NecroBot]], bool]:
+    def predicate(ctx: commands.Context[NecroBot]) -> bool:
         if ctx.guild is None:
             raise commands.CheckFailure("This command cannot be executed in DMs")
 

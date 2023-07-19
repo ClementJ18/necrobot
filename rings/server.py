@@ -674,7 +674,7 @@ class Server(commands.Cog):
     @welcome.command(name="channel")
     @has_perms(4)
     async def welcome_channel(
-        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = commands.Parameter(converter=WritableChannelConverter, default=0)
+        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=0)
     ):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention/name/id. The welcome
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use
@@ -692,7 +692,7 @@ class Server(commands.Cog):
     @farewell.command(name="channel")
     @has_perms(4)
     async def farewell_channel(
-        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = commands.Parameter(converter=WritableChannelConverter, default=0)
+        self, ctx: commands.Context[NecroBot], channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=0)
     ):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention. The welcome
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use

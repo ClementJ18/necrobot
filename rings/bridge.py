@@ -24,7 +24,6 @@ class Bridge(commands.Cog):
         self.TEST_CHANNEL = 722040731946057789
         self.mu_channels = (self.TEST_CHANNEL, 722474242762997868)
         self.cookies = False
-        self.in_process = []
         self.mapping = {
             "angmar": {
                 "id": 687748138345169075,
