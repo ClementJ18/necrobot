@@ -18,6 +18,7 @@ from .objectives import Objective, StandardObjective
 if TYPE_CHECKING:
     from .battle import Battle
 
+logger = logging.getLogger()
 
 class ActionLog:
     def __eq__(self, other: object) -> bool:
@@ -310,7 +311,7 @@ class Battle:
         entity.active_skill.was_activated = True
 
     def pick_ai_action(self, entity: StattedEntity):
-        logging.info("Pathfinding %s at %s", entity.name, entity.position)
+        logger.info("Pathfinding %s at %s", entity.name, entity.position)
         adjacent = self.get_adjacent_positions(entity.position)
         targets = [player for player in self.players if player.position in adjacent.values()]
 
@@ -328,24 +329,24 @@ class Battle:
         neighbors = {neighbor for end in ends for neighbor in grid.neighbors(end)}
         for neighbor in neighbors:
             n = (neighbor.x, neighbor.y)
-            logging.info("Evaluating neighbor %s", n)
+            logger.info("Evaluating neighbor %s", n)
             if n in adjacent:
-                logging.info("neighbor %s is adjacent %s", n, adjacent)
+                logger.info("neighbor %s is adjacent %s", n, adjacent)
                 current_path = [n]
                 break
 
             grid.cleanup()
             path, _ = finder.find_path(start, neighbor, grid)
             if not path:
-                logging.info("could not find path to %s", n)
+                logger.info("could not find path to %s", n)
                 continue
 
             path.append(n)
             if len(path) < len(current_path) or not current_path:
-                logging.info("path %s is better than old path %s", path, current_path)
+                logger.info("path %s is better than old path %s", path, current_path)
                 current_path = path
             else:
-                logging.info("path %s is worse than old path %s", path, current_path)
+                logger.info("path %s is worse than old path %s", path, current_path)
 
         new_position = (
             current_path[entity.movement_range]

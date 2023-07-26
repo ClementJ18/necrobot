@@ -5,6 +5,7 @@ import datetime
 import importlib
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 import sys
 import time
 import traceback
@@ -16,7 +17,7 @@ import discord
 from discord.ext import commands
 
 from rings.db import SyncDatabase
-from rings.utils.config import token
+from rings.utils.config import token, DEBUG
 from rings.utils.help import NecrobotHelp
 from rings.utils.ui import Confirm
 from rings.utils.utils import Event, Giveaway, Guild, PendingPost, default_settings, get_pre
@@ -28,9 +29,26 @@ if TYPE_CHECKING:
     from rings.rss import RSS
     from rings.utils.utils import PotentialStar
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(message)s", filename="discord.log", level=logging.ERROR
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('[{asctime}] [{levelname:<8}] {name}: {message}', '%Y-%m-%d %H:%M:%S', style='{')
+
+file_handler = RotatingFileHandler(
+    filename='logs/discord.log',
+    encoding='utf-8',
+    maxBytes=32 * 1024 * 1024,  # 32 MiB
+    backupCount=5,  # Rotate through 5 files
 )
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.DEBUG)
+stream_handler.setFormatter(formatter)
+
+if DEBUG:
+    logger.addHandler(stream_handler)
 
 intents = discord.Intents.all()
 intents.emojis_and_stickers = False
@@ -258,7 +276,7 @@ class NecroBot(commands.Bot):
         try:
             await channel.send(embed=embed)
         except discord.HTTPException:
-            logging.error(error_traceback)
+            logger.error(error_traceback)
 
     async def on_message(self, message: discord.Message):
         if self.blacklist_check(message.author.id):
@@ -472,12 +490,9 @@ async def off_abort(ctx: commands.Context[NecroBot]):
 
 if __name__ == "__main__":
     try:
-        bot.run(token)
+        bot.run(token, log_handler=file_handler)
     except Exception as error:
-        tc = traceback.format_exception(type(error), error, error.__traceback__)
-        with open("error.log", "w") as f:
-            f.write("\n".join(tc))
-
+        logger.exception(str(error))
     finally:
         with open("rings/utils/data/settings.json", "w") as outfile:
             json.dump(bot.settings, outfile)

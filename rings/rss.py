@@ -285,6 +285,7 @@ class RSS(commands.Cog):
             )
 
     async def twitch_request(self, route, payload):
+        await self.bot.wait_until_ready()
         if not hasattr(self.bot, "twitch_token"):
             await self.bot.meta.refresh_token()
 

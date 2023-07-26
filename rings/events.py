@@ -14,6 +14,7 @@ from rings.utils.utils import BotError, DatabaseError, build_format_dict
 if TYPE_CHECKING:
     from bot import NecroBot
 
+logger = logging.getLogger()
 
 class Events(commands.Cog):
     def __init__(self, bot: NecroBot):
@@ -152,7 +153,7 @@ class Events(commands.Cog):
             try:
                 await self.bot.error_channel.send(embed=embed)
             except discord.HTTPException:
-                logging.error(error_traceback)
+                logger.error(error_traceback)
 
             thing = ctx.guild or ctx.author
             if thing.id != 311630847969198082:

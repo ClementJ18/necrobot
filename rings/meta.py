@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import io
+import logging
 import re
 import time
 from typing import TYPE_CHECKING, Optional, Union
@@ -19,6 +20,7 @@ from rings.utils.ui import PollView
 if TYPE_CHECKING:
     from bot import NecroBot
 
+logger = logging.getLogger()
 
 class Meta(commands.Cog):
     def __init__(self, bot: NecroBot):
@@ -194,6 +196,7 @@ class Meta(commands.Cog):
     async def hourly(self):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
+            logger.info("Starting hourly loop")
             now = datetime.datetime.now(datetime.timezone.utc)
             sleep = 3600 - (now.second + (now.minute * 60))
             try:
@@ -202,16 +205,20 @@ class Meta(commands.Cog):
                 return
 
             if self.bot.counter >= 24:
+                logger.info("Doing daily tasks")
                 self.bot.counter = 0
                 self.bot.settings["day"] += 1
                 for task in self.tasks_daily:
                     try:
+                        logger.debug("Daily task: %s", task)
                         await task()
                     except Exception as e:
                         self.bot.dispatch("error", e)
 
+            logger.info("It is day hour %s of day %s", self.bot.counter, self.bot.settings["day"])
             for task in self.tasks_hourly:
                 try:
+                    logger.debug("Hourly task: %s", task)
                     await task()
                 except Exception as e:
                     self.bot.dispatch("error", e)
@@ -317,6 +324,7 @@ class Meta(commands.Cog):
 
         msg = await self.bot.bot_channel.send("**Initiating Bot**")
         for guild in self.bot.guilds:
+            logger.info("Loading guild %s (%s)", guild.name, guild.id)
             await self.new_guild(guild.id)
             await self.guild_checker(guild)
 
@@ -340,6 +348,7 @@ class Meta(commands.Cog):
             if sleep <= 0:
                 await self.bot.db.delete_reminder(reminder["id"])
             else:
+                logger.info("Recovering reminder %s", reminder["id"])
                 task = self.bot.loop.create_task(
                     self.bot.meta.reminder_task(
                         reminder["id"],
@@ -357,6 +366,7 @@ class Meta(commands.Cog):
         for command_name in self.bot.settings["disabled"]:
             command = self.bot.get_command(command_name)
             if command is not None:
+                logger.info("Disabling %s", command.name)
                 command.enabled = False
 
         polls = await self.bot.db.query(
@@ -369,19 +379,21 @@ class Meta(commands.Cog):
             """
         )
         for poll in polls:
+            logger.info("Recovering poll %s", poll["message_id"])
             self.bot.add_view(
                 PollView(
                     poll["title"],
                     poll["message"],
                     poll["max_votes"],
                     poll["options"],
-                    poll["message_id"],
                     self.bot,
+                    poll["message_id"],
                 ),
                 message_id=poll["message_id"],
             )
 
         self.bot.maintenance = False
+        logger.info("Bot online")
         await msg.edit(content="**Bot Online**")
 
     async def guild_checker(self, guild: discord.Guild):

@@ -15,6 +15,7 @@ from rings.utils.config import MU_Password, MU_Username
 if TYPE_CHECKING:
     from bot import NecroBot
 
+logger = logging.getLogger()
 
 class Bridge(commands.Cog):
     """A cog for all commands specific to certain servers."""
@@ -126,7 +127,7 @@ class Bridge(commands.Cog):
                 error_traceback = " ".join(
                     traceback.format_exception(type(e), e, e.__traceback__, chain=True)
                 )
-                logging.error(error_traceback)
+                logger.error(error_traceback)
 
                 await post["message"].channel.send(
                     f":negative_squared_cross_mark: | Error while sending: {e}"
