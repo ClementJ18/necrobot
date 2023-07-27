@@ -38,7 +38,9 @@ class Moderation(commands.Cog):
     ## Functions
     #######################################################################
 
-    async def mute_task(self, ctx: commands.Context[NecroBot], user: discord.Member, role: discord.Role, time: int):
+    async def mute_task(
+        self, ctx: commands.Context[NecroBot], user: discord.Member, role: discord.Role, time: int
+    ):
         await asyncio.sleep(time)
 
         if user.id in self.bot.guild_data[user.guild.id]["mutes"]:
@@ -215,7 +217,12 @@ class Moderation(commands.Cog):
 
     @mute.group(name="role", invoke_without_command=True)
     @has_perms(4)
-    async def mute_role(self, ctx: commands.Context[NecroBot], *, role: discord.Role = commands.parameter(converter=RoleConverter, default=0)):
+    async def mute_role(
+        self,
+        ctx: commands.Context[NecroBot],
+        *,
+        role: discord.Role = commands.parameter(converter=RoleConverter, default=0),
+    ):
         """Sets the mute role for this server to [role], this is used for the `mute` command, it is the role assigned by
         the command to the user. Make sure to spell the role correctly, the role name is case sensitive. It is up to the server
         authorities to set up the proper permissions for the chosen mute role. Once the role is set up it can be renamed and

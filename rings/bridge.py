@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger()
 
+
 class Bridge(commands.Cog):
     """A cog for all commands specific to certain servers."""
 
@@ -113,7 +114,7 @@ class Bridge(commands.Cog):
     #######################################################################
 
     async def post_task(self):
-        await self.bot.wait_until_ready()
+        await self.bot.wait_until_loaded()
 
         while True:
             post = await self.bot.queued_posts.get()

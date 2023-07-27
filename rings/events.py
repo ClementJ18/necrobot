@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger()
 
+
 class Events(commands.Cog):
     def __init__(self, bot: NecroBot):
         self.bot = bot

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger()
 
+
 class ActionLog:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):

@@ -148,9 +148,7 @@ class RSS(commands.Cog):
                         pass
 
     async def rss_task(self):
-        await self.bot.wait_until_ready()
-        await asyncio.sleep(10)
-
+        await self.bot.wait_until_loaded()
         while not self.bot.is_closed():
             try:
                 await self.youtube_sub_task()
@@ -285,7 +283,6 @@ class RSS(commands.Cog):
             )
 
     async def twitch_request(self, route, payload):
-        await self.bot.wait_until_ready()
         if not hasattr(self.bot, "twitch_token"):
             await self.bot.meta.refresh_token()
 

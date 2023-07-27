@@ -4,10 +4,12 @@ import random
 from typing import TYPE_CHECKING
 
 import dice
+import discord
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
 from rings.utils.converters import CoinConverter, MoneyConverter
+from rings.utils.ui import Paginator, paginate
 from rings.utils.utils import BotError
 
 from .var import ball8_list
@@ -113,12 +115,39 @@ class Decisions(commands.Cog):
             raise BotError(e) from e
 
         if isinstance(dice_list, int):
-            await ctx.send(f":game_die: | **{ctx.author.display_name}** rolled **{dice_list}**.")
-        else:
-            total = sum(dice_list)
-            await ctx.send(
-                f":game_die: | **{ctx.author.display_name}** rolled **{dices}** for a total of **{total}**. The dice were {', '.join([f'**{x}**' for x in dice_list])}"
+            return await ctx.send(
+                f":game_die: | **{ctx.author.display_name}** rolled **{dice_list}**."
             )
+
+        total = sum(dice_list)
+        dice_list_string = ", ".join([str(x) for x in dice_list])
+        chunks = []
+        chunk_size = 2000
+        index = 0
+        while True:
+            chunk = dice_list_string[index : index + chunk_size]
+            if len(chunk) < chunk_size:
+                chunks.append(chunk)
+                break
+
+            i = chunk.rfind(",")
+            chunks.append(chunk[: i - 1])
+            index = i + 2
+
+        def embed_maker(view: Paginator, entry: str):
+            embed = discord.Embed(
+                title=f"Dice Roll ({view.page_number}/{view.page_count})",
+                description=entry,
+                color=self.bot.bot_color,
+            )
+            embed.add_field(name="Total", value=total)
+            embed.add_field(name="Roll", value=dices)
+            embed.add_field(name="Dice on page", value=entry.count(",") + 1)
+            embed.set_footer(**self.bot.bot_footer)
+
+            return embed
+
+        await paginate(ctx, chunks, 1, embed_maker)
 
     @commands.command(name="8ball")
     async def ball8(self, ctx: commands.Context[NecroBot], *, message: str = None):

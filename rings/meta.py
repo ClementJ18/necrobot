@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger()
 
+
 class Meta(commands.Cog):
     def __init__(self, bot: NecroBot):
         self.bot = bot
@@ -194,7 +195,7 @@ class Meta(commands.Cog):
             )
 
     async def hourly(self):
-        await self.bot.wait_until_ready()
+        await self.bot.wait_until_loaded()
         while not self.bot.is_closed():
             logger.info("Starting hourly loop")
             now = datetime.datetime.now(datetime.timezone.utc)
@@ -224,6 +225,7 @@ class Meta(commands.Cog):
                     self.bot.dispatch("error", e)
 
             self.bot.counter += 1
+            logger.info("Hourly loop done")
 
     async def clear_potential_star(self):
         ids = list(self.bot.potential_stars.keys())
@@ -318,7 +320,6 @@ class Meta(commands.Cog):
 
     async def load_cache(self):
         await self.bot.wait_until_ready()
-
         await self.bot.db.create_pool()
         self.bot.session = aiohttp.ClientSession(loop=self.bot.loop)
 
@@ -392,6 +393,7 @@ class Meta(commands.Cog):
                 message_id=poll["message_id"],
             )
 
+        self.bot.loaded.set()
         self.bot.maintenance = False
         logger.info("Bot online")
         await msg.edit(content="**Bot Online**")

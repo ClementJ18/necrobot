@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import logging
 import math
 import re
+import traceback
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, TypeVar
 
 import discord
 from discord.ext import commands
+from discord.interactions import Interaction
+from discord.ui.item import Item
 
 from rings.utils.utils import BotError
 
@@ -18,9 +22,50 @@ if TYPE_CHECKING:
 CUSTOM_EMOJI = r"<:[^\s]+:([0-9]*)>"
 UNICODE_EMOJI = r":\w*:"
 
+logger = logging.getLogger()
+
 
 def strip_emoji(content):
     return re.sub(UNICODE_EMOJI, "", re.sub(CUSTOM_EMOJI, "", content)).strip()
+
+
+class BaseView(discord.ui.View):
+    author: discord.User
+
+    async def on_error(
+        self, interaction: Interaction[NecroBot], error: Exception, item: Item[Any]
+    ):
+        error_traceback = " ".join(
+            traceback.format_exception(type(error), error, error.__traceback__, chain=True)
+        )
+
+        embed = discord.Embed(
+            title="View Error",
+            description=f"```py\n{error_traceback}\n```",
+            colour=interaction.client.bot_color,
+        )
+
+        try:
+            logger.exception(error)
+            await interaction.client.error_channel.send(embed=embed)
+        except discord.HTTPException as e:
+            logger.exception(f"Failed to send error interaction: {e}")
+
+        await interaction.response.send_message(
+            f":negative_squared_cross_mark: | Error with interaction: {error}", ephemeral=True
+        )
+
+    async def interaction_check(self, interaction: Interaction[NecroBot]):
+        if not hasattr(self, "author"):
+            return True
+
+        if not interaction.user == self.author:
+            await interaction.response.send_message(
+                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
+            )
+            return False
+
+        return True
 
 
 class PollSelect(discord.ui.Select):
@@ -44,7 +89,7 @@ class PollSelect(discord.ui.Select):
         await interaction.followup.send(":white_check_mark: | Vote(s) registered", ephemeral=True)
 
 
-class PollView(discord.ui.View):
+class PollView(BaseView):
     def __init__(
         self,
         title: str,
@@ -166,7 +211,7 @@ class PollEditorModal(discord.ui.Modal):
             )
 
 
-class PollEditorView(discord.ui.View):
+class PollEditorView(BaseView):
     def __init__(self, channel: discord.TextChannel, bot: NecroBot, author: discord.Member):
         super().__init__()
         self.converters: Dict[str, EmbedDefaultConverter] = {
@@ -181,15 +226,6 @@ class PollEditorView(discord.ui.View):
         self.channel = channel
         self.bot = bot
         self.author = author
-
-    async def interaction_check(self, interaction: discord.Interaction[NecroBot]):
-        if not interaction.user == self.author:
-            await interaction.response.send_message(
-                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
-            )
-            return False
-
-        return True
 
     async def generate_embed(self):
         return self.bot.embed_poll(
@@ -301,7 +337,7 @@ class Select(discord.ui.Select):
         )
 
 
-class SelectView(discord.ui.View):
+class SelectView(BaseView):
     def __init__(
         self,
         options: List[str],
@@ -328,15 +364,6 @@ class SelectView(discord.ui.View):
 
         self.add_item(self.select)
 
-    async def interaction_check(self, interaction: discord.Interaction[NecroBot]):
-        if not interaction.user == self.author:
-            await interaction.response.send_message(
-                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
-            )
-            return False
-
-        return True
-
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, row=1)
     async def cancel(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         self.value = False
@@ -352,7 +379,7 @@ class SelectView(discord.ui.View):
         await self.message.edit(view=self)
 
 
-class Confirm(discord.ui.View):
+class Confirm(BaseView):
     def __init__(
         self,
         author: discord.Member,
@@ -367,15 +394,6 @@ class Confirm(discord.ui.View):
         self.cancel_msg = cancel_msg
         self.message: discord.Message = None
         self.author = author
-
-    async def interaction_check(self, interaction: discord.Interaction[NecroBot]):
-        if not interaction.user == self.author:
-            await interaction.response.send_message(
-                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
-            )
-            return False
-
-        return True
 
     async def on_timeout(self):
         self.value = False
@@ -439,7 +457,7 @@ async def paginate(
     await paginator.wait()
 
 
-class Paginator(discord.ui.View):
+class Paginator(BaseView):
     def __init__(
         self,
         embed_maker: Callable[[Dict[str, Any]], discord.Embed],
@@ -458,15 +476,6 @@ class Paginator(discord.ui.View):
         self.page_size = page_size
         self.message: discord.Message = None
         self.author = author
-
-    async def interaction_check(self, interaction: discord.Interaction[NecroBot]):
-        if not interaction.user == self.author:
-            await interaction.response.send_message(
-                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
-            )
-            return False
-
-        return True
 
     @property
     def page_number(self):
@@ -716,7 +725,7 @@ class EmbedConverterError(Exception):
     pass
 
 
-class MultiInputEmbedView(discord.ui.View):
+class MultiInputEmbedView(BaseView):
     def __init__(
         self,
         embed_maker: Callable[[Paginator, List[Any]], discord.Embed],
@@ -737,15 +746,6 @@ class MultiInputEmbedView(discord.ui.View):
         self.value = False
         self.author = author
         self.add_item(EditModalSelect(self.converters, self.values, modal_title))
-
-    async def interaction_check(self, interaction: discord.Interaction[NecroBot]):
-        if not interaction.user == self.author:
-            await interaction.response.send_message(
-                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
-            )
-            return False
-
-        return True
 
     async def generate_embed(self):
         converted_values = self.convert_values()

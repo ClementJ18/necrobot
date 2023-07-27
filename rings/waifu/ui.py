@@ -10,7 +10,12 @@ import discord
 from discord.ext import commands
 from discord.interactions import Interaction
 
-from rings.utils.ui import EmbedBooleanConverter, EmbedDefaultConverter, EmbedIntegerConverter
+from rings.utils.ui import (
+    BaseView,
+    EmbedBooleanConverter,
+    EmbedDefaultConverter,
+    EmbedIntegerConverter,
+)
 
 from .base import Stat, get_symbol
 from .battle import Battle, BattleOverException, MovementType
@@ -197,7 +202,7 @@ class CharacterUI(discord.ui.Select):
             self.view.add_item(button)
 
 
-class CombatView(discord.ui.View):
+class CombatView(BaseView):
     def __init__(self, battle: Battle, embed_maker, author: discord.Member):
         super().__init__()
 
@@ -208,15 +213,6 @@ class CombatView(discord.ui.View):
         self.author = author
         self.victory = False
         self.index = 0
-
-    async def interaction_check(self, interaction: Interaction):
-        if not interaction.user == self.author:
-            await interaction.response.send_message(
-                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
-            )
-            return False
-
-        return True
 
     def set_ui(self, ui: CharacterUI):
         self.ui = ui

@@ -1,5 +1,7 @@
 import discord
 
+from rings.utils.ui import BaseView
+
 
 class TextInput(discord.ui.TextInput):
     async def callback(self, interaction):
@@ -20,7 +22,7 @@ class TextInput(discord.ui.TextInput):
             )
 
 
-class RiddleView(discord.ui.View):
+class RiddleView(BaseView):
     def __init__(self, answer, *, timeout=180):
         self.answer = answer.lower()
         super().__init__(timeout=timeout)

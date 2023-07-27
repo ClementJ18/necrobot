@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, List
 
 import discord
 
+from rings.utils.ui import BaseView
+
 from .hunger_game import events
 
 if TYPE_CHECKING:
@@ -34,8 +36,8 @@ class FightError(Exception):
         return embed
 
 
-class HungerGames(discord.ui.View):
-    def __init__(self, bot: NecroBot, tributes, author: discord.User, *, timeout:int = 180):
+class HungerGames(BaseView):
+    def __init__(self, bot: NecroBot, tributes, author: discord.User, *, timeout: int = 180):
         super().__init__(timeout=timeout)
 
         self.tributes = tributes
@@ -48,15 +50,6 @@ class HungerGames(discord.ui.View):
         self.bot = bot
         self.author = author
         self.message: discord.Message = None
-
-    async def interaction_check(self, interaction: discord.Interaction):
-        if not interaction.user == self.author:
-            await interaction.response.send_message(
-                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
-            )
-            return False
-
-        return True
 
     @property
     def max_index(self):

@@ -10,6 +10,7 @@ from cards import common
 from cards.decks import standard52
 from cards.decks.standard52 import JACK, KING, QUEEN
 from rings.utils.converters import MoneyConverter
+from rings.utils.ui import BaseView
 from rings.utils.utils import BotError
 
 if TYPE_CHECKING:
@@ -90,7 +91,7 @@ class Hand(common.Hand):
         return self.value() > other.value()
 
 
-class BlackJack(discord.ui.View):
+class BlackJack(BaseView):
     def __init__(self, ctx: commands.Context[NecroBot], bet, *, timeout=180):
         super().__init__(timeout=timeout)
 
@@ -114,14 +115,7 @@ class BlackJack(discord.ui.View):
         self.index = 0
         self.message: discord.Message = None
 
-    async def interaction_check(self, interaction: Interaction):
-        if not interaction.user == self.ctx.author:
-            await interaction.response.send_message(
-                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
-            )
-            return False
-
-        return True
+        self.author = ctx.author
 
     @property
     def max_index(self):

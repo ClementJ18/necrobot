@@ -5,10 +5,10 @@ import datetime
 import importlib
 import json
 import logging
-from logging.handlers import RotatingFileHandler
 import sys
 import time
 import traceback
+from logging.handlers import RotatingFileHandler
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import aiohttp
@@ -17,7 +17,7 @@ import discord
 from discord.ext import commands
 
 from rings.db import SyncDatabase
-from rings.utils.config import token, DEBUG
+from rings.utils.config import DEBUG, token
 from rings.utils.help import NecrobotHelp
 from rings.utils.ui import Confirm
 from rings.utils.utils import Event, Giveaway, Guild, PendingPost, default_settings, get_pre
@@ -31,11 +31,13 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter('[{asctime}] [{levelname:<8}] {name}: {message}', '%Y-%m-%d %H:%M:%S', style='{')
+formatter = logging.Formatter(
+    "[{asctime}] [{levelname:<8}] {name}: {message}", "%Y-%m-%d %H:%M:%S", style="{"
+)
 
 file_handler = RotatingFileHandler(
-    filename='logs/discord.log',
-    encoding='utf-8',
+    filename="logs/discord.log",
+    encoding="utf-8",
     maxBytes=32 * 1024 * 1024,  # 32 MiB
     backupCount=5,  # Rotate through 5 files
 )
@@ -128,6 +130,8 @@ class NecroBot(commands.Bot):
         self.tutorial_e: discord.Embed = None
         self.gdpr_embed: discord.Embed = None
 
+        self.loaded: asyncio.Event = None
+
         with open("rings/utils/data/settings.json", "rb") as infile:
             self.settings = {**default_settings(), **json.load(infile)}
 
@@ -186,12 +190,18 @@ class NecroBot(commands.Bot):
 
         return True
 
+    async def wait_until_loaded(self):
+        await super().wait_until_ready()
+        await self.loaded.wait()
+
     async def setup_hook(self):
+        self.queued_posts = asyncio.Queue()
+        self.loaded = asyncio.Event()
+
         for extension in self.extension_names:
             await self.load_extension(f"rings.{extension}")
 
         self.loop.create_task(self.meta.load_cache())
-        self.queued_posts = asyncio.Queue()
 
     def embed_poll(
         self,

@@ -84,7 +84,7 @@ class Database(commands.Cog):
     async def get_user(self, user_id):
         return await self.query("SELECT * FROM necrobot.Users WHERE user_id = $1", user_id)
 
-    async def get_permission(self, user_id: int, guild_id : int = None) -> bool:
+    async def get_permission(self, user_id: int, guild_id: int = None) -> bool:
         if guild_id is None:
             query = "SELECT guild_id, level FROM necrobot.Permissions WHERE user_id = $1"
             return await self.query(query, user_id)
@@ -474,7 +474,9 @@ class Database(commands.Cog):
 
     async def update_invites(self, guild: discord.Guild):
         try:
-            invites: List[discord.Invite] = sorted(await guild.invites(), key=lambda x: x.created_at)
+            invites: List[discord.Invite] = sorted(
+                await guild.invites(), key=lambda x: x.created_at
+            )
         except discord.Forbidden:
             return
 
@@ -493,7 +495,9 @@ class Database(commands.Cog):
 
     async def sync_invites(self, guild: discord.Guild):
         try:
-            invites: List[discord.Invite] = sorted(await guild.invites(), key=lambda x: x.created_at)
+            invites: List[discord.Invite] = sorted(
+                await guild.invites(), key=lambda x: x.created_at
+            )
         except discord.Forbidden:
             return
 
