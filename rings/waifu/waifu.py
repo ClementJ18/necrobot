@@ -31,7 +31,7 @@ from rings.utils.ui import (
     EmbedRangeConverter,
     EmbedStringConverter,
     MultiInputEmbedView,
-    paginate,
+    Paginator,
 )
 from rings.utils.utils import BotError, DatabaseError, check_channel
 
@@ -45,14 +45,14 @@ from .ui import CombatView, EmbedSkillConverter, EmbedStatConverter
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 LOG_SIZE = 7
 EquipmentSet = namedtuple("EquipmentSet", "character weapon artefact")
 
 
 class Flowers(commands.Cog):
-    """A server specific economy system. Use it to reward/punish users at you heart's content. Also contains a gacha system."""
+    """A server specific economy system. Use it to reward/punish users at you heart's content. 
+    Also contains a gacha system."""
 
     def __init__(self, bot: NecroBot):
         self.bot = bot
@@ -382,7 +382,7 @@ class Flowers(commands.Cog):
         amount: int,
         time: TimeConverter = 86400,
     ):
-        """Create a 24hr message, if reacted to, the use who reacted will be granted flowers. Time arguments uses standard
+        """Create a 24hr message, if reacted to, the use who reacted will be granted flowers. Time arguments uses standard \
         necrobot time system. The following times can be used: days (d), hours (h), minutes (m), seconds (s).
 
         {usage}
@@ -447,12 +447,12 @@ class Flowers(commands.Cog):
         if for_banner:
             characters = [character for character in characters if character["obtainable"]]
 
-        def embed_maker(view, entry):
+        def embed_maker(view: Paginator, entry: dict):
             mutable_entry = dict(entry)
-            mutable_entry["name"] = f"{entry['name']} ({view.page_number}/{view.page_count})"
+            mutable_entry["name"] = f"{entry['name']} ({view.page_string})"
             return self.embed_character(mutable_entry, True)
 
-        await paginate(ctx, characters, 1, embed_maker)
+        await Paginator(embed_maker, 1, characters, ctx.author).start(ctx)
 
     @characters.command(name="list")
     async def characters_list(self, ctx: commands.Context[NecroBot]):
@@ -473,7 +473,7 @@ class Flowers(commands.Cog):
                 ]
             )
             embed = discord.Embed(
-                title=f"Character List ({view.page_number}/{view.page_count})",
+                title=f"Character List ({view.page_string})",
                 colour=self.bot.bot_color,
                 description=description,
             )
@@ -481,7 +481,7 @@ class Flowers(commands.Cog):
 
             return embed
 
-        await paginate(ctx, characters, 10, embed_maker)
+        await Paginator(embed_maker, 10, characters, ctx.author).start(ctx)
 
     @characters.command(name="get")
     async def characters_get(
@@ -833,15 +833,15 @@ class Flowers(commands.Cog):
                 ctx.guild.id,
             )
 
-        def embed_maker(view, entry):
+        def embed_maker(view: Paginator, entry: dict):
             mutable_entry = dict(entry)
-            mutable_entry["name"] = f"{entry['name']} ({view.page_number}/{view.page_count})"
+            mutable_entry["name"] = f"{entry['name']} ({view.page_string})"
             mutable_entry["characters"] = [
                 f"{char[0]} ({char[1]} :star:)" for char in json.loads(entry["characters"])
             ]
             return self.embed_banner(mutable_entry, archive)
 
-        await paginate(ctx, banners, 1, embed_maker)
+        await Paginator(embed_maker, 1, banners, ctx.author).start(ctx)
 
     @banners.command(name="create")
     @has_perms(4)
@@ -1066,12 +1066,12 @@ class Flowers(commands.Cog):
             ctx.author.id,
         )
 
-        def embed_maker(view, entry):
+        def embed_maker(view: Paginator, entry: dict):
             mutable_entry = dict(entry)
-            mutable_entry["name"] = f"{entry['name']} ({view.page_number}/{view.page_count})"
+            mutable_entry["name"] = f"{entry['name']} ({view.page_string})"
             return self.embed_character(mutable_entry)
 
-        await paginate(ctx, characters, 1, embed_maker)
+        await Paginator(embed_maker, 1, characters, ctx.author).start(ctx)
 
     @gacha.group(name="roll", invoke_without_command=True, aliases=["pull"])
     @commands.guild_only()
@@ -1201,7 +1201,7 @@ class Flowers(commands.Cog):
     @gacha_roll.command(name="cost")
     @has_perms(4)
     async def gacha_roll_cost(self, ctx: commands.Context[NecroBot], amount: int):
-        """Change the cost of rolling for a single character, must be at least 1. Default
+        """Change the cost of rolling for a single character, must be at least 1. Default \
         is 50.
 
         {usage}
@@ -1431,13 +1431,13 @@ class Flowers(commands.Cog):
         __Examples
         `{pre}equipment list` - list all your equipped characters"""
 
-        def embed_maker(view, entry):
+        def embed_maker(view: Paginator, entry: EquipmentSet):
             return self.embed_equipment_set(
-                f"{entry.character['name']} ({view.page_number}/{view.page_count})", entry
+                f"{entry.character['name']} ({view.page_string})", entry
             )
 
         entries = await self.get_equipment_set(ctx.guild.id, ctx.author.id)
-        await paginate(ctx, entries, 1, embed_maker)
+        await Paginator(embed_maker, 1, entries, ctx.author).start(ctx)
 
     def convert_battlefield_to_str(
         self, field: Battlefield, characters: List[Character], character_range: Character = None
@@ -1545,6 +1545,15 @@ class Flowers(commands.Cog):
         ctx: commands.Context[NecroBot],
         *chars: GachaCharacterConverter(allowed_types=("character",), is_owned=True),
     ):
+        """Start a battle between three of your characters and a random enemy on a random battlefield. \ 
+        In order for characters to be able to compete they must be equipped with weapons and artefacts using  \ 
+        `{pre}equipment equip`.
+        
+        {usage}
+
+        __Example__
+        `{pre}gacha battle Amelan Albert John` - start a battle with these three characters
+        """
         if len(chars) != 3:
             raise BotError("Please submit exactly three characters for the battle.")
 

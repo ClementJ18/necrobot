@@ -20,13 +20,12 @@ from rings.utils.ui import (
     EmbedStringConverter,
     MultiInputEmbedView,
     PollEditorView,
-    paginate,
+    Paginator,
 )
 from rings.utils.utils import BotError, DatabaseError, build_format_dict, check_channel
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 
 class Server(commands.Cog):
@@ -114,7 +113,7 @@ class Server(commands.Cog):
         user: discord.Member = commands.parameter(converter=MemberConverter, default=None),
         level: RangeConverter(0, 7) = None,
     ):
-        """Sets the NecroBot permission level of the given user, you can only set permission levels lower than your own.
+        """Sets the NecroBot permission level of the given user, you can only set permission levels lower than your own. \
         Permissions reset if you leave the server.
 
         {usage}
@@ -150,7 +149,7 @@ class Server(commands.Cog):
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
 
-            return await paginate(ctx, members, 10, embed_maker)
+            return await Paginator(embed_maker, 10, members, ctx.author).start(ctx)
 
         if await self.bot.db.compare_user_permission(ctx.author.id, ctx.guild.id, user.id) > 1:
             current_level = await self.bot.db.get_permission(user.id, ctx.guild.id)
@@ -198,7 +197,7 @@ class Server(commands.Cog):
         def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             string = "\n".join(entries)
             embed = discord.Embed(
-                title=f"Commands for {self.bot.perms_name[level]} {level}+ ({view.page_number}/{view.page_count})",
+                title=f"Commands for {self.bot.perms_name[level]} {level}+ ({view.page_string})",
                 colour=self.bot.bot_color,
                 description=string,
             )
@@ -206,7 +205,7 @@ class Server(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        await paginate(ctx, c, 10, embed_maker)
+        await Paginator(embed_maker, 10, c, ctx.author).start(ctx)
 
     @permissions.command(name="bind")
     @has_perms(4)
@@ -216,8 +215,8 @@ class Server(commands.Cog):
         level: RangeConverter(1, 4) = None,
         role: discord.Role = commands.parameter(converter=RoleConverter, default=None),
     ):
-        """See current bindings, create a binding or remove a binding. Bindings between a role and a level mean that
-        the bot automatically assigns that permission level to the users when they are given the role (if it is higher
+        """See current bindings, create a binding or remove a binding. Bindings between a role and a level mean that \
+        the bot automatically assigns that permission level to the users when they are given the role (if it is higher \
         than their current).
 
         Bindings do not work if the bot is offline and the bot will not retro-actively apply them when it comes back online.
@@ -374,12 +373,12 @@ class Server(commands.Cog):
         ctx: commands.Context[NecroBot],
         *mentions: Union[MemberConverter, discord.TextChannel, RoleConverter],
     ):
-        """Used to manage the list of channels and user ignored by the bot's automoderation system. If no mentions are
-        given it will print out the list of ignored Users (**U**) and the list of ignored Channels (**C**). The automoderation
-        feature tracks the edits made by users to their own messages and the deleted messages, printing them in the server's automod
-        channel. If mentions are given then it will add any user/channel not already ignored and remove any user/channel already ignored.
+        """Used to manage the list of channels and user ignored by the bot's automoderation system. If no mentions are \
+        given it will print out the list of ignored Users (**U**) and the list of ignored Channels (**C**). The automoderation \
+        feature tracks the edits made by users to their own messages and the deleted messages, printing them in the server's automod \
+        channel. If mentions are given then it will add any user/channel not already ignored and remove any user/channel already ignored. \
 
-        The bot also uses the automod channel to inform you of moderation actions that take place around your server, invites used by users
+        The bot also uses the automod channel to inform you of moderation actions that take place around your server, invites used by users \
         joining and attempts at mute evasions.
 
         {usage}
@@ -395,7 +394,7 @@ class Server(commands.Cog):
         def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             string = "\n- ".join(entries)
             embed = discord.Embed(
-                title=f"Ignored by Automod ({view.page_number}/{view.page_count})",
+                title=f"Ignored by Automod ({view.page_string})",
                 colour=self.bot.bot_color,
                 description=f"Channels(**C**), Users(**U**) and Roles (**R**) ignored by auto moderation:\n- {string}",
             )
@@ -405,7 +404,7 @@ class Server(commands.Cog):
 
         if not mentions:
             ignored = self.bot.guild_data[ctx.guild.id]["ignore-automod"]
-            return await paginate(ctx, self.get_all(ctx, ignored), 10, embed_maker)
+            return await Paginator(embed_maker, 10, self.get_all(ctx, ignored), ctx.author).start(ctx)
 
         to_add = []
         to_remove = []
@@ -431,15 +430,15 @@ class Server(commands.Cog):
     async def automod_channel(
         self, ctx: commands.Context[NecroBot], channel: Union[discord.TextChannel, str] = None
     ):
-        """Sets the automoderation channel to [channel], [channel] argument should be a channel mention. All the
+        """Sets the auto-moderation channel to [channel], [channel] argument should be a channel mention. All the \
         auto-moderation related messages will be sent there.
 
         {usage}
 
         __Example__
-        `{pre}automod channel #channel` - set the automoderation messages to be sent to channel 'channel'
-        `{pre}automod channel disable` - disables automoderation for the entire server
-        `{pre}automod channel` - see what the automod channel is currently"""
+        `{pre}automod channel #channel` - set the auto-moderation messages to be sent to channel 'channel'
+        `{pre}automod channel disable` - disables auto-moderation for the entire server
+        `{pre}automod channel` - see what the auto-moderation channel is currently"""
 
         if isinstance(channel, discord.TextChannel):
             check_channel(channel)
@@ -463,9 +462,9 @@ class Server(commands.Cog):
         ctx: commands.Context[NecroBot],
         *mentions: Union[MemberConverter, discord.TextChannel, RoleConverter],
     ):
-        """Used to manage the list of channels and user ignored by the bot's command system. If no mentions are
-        given it will print out the list of ignored Users (**U**) and the list of ignored Channels (**C**). Being ignored
-        by the command system means that user cannot use any of the bot commands on the server. If mentions are given then
+        """Used to manage the list of channels and user ignored by the bot's command system. If no mentions are \
+        given it will print out the list of ignored Users (**U**) and the list of ignored Channels (**C**). Being ignored \
+        by the command system means that user cannot use any of the bot commands on the server. If mentions are given then \
         it will add any user/channel not already ignored and remove any user/channel already ignored.
 
         {usage}
@@ -473,7 +472,7 @@ class Server(commands.Cog):
         __Example__
         `{pre}ignore` - prints the list of users/channels ignored by necrobot
         `{pre}ignore @Necro #general` - adds user Necro and channel general to list of users/channels ignored by the necrobot
-        `{pre}ignore @NecroBot #general` - adds user Necrobot to the list of users ignored by the bot and removes channel #general
+        `{pre}ignore @NecroBot #general` - adds user Necrobot to the list of users ignored by the bot and removes channel #general \
         from it (since we added it above)
         `{pre}ignore @ARole` - adds role ARole to the list of roles ignored by the bot
         """
@@ -484,7 +483,7 @@ class Server(commands.Cog):
             def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
                 string = "\n- ".join(entries)
                 embed = discord.Embed(
-                    title=f"Ignored by command ({view.page_number}/{view.page_count})",
+                    title=f"Ignored by command ({view.page_string})",
                     colour=self.bot.bot_color,
                     description=f"Channels(**C**), Users(**U**) and Roles (**R**) ignored by the bot:\n- {string}",
                 )
@@ -492,7 +491,7 @@ class Server(commands.Cog):
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
 
-            return await paginate(ctx, self.get_all(ctx, ignored), 10, embed_maker)
+            return await Paginator(embed_maker, 10, self.get_all(ctx, ignored), ctx.author).start(ctx)
 
         to_add = []
         to_remove = []
@@ -590,7 +589,7 @@ class Server(commands.Cog):
     @commands.group(invoke_without_command=True)
     @has_perms(4)
     async def welcome(self, ctx: commands.Context[NecroBot], *, message: str = ""):
-        """Sets the message that will be sent to the designated channel everytime a member joins the server. You
+        """Sets the message that will be sent to the designated channel everytime a member joins the server. You \
         can use special keywords to replace certain words by stuff like the name of the member or a mention.
         List of keywords:
         `{{mention}}` - mentions the member
@@ -603,7 +602,7 @@ class Server(commands.Cog):
 
         __Example__
         `{pre}welcome Hello {{member}} :wave:` - sets the welcome message to be 'Hello Necrobot#1231 :wave:'.
-        `{pre}welcome hey there {{mention}}, welcome to {{server}}` - set the welcome message to 'hey there @NecroBot, welcome
+        `{pre}welcome hey there {{mention}}, welcome to {{server}}` - set the welcome message to 'hey there @NecroBot, welcome \
         to NecroBot Support Server'
         `{pre}welcome` - disable server welcome message
         """
@@ -627,7 +626,7 @@ class Server(commands.Cog):
     @commands.group(invoke_without_command=True)
     @has_perms(4)
     async def farewell(self, ctx: commands.Context[NecroBot], *, message: str = ""):
-        """Sets the message that will be sent to the designated channel everytime a member leaves the server. You
+        """Sets the message that will be sent to the designated channel everytime a member leaves the server. You \
         can use special keywords to replace certain words by stuff like the name of the member or a mention.
         List of keywords:
         `{{mention}}` - mentions the member
@@ -640,7 +639,7 @@ class Server(commands.Cog):
 
         __Example__
         `{pre}farewell Hello {{member}} :wave:` - sets the farewell message to be 'Hello Necrobot#1231 :wave:'.
-        `{pre}farewell hey there {{mention}}, we'll miss you on {{server}}` - set the farewell message to 'hey
+        `{pre}farewell hey there {{mention}}, we'll miss you on {{server}}` - set the farewell message to 'hey \
         there @NecroBot, we'll miss you on NecroBot Support Server'
         """
         if message == "":
@@ -680,9 +679,9 @@ class Server(commands.Cog):
             converter=WritableChannelConverter, default=0
         ),
     ):
-        """Sets the welcome channel to [channel], the [channel] argument should be a channel mention/name/id. The welcome
-        message for users will be sent there. Can be called with either farewell or welcome, regardless both will use
-        the same channel, calling the command with both parent commands but different channel will not make
+        """Sets the welcome channel to [channel], the [channel] argument should be a channel mention/name/id. The welcome \
+        message for users will be sent there. Can be called with either farewell or welcome, regardless both will use \
+        the same channel, calling the command with both parent commands but different channel will not make \
         messages send to two channels.
 
         {usage}
@@ -702,9 +701,9 @@ class Server(commands.Cog):
             converter=WritableChannelConverter, default=0
         ),
     ):
-        """Sets the welcome channel to [channel], the [channel] argument should be a channel mention. The welcome
-        message for users will be sent there. Can be called with either farewell or welcome, regardless both will use
-        the same channel, calling the command with both parent commands but different channel will not make
+        """Sets the welcome channel to [channel], the [channel] argument should be a channel mention. The welcome \
+        message for users will be sent there. Can be called with either farewell or welcome, regardless both will use \
+        the same channel, calling the command with both parent commands but different channel will not make \
         messages send to two channels.
 
         {usage}
@@ -718,7 +717,7 @@ class Server(commands.Cog):
     @commands.command(name="prefix")
     @has_perms(4)
     async def prefix(self, ctx: commands.Context[NecroBot], *, prefix: str = ""):
-        r"""Sets the bot to only respond to the given prefix. If no prefix is given it will reset it to NecroBot's default
+        r"""Sets the bot to only respond to the given prefix. If no prefix is given it will reset it to NecroBot's default \
         list of prefixes: `n!`, `N!` or `@NecroBot `. The prefix can't be longer than 15 characters.
 
         If you want your prefix to have a whitespace between the prefix and the command then end it with \w
@@ -726,7 +725,7 @@ class Server(commands.Cog):
         {usage}
 
         __Example__
-        `{pre}prefix bob! potato` - sets the prefix to be `bob! potato ` so a command like `{pre}cat` will now be
+        `{pre}prefix bob! potato` - sets the prefix to be `bob! potato ` so a command like `{pre}cat` will now be \
         summoned like this `bob! potato cat`
         `{pre}prefix` - resets the prefix to NecroBot's default list"""
         prefix = prefix.replace(r"\w", " ")
@@ -749,7 +748,7 @@ class Server(commands.Cog):
         role: discord.Role = commands.parameter(converter=RoleConverter, default=0),
         time: TimeConverter = 0,
     ):
-        """Sets the auto-role for this server to the given role. Auto-role will assign the role to the member when they join.
+        """Sets the auto-role for this server to the given role. Auto-role will assign the role to the member when they join. \
         The following times can be used: days (d), hours (h), minutes (m), seconds (s).
 
         {usage}
@@ -790,7 +789,7 @@ class Server(commands.Cog):
 
         def embed_maker(view: Paginator, entry):
             embed = discord.Embed(
-                title=f"Broadcast ({view.page_number}/{view.page_count})",
+                title=f"Broadcast ({view.page_string})",
                 description=entry[5],
                 colour=self.bot.bot_color,
             )
@@ -808,7 +807,7 @@ class Server(commands.Cog):
             "SELECT * FROM necrobot.Broadcasts WHERE guild_id = $1", ctx.guild.id
         )
 
-        await paginate(ctx, broadcasts, 1, embed_maker)
+        await Paginator(embed_maker, 1, broadcasts, ctx.author).start(ctx)
 
     async def broadcast_editor(
         self,
@@ -849,9 +848,9 @@ class Server(commands.Cog):
     ):
         """Start the process for adding a new broadcast.
 
-        **Disclaimer**: The start parameter does not actually dictate when the first broadcast will occur, it simply insures
-        that the broadcast happens on the hour specified and uses it as a benchmark to determine whether the broadcast should
-        happen at every other hour. Broadcasts will small intervals are likely to be posted before the "start" time.
+        **Disclaimer**: The start parameter does not actually dictate when the first broadcast will occur, it simply insures \
+        that the broadcast happens on the hour specified and uses it as a benchmark to determine whether the broadcast should \
+        happen at every other hour. Broadcasts will small intervals are likely to be posted before the "start" time. \
 
         {usage}
 
@@ -953,7 +952,7 @@ class Server(commands.Cog):
     @broadcast.command(name="toggle")
     @has_perms(4)
     async def broadcast_toggle(self, ctx: commands.Context[NecroBot], broadcast_id: int):
-        """Toggle a broadcast on/off. Turning a broadcast off retains the data but stops the message
+        """Toggle a broadcast on/off. Turning a broadcast off retains the data but stops the message \
         from broadcasting.
 
         {usage}
@@ -983,8 +982,8 @@ class Server(commands.Cog):
         *,
         role: discord.Role = commands.parameter(converter=RoleConverter, default=None),
     ):
-        """Gives the user the role if it is part of this Server's list of self assignable roles. If the user already
-        has the role it will remove it. **Roles names are case sensitive** If no role name is given then it will list
+        """Gives the user the role if it is part of this Server's list of self assignable roles. If the user already \
+        has the role it will remove it. **Roles names are case sensitive** If no role name is given then it will list \
         the self-assignable roles for the server
 
         {usage}
@@ -1001,7 +1000,7 @@ class Server(commands.Cog):
 
             def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
                 embed = discord.Embed(
-                    title=f"Self Assignable Roles ({view.page_number}/{view.page_count})",
+                    title=f"Self Assignable Roles ({view.page_string})",
                     description="- " + "\n- ".join(entries),
                     colour=self.bot.bot_color,
                 )
@@ -1009,7 +1008,7 @@ class Server(commands.Cog):
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
 
-            return await paginate(ctx, roles, 10, embed_maker)
+            return await Paginator(embed_maker, 10, roles, ctx.author).start(ctx)
 
         if role.id in self.bot.guild_data[ctx.guild.id]["self-roles"]:
             if role not in ctx.author.roles:
@@ -1076,7 +1075,7 @@ class Server(commands.Cog):
             converter=WritableChannelConverter, default=None
         ),
     ):
-        """Sets a channel for the starboard messages, required in order for starboard to be enabled. Call the command
+        """Sets a channel for the starboard messages, required in order for starboard to be enabled. Call the command \
         without a channel to disable starboard.
 
         {usage}
@@ -1103,7 +1102,7 @@ class Server(commands.Cog):
         {usage}
 
         __Examples__
-        `{pre}starboard limit 4` - set the required amount of stars on a message to 4, once a message hits 4 :star: they
+        `{pre}starboard limit 4` - set the required amount of stars on a message to 4, once a message hits 4 :star: they \
         will be posted if there is a starboard channel set."""
         if limit < 1:
             raise BotError("Limit must be at least one")
@@ -1116,7 +1115,7 @@ class Server(commands.Cog):
     @starboard.command(name="force")
     @has_perms(3)
     async def starboard_force(self, ctx: commands.Context[NecroBot], message_id: int):
-        """Allows to manually star a message that either has failed to be sent to starboard or doesn't
+        """Allows to manually star a message that either has failed to be sent to starboard or doesn't \
         have the amount of stars required.
 
         {usage}
@@ -1153,13 +1152,13 @@ class Server(commands.Cog):
         ctx: commands.Context[NecroBot],
         channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter),
     ):
-        """Create a reaction poll for your server in the specified channel. This will also ask you to specify a
+        """Create a reaction poll for your server in the specified channel. This will also ask you to specify a \
         maximum number of reactions. This number will limit how many options users can vote for.
 
         {usage}
 
         __Examples__
-        `{pre}poll #general Which character do you prefer: **Aragorn** :crossed_swords: or **Gimli** :axe:` - post a reaction poll
+        `{pre}poll #general Which character do you prefer: **Aragorn** :crossed_swords: or **Gimli** :axe:` - post a reaction poll \
         two possible answers: :axe: and :crossed_swords:
         """
         view = PollEditorView(channel, self.bot, ctx.author)

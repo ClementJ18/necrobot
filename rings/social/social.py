@@ -35,9 +35,9 @@ class Social(commands.Cog):
 
     @commands.command()
     async def riddle(self, ctx: commands.Context[NecroBot]):
-        """Ask a riddle to the user from a long list and waits 30 seconds for the answer. If the
-        user fails to answer they go feed Gollum's fishies. To answer the riddle simply type out
-        the answer, no need to prefix it with anything.
+        """Ask a riddle to the user from a long list and waits 30 seconds for the answer. If the \
+        user fails to answer they go feed Gollum's fishies. To answer the riddle simply type out \
+        the answer, no need to prefix it with anything. \
 
         {usage}"""
         riddle = random.choice(riddle_list)
@@ -50,7 +50,7 @@ class Social(commands.Cog):
 
     @commands.command()
     async def tarot(self, ctx: commands.Context[NecroBot]):
-        """Using the mystical art of tarology, NecroBot reads the user's fate in the card and
+        """Using the mystical art of tarology, NecroBot reads the user's fate in the card and \
         returns the explanation for each card. Not to be taken seriously.
 
         {usage}"""
@@ -91,7 +91,7 @@ class Social(commands.Cog):
 
     @commands.command()
     async def pokefusion(self, ctx: commands.Context[NecroBot], pokemon1=None, pokemon2=None):
-        """Generates a rich embed containing a pokefusion from Gen 1, this can either be a two random pokemons,
+        """Generates a rich embed containing a pokefusion from Gen 1, this can either be a two random pokemons, \
         one random pokemon and one chosen pokemon or two chosen pokemons.
 
         {usage}

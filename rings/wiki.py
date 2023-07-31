@@ -212,7 +212,7 @@ class Wiki(commands.Cog):
 
     @commands.command()
     async def edain(self, ctx: commands.Context[NecroBot], *, article: str = None):
-        """Performs a search on the Edain Mod Wiki for the give article name. If an article is found then it will
+        """Performs a search on the Edain Mod Wiki for the give article name. If an article is found then it will \
         return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
         {usage}
@@ -272,7 +272,7 @@ class Wiki(commands.Cog):
 
     @commands.command()
     async def aotr(self, ctx: commands.Context[NecroBot], *, article: str = None):
-        """Performs a search on the Age of the Ring Wiki for the give article name. If an article is found then it will
+        """Performs a search on the Age of the Ring Wiki for the give article name. If an article is found then it will \
         return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
         {usage}
@@ -285,21 +285,21 @@ class Wiki(commands.Cog):
 
     @commands.command()
     async def wiki(self, ctx: commands.Context[NecroBot], sub_wiki, *, article: str = None):
-        """Performs a search on the given wiki (if valid) for the given article name. If an article is found then it
+        """Performs a search on the given wiki (if valid) for the given article name. If an article is found then it \
         will return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
         {usage}
 
         __Example__
         `{pre}wiki disney Donald Duck` - creates a rich embed of the Donald Duck page
-        `{pre}wiki transformers Optimus` - searches for the 'Optimus Page' and returns a list of search results and a
+        `{pre}wiki transformers Optimus` - searches for the 'Optimus Page' and returns a list of search results and a \
         rich embed of the first one."""
         async with ctx.typing():
             await self.mediawiki_handler(ctx, article, sub_wiki)
 
     @commands.command()
     async def lotr(self, ctx: commands.Context[NecroBot], *, article_name: str = None):
-        """Performs a search on the Tolkien Gateway for the give article name. If an article is found then it
+        """Performs a search on the Tolkien Gateway for the give article name. If an article is found then it \
         will return a rich embed of it, else it will return a list of a related articles and an embed of the first related article.
 
         {usage}

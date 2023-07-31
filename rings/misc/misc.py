@@ -18,7 +18,7 @@ from discord.ext.commands.cooldowns import BucketType
 
 from rings.utils.checks import guild_only, has_perms
 from rings.utils.converters import UserConverter
-from rings.utils.ui import Confirm, paginate
+from rings.utils.ui import Confirm, Paginator
 from rings.utils.utils import BotError
 
 matplotlib.use("agg")
@@ -28,7 +28,6 @@ from .ui import HungerGames
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 
 class Misc(commands.Cog):
@@ -91,7 +90,7 @@ class Misc(commands.Cog):
 
     @commands.command()
     async def fight(self, ctx: commands.Context[NecroBot], *, tributes: str):
-        """Takes in a list of tributes separated by `,` and simulates a hunger games based on Bransteele's Hunger Game
+        """Takes in a list of tributes separated by `,` and simulates a hunger games based on Bransteele's Hunger Game \
         Simulator. More than one tribute needs to be supplied. Duplicate names will be supressed.
 
         {usage}
@@ -113,7 +112,7 @@ class Misc(commands.Cog):
     @commands.group(invoke_without_command=True, aliases=["matchup"])
     @guild_only(496617962334060545)
     async def matchups(self, ctx: commands.Context[NecroBot], *, arguments=None):
-        """Get data about the results of matchups stored in the bot. You can pass either a faction name, a sorting key
+        """Get data about the results of matchups stored in the bot. You can pass either a faction name, a sorting key \
         or both.
 
         Factions Names:
@@ -222,7 +221,7 @@ class Misc(commands.Cog):
 
             stats.sort(key=lambda x: x["faction"])
             stats = itertools.groupby(stats, lambda x: x["faction"])
-            await paginate(ctx, [list(y) for x, y in stats], 1, embed_maker)
+            await Paginator(embed_maker, 1, [list(y) for _, y in stats], ctx.author).start(ctx)
 
     @matchups.command(name="reset")
     @guild_only(496617962334060545)
@@ -283,7 +282,7 @@ class Misc(commands.Cog):
                 description += f"- {name}: **{entry['faction']}** won against **{entry['enemy']}** at {time} (ID: **{entry['id']}**)\n"
 
             embed = discord.Embed(
-                title=f"Logs ({view.page_number}/{view.page_count})",
+                title=f"Logs ({view.page_string})",
                 description=description,
                 colour=self.bot.bot_color,
             )
@@ -337,7 +336,7 @@ class Misc(commands.Cog):
 
             logs = [log for log in logs if check_entry(log)]
 
-        await paginate(ctx, logs, 15, embed_maker)
+        await Paginator(embed_maker, 15, logs, ctx.author).start(ctx)
 
     @matchups.command(name="delete")
     @guild_only(496617962334060545)

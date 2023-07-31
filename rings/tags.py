@@ -8,12 +8,11 @@ import discord
 from discord.ext import commands
 
 from rings.utils.converters import Tag
-from rings.utils.ui import paginate
+from rings.utils.ui import Paginator
 from rings.utils.utils import BotError, DatabaseError, build_format_dict
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 
 class Tags(commands.Cog):
@@ -41,8 +40,8 @@ class Tags(commands.Cog):
     @commands.group(invoke_without_command=True, aliases=["t", "tags"])
     @commands.guild_only()
     async def tag(self, ctx: commands.Context[NecroBot], tag: Tag, *tag_args):
-        """The base of the tag system. Also used to summoned tags through the [tag] argument. Tags can also
-        be called by mentionning the bot, however tags that need arguments will not work with this. In addition,
+        """The base of the tag system. Also used to summoned tags through the [tag] argument. Tags can also \
+        be called by mentionning the bot, however tags that need arguments will not work with this. In addition, \
         multi word tags need to be wraped in quotation marks when being created.
 
         {usage}
@@ -94,7 +93,7 @@ class Tags(commands.Cog):
     @tag.command(name="add")
     @commands.guild_only()
     async def tag_add(self, ctx: commands.Context[NecroBot], tag, *, content):
-        """Assigns the [text] passed through to the tag named [name]. A few reserved keywords can be used to render the
+        """Assigns the [text] passed through to the tag named [name]. A few reserved keywords can be used to render the \
         tag dynamic. If a tag starts with `cmd:` it will be interpreted as a command.
 
         `{{server.keyword}}`
@@ -180,7 +179,7 @@ class Tags(commands.Cog):
     @tag_delete.command(name="alias")
     @commands.guild_only()
     async def tag_delete_alias(self, ctx: commands.Context[NecroBot], *, alias: str):
-        """Remove the alias to a tag. Only Server Admins and the tag owner can remove aliases and they can
+        """Remove the alias to a tag. Only Server Admins and the tag owner can remove aliases and they can \
         remove any aliases.
 
         {usage}
@@ -207,7 +206,7 @@ class Tags(commands.Cog):
     @tag.command(name="edit")
     @commands.guild_only()
     async def tag_edit(self, ctx: commands.Context[NecroBot], tag: Tag, *, content):
-        """Replaces the content of [tag] with the [text] given. Basically works as a delete + create function
+        """Replaces the content of [tag] with the [text] given. Basically works as a delete + create function \
         but without the risk of losing the tag name ownership and counts.
 
         {usage}
@@ -249,7 +248,7 @@ class Tags(commands.Cog):
         def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             tag_str = "- " + "\n- ".join(entries)
             embed = discord.Embed(
-                title=f"Tags on this server ({view.page_number}/{view.page_count})",
+                title=f"Tags on this server ({view.page_string})",
                 description=tag_str,
                 colour=self.bot.bot_color,
             )
@@ -258,7 +257,8 @@ class Tags(commands.Cog):
 
             return embed
 
-        await paginate(ctx, [t["alias"] for t in tag_list], 10, embed_maker)
+        await Paginator(embed_maker, 10, [t["alias"] for t in tag_list], ctx.author).start(ctx)
+        
 
     @tag.command(name="info")
     @commands.guild_only()
@@ -284,10 +284,10 @@ class Tags(commands.Cog):
     @tag.command(name="alias")
     @commands.guild_only()
     async def tag_alias(self, ctx: commands.Context[NecroBot], tag: Tag, *, new_name: str):
-        """Allows to create an alias for a tag, allowing to call the content of the
-        tag by another name without changing the name or editing the content. Alias are
-        merely a link, therefore any content updates to the original tag will be reflected
-        in its aliases. You cannot alias an an alias and nor can you edit an alias. Trying
+        """Allows to create an alias for a tag, allowing to call the content of the \
+        tag by another name without changing the name or editing the content. Alias are \
+        merely a link, therefore any content updates to the original tag will be reflected \
+        in its aliases. You cannot alias an an alias and nor can you edit an alias. Trying \
         to alias or edit an alias will simply edit or alias the original.
 
         {usage}

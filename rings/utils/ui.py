@@ -7,7 +7,7 @@ import math
 import re
 import traceback
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, TypeVar, Union
 
 import discord
 from discord.ext import commands
@@ -66,7 +66,6 @@ class BaseView(discord.ui.View):
             return False
 
         return True
-
 
 class PollSelect(discord.ui.Select):
     view: PollView
@@ -323,6 +322,12 @@ class PollEditorView(BaseView):
             view=poll_view,
         )
 
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red)
+    async def cancel_poll(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
+        self.clear_items()
+        self.stop()
+        await interaction.response.edit_message(view=self)
+
 
 class Select(discord.ui.Select):
     view: SelectView
@@ -432,35 +437,10 @@ class Confirm(BaseView):
     async def cancel(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.cancel_action(interaction)
 
-
-async def paginate(
-    ctx: commands.Context[NecroBot],
-    entries: List[Any],
-    page_size: int,
-    embed_maker: Callable[[Paginator, List[Any]], discord.Embed],
-    *,
-    timeout: int = 300,
-):
-    if not entries:
-        raise BotError("No entries in this list")
-
-    paginator = Paginator(embed_maker, page_size, entries, ctx.author, timeout=timeout)
-
-    if paginator.max_index == 0:
-        return await ctx.send(embed=paginator.embed_maker(paginator, paginator.get_entry_subset()))
-
-    paginator.message = await ctx.send(
-        embed=paginator.embed_maker(paginator, paginator.get_entry_subset()),
-        view=paginator,
-    )
-
-    await paginator.wait()
-
-
 class Paginator(BaseView):
     def __init__(
         self,
-        embed_maker: Callable[[Dict[str, Any]], discord.Embed],
+        embed_maker: Callable[[Paginator, Union[Any, List[Any]]], discord.Embed],
         page_size: int,
         entries: List[Any],
         author: discord.Member,
@@ -468,6 +448,9 @@ class Paginator(BaseView):
         timeout: int = 180,
     ):
         super().__init__(timeout=timeout)
+
+        if not entries:
+            raise BotError("No entries in this list")
 
         self.embed_maker = embed_maker
         self.entries = entries
@@ -477,20 +460,42 @@ class Paginator(BaseView):
         self.message: discord.Message = None
         self.author = author
 
+
+    def view_maker(self, entries: Union[Any, List[Any]]):
+        pass
+
     @property
-    def page_number(self):
+    def page_number(self) -> int:
         return self.index + 1
 
     @property
-    def page_count(self):
+    def page_count(self) -> int:
         return self.max_index + 1
+    
+    @property
+    def page_string(self) -> str:
+        return f"{self.page_number}/{self.page_count}"
+    
+    async def start(self, channel: discord.abc.Messageable):
+        entries = self.get_entry_subset()
+        embed = await self.generate_embed(entries)
+        self.view_maker(entries)
+
+        if self.max_index == 0:
+            for button in [self.first_page, self.previous_page, self.next_page, self.last_page]:
+                self.remove_item(button)
+
+        self.message = await channel.send(
+            embed=embed,
+            view=self,
+        )
 
     async def on_timeout(self):
         self.stop()
         self.clear_items()
         await self.message.edit(view=self)
 
-    def get_entry_subset(self):
+    def get_entry_subset(self) -> Union[Any, List[Any]]:
         subset = self.entries[self.index * self.page_size : (self.index + 1) * self.page_size]
         return subset[0] if self.page_size == 1 else subset
 
@@ -506,28 +511,35 @@ class Paginator(BaseView):
             return await self.change_page(interaction, new_change)
 
         self.index = self.index + change
+        entries = self.get_entry_subset()
+        self.view_maker(entries)
         await interaction.response.edit_message(
-            embed=self.embed_maker(self, self.get_entry_subset()), view=self
+            embed=await self.generate_embed(entries), view=self
         )
 
-    @discord.ui.button(label="-10", style=discord.ButtonStyle.grey)
+    async def generate_embed(self, entries):
+        if asyncio.iscoroutinefunction(self.embed_maker):
+            return await self.embed_maker(self, entries)
+
+        return self.embed_maker(self, entries)
+
+    @discord.ui.button(label="-10", style=discord.ButtonStyle.grey, row=0)
     async def first_page(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.change_page(interaction, -10)
 
-    @discord.ui.button(label="-1", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="-1", style=discord.ButtonStyle.blurple, row=0)
     async def previous_page(
         self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button
     ):
         await self.change_page(interaction, -1)
 
-    @discord.ui.button(label="+1", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="+1", style=discord.ButtonStyle.blurple, row=0)
     async def next_page(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.change_page(interaction, 1)
 
-    @discord.ui.button(label="+10", style=discord.ButtonStyle.grey)
+    @discord.ui.button(label="+10", style=discord.ButtonStyle.grey, row=0)
     async def last_page(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.change_page(interaction, 10)
-
 
 def convert_key_to_label(key: str):
     return key.title().replace("_", " ")

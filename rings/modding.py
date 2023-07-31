@@ -8,12 +8,11 @@ from bs4 import BeautifulSoup
 from discord.ext import commands
 from fuzzywuzzy import process
 
-from rings.utils.ui import paginate
+from rings.utils.ui import Paginator
 from rings.utils.utils import BotError
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 
 class Modding(commands.Cog):
@@ -30,8 +29,8 @@ class Modding(commands.Cog):
 
     @commands.command()
     async def game(self, ctx: commands.Context[NecroBot], *, game: str):
-        """This command takes in a game name from ModDB and returns a rich embed of it. Due to the high variety of
-        game formats, embed appearances will vary but it should always return one as long as it is given the name of
+        """This command takes in a game name from ModDB and returns a rich embed of it. Due to the high variety of \
+        game formats, embed appearances will vary but it should always return one as long as it is given the name of \
         an existing game
 
         {usage}
@@ -114,12 +113,13 @@ class Modding(commands.Cog):
             soup = BeautifulSoup(await resp.text(), "html.parser")
 
         game = moddb.pages.Game(soup)
-        await paginate(ctx, [1, 2, 3], 1, embed_maker)
+        await Paginator(embed_maker, 1, [1, 2, 3], ctx.author).start(ctx)
+        
 
     @commands.command()
     async def mod(self, ctx: commands.Context[NecroBot], *, name: str):
-        """This command takes in a mod name from ModDB and returns a rich embed of it. Due to the high variety of
-        mod formats, embed appearances will vary but it should always return one as long as it is given the name of
+        """This command takes in a mod name from ModDB and returns a rich embed of it. Due to the high variety of \
+        mod formats, embed appearances will vary but it should always return one as long as it is given the name of \
         an existing mod
 
         {usage}
@@ -202,7 +202,7 @@ class Modding(commands.Cog):
             soup = BeautifulSoup(await resp.text(), "html.parser")
 
         mod = moddb.pages.Mod(soup)
-        await paginate(ctx, [1, 2, 3], 1, embed_maker)
+        await Paginator(embed_maker, 1, [1, 2, 3], ctx.author).start(ctx)
 
 
 async def setup(bot: NecroBot):

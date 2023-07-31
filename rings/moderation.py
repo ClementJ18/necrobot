@@ -9,12 +9,11 @@ from discord.ext import commands
 
 from rings.utils.checks import has_perms, requires_mute_role
 from rings.utils.converters import MemberConverter, RangeConverter, RoleConverter, TimeConverter
-from rings.utils.ui import paginate
+from rings.utils.ui import Paginator
 from rings.utils.utils import BotError, format_dt
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 
 class Moderation(commands.Cog):
@@ -127,7 +126,7 @@ class Moderation(commands.Cog):
         *,
         nickname: str = None,
     ):
-        """Nicknames a user, use to clean up offensive or vulgar names or just to prank your friends. Will return
+        """Nicknames a user, use to clean up offensive or vulgar names or just to prank your friends. Will return \
         an error message if the user cannot be renamed due to permission issues.
 
         {usage}
@@ -173,8 +172,8 @@ class Moderation(commands.Cog):
         user: discord.Member = commands.parameter(converter=MemberConverter),
         time: TimeConverter = None,
     ):
-        """Blocks the user from writing in channels by giving it the server's mute role. Make sure an admin has set a
-        mute role using `{pre}mute role`. The user can either be muted for the given amount of seconds or indefinitely
+        """Blocks the user from writing in channels by giving it the server's mute role. Make sure an admin has set a \
+        mute role using `{pre}mute role`. The user can either be muted for the given amount of seconds or indefinitely \
         if no amount is given. The following times can be used: days (d), hours (h), minutes (m), seconds (s).
 
         {usage}
@@ -223,10 +222,10 @@ class Moderation(commands.Cog):
         *,
         role: discord.Role = commands.parameter(converter=RoleConverter, default=0),
     ):
-        """Sets the mute role for this server to [role], this is used for the `mute` command, it is the role assigned by
-        the command to the user. Make sure to spell the role correctly, the role name is case sensitive. It is up to the server
-        authorities to set up the proper permissions for the chosen mute role. Once the role is set up it can be renamed and
-        edited as seen needed, NecroBot keeps the id saved. Unexpect behavior can happen if multiple roles have the same name when
+        """Sets the mute role for this server to [role], this is used for the `mute` command, it is the role assigned by \
+        the command to the user. Make sure to spell the role correctly, the role name is case sensitive. It is up to the server \
+        authorities to set up the proper permissions for the chosen mute role. Once the role is set up it can be renamed and \
+        edited as seen needed, NecroBot keeps the id saved. Unexpected behavior can happen if multiple roles have the same name when \
         setting the role.
 
         {usage}
@@ -234,8 +233,7 @@ class Moderation(commands.Cog):
         __Example__
         `{pre}mute role Token Mute Role` - set the mute role to be the role named 'Token Mute Role'
         `{pre}mute role` - resets the mute role and disables the `mute` command.
-        there is already a mute role this updates all the channels without permissions for it to disallow sending
-        messages and connection"""
+        """
         if not role:
             await self.bot.db.update_mute_role(ctx.guild.id)
             await ctx.send(":white_check_mark: | Reset mute role")
@@ -249,7 +247,7 @@ class Moderation(commands.Cog):
     @has_perms(4)
     @commands.bot_has_permissions(manage_roles=True, manage_channels=True)
     async def mute_role_create(self, ctx: commands.Context[NecroBot], *, name: str = None):
-        """Creates the mute role for you if not already set and updates the channels where there are no overwrite
+        """Creates the mute role for you if not already set and updates the channels where there are no overwrite \
         already set for the mute role. This means any channel with overwrites already set will be skipped over.
 
         {usage}
@@ -339,7 +337,7 @@ class Moderation(commands.Cog):
         {usage}
 
         __Example__
-        `{pre}warn @NecroBot For being the best bot` - will add the warning 'For being the best bot' to
+        `{pre}warn @NecroBot For being the best bot` - will add the warning 'For being the best bot' to \
         Necrobot's warning list and pm the warning message to him"""
         if await self.bot.db.compare_user_permission(ctx.author.id, ctx.guild.id, user.id) < 1:
             raise BotError("You do not have the required NecroBot permissions to warn this user.")
@@ -423,7 +421,7 @@ class Moderation(commands.Cog):
 
         def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
             embed = discord.Embed(
-                title=f"Warnings ({view.page_number}/{view.page_count})",
+                title=f"Warnings ({view.page_string})",
                 colour=self.bot.bot_color,
                 description=f"List of warnings for {user.display_name}",
             )
@@ -439,7 +437,7 @@ class Moderation(commands.Cog):
 
             return embed
 
-        await paginate(ctx, warnings, 5, embed_maker)
+        await Paginator(embed_maker, 5, warnings, ctx.author).start(ctx)
 
     @warn.command(name="get")
     async def warn_get(self, ctx: commands.Context[NecroBot], warn_id: int):
@@ -485,7 +483,7 @@ class Moderation(commands.Cog):
     @warn.command(name="pm")
     @has_perms(4)
     async def warn_pm(self, ctx: commands.Context[NecroBot], pm: bool):
-        """Defines the setting on whether or not the user that is warned will be DM'd the warning. They
+        """Defines the setting on whether or not the user that is warned will be DM'd the warning. They \
         will be DM'd if the setting is True. Disabled by default.
 
         {usage}
@@ -510,7 +508,7 @@ class Moderation(commands.Cog):
         check: Literal["link", "mention", "bot"] = "",
         extra: discord.Member = commands.parameter(converter=MemberConverter, default=""),
     ):
-        """Removes number of messages from the channel it is called in. That's all it does at the moment
+        """Removes number of messages from the channel it is called in. That's all it does at the moment \
         but later checks will also be added to allow for more flexible/specific purging
 
         {usage}
@@ -578,9 +576,9 @@ class Moderation(commands.Cog):
     @commands.command()
     @has_perms(4)
     async def disable(self, ctx: commands.Context[NecroBot], name: str = None):
-        """Disables a command or cog. Once a command or cog is disabled only admins can use it. To re-enable a
-        command or cog call the `enable` command on it. Disabling cogs works as a sort of "select all"
-        button which means that all commands will be disabled and individual commands can then be enabled separatly for
+        """Disables a command or cog. Once a command or cog is disabled only admins can use it. To re-enable a \
+        command or cog call the `enable` command on it. Disabling cogs works as a sort of "select all" \
+        button which means that all commands will be disabled and individual commands can then be enabled separately for \
         fine tuning.
 
 
@@ -621,10 +619,10 @@ class Moderation(commands.Cog):
     @commands.command()
     @has_perms(4)
     async def enable(self, ctx: commands.Context[NecroBot], name: str = None):
-        """Enable a command or cog. Once a command or cog is enabled everybody can use it given no other restrictions such
-        as blacklisted or ignored. To disable a command or cog call the `disable` comannd on it. Enabling cogs works as a
-        sort of "select all" button which means that all commands will be enabled and individual commands can then be disabled
-        separatly for fine tuning.
+        """Enable a command or cog. Once a command or cog is enabled everybody can use it given no other restrictions such \
+        as blacklisted or ignored. To disable a command or cog call the `disable` command on it. Enabling cogs works as a \
+        sort of "select all" button which means that all commands will be enabled and individual commands can then be disabled \
+        separately for fine tuning.
 
 
         {usage}

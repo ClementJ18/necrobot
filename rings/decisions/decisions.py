@@ -9,7 +9,7 @@ from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
 from rings.utils.converters import CoinConverter, MoneyConverter
-from rings.utils.ui import Paginator, paginate
+from rings.utils.ui import Paginator
 from rings.utils.utils import BotError
 
 from .var import ball8_list
@@ -42,7 +42,7 @@ class Decisions(commands.Cog):
 
     @commands.group(aliases=["choice"], invoke_without_command=True)
     async def choose(self, ctx: commands.Context[NecroBot], *, choices: str):
-        """Returns a single choice from the list of choices given. Use `,` to seperate each of the choices. You can
+        """Returns a single choice from the list of choices given. Use `,` to separate each of the choices. You can \
         make multiple choices with a single command by separating them with `|`.
 
         {usage}
@@ -61,7 +61,7 @@ class Decisions(commands.Cog):
 
         __Example__
         `{pre}choose multiple 2 Bob, John, Smith, Mary` -  choose two names of the list of names provided
-        `{pre}choose mult 2 Elves, Men, Dwarves | Legolas, Gimli, Aragorn - return two results from each group
+        `{pre}choose mult 2 Elves, Men, Dwarves | Legolas, Gimli, Aragorn` - return two results from each group
         """
         await self._choose(ctx, choices, count)
 
@@ -73,7 +73,7 @@ class Decisions(commands.Cog):
         choice: CoinConverter = None,
         bet: MoneyConverter = 0,
     ):
-        """Flips a coin and returns the result. Can also be used to bet money on the result (`h` for head and
+        """Flips a coin and returns the result. Can also be used to bet money on the result (`h` for head and \
         `t` for tail). The bet return is 50% of your initial bet.
 
         {usage}
@@ -101,7 +101,7 @@ class Decisions(commands.Cog):
 
     @commands.command(aliases=["dice"])
     async def roll(self, ctx: commands.Context[NecroBot], dices: str = "1d6"):
-        """Rolls one or multiple x sided dices and returns the result.
+        """Rolls one or multiple x sided dices and returns the result. \
         Structure of the argument: `[number of die]d[number of faces]`.
 
         {usage}
@@ -136,7 +136,7 @@ class Decisions(commands.Cog):
 
         def embed_maker(view: Paginator, entry: str):
             embed = discord.Embed(
-                title=f"Dice Roll ({view.page_number}/{view.page_count})",
+                title=f"Dice Roll ({view.page_string})",
                 description=entry,
                 color=self.bot.bot_color,
             )
@@ -147,7 +147,7 @@ class Decisions(commands.Cog):
 
             return embed
 
-        await paginate(ctx, chunks, 1, embed_maker)
+        await Paginator(embed_maker, 1, chunks, ctx.author).start(ctx)
 
     @commands.command(name="8ball")
     async def ball8(self, ctx: commands.Context[NecroBot], *, message: str = None):

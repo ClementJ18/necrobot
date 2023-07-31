@@ -12,7 +12,6 @@ from pyparsing import List
 from simpleeval import simple_eval
 
 from rings.utils.checks import has_perms
-from rings.utils.config import github_key
 from rings.utils.converters import (
     BadgeConverter,
     Grudge,
@@ -21,12 +20,11 @@ from rings.utils.converters import (
     RangeConverter,
     UserConverter,
 )
-from rings.utils.ui import Confirm, paginate
+from rings.utils.ui import Confirm, Paginator
 from rings.utils.utils import BotError
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 
 class Admin(commands.Cog):
@@ -112,7 +110,7 @@ class Admin(commands.Cog):
                 name = user
 
             embed = discord.Embed(
-                title=f"Grudges ({view.page_number}/{view.page_count})",
+                title=f"Grudges ({view.page_string})",
                 colour=self.bot.bot_color,
                 description=f"List of grudges for {name}",
             )
@@ -124,7 +122,7 @@ class Admin(commands.Cog):
 
             return embed
 
-        await paginate(ctx, grudges, 10, embed_maker)
+        await Paginator(embed_maker, 10, grudges, ctx.author).start(ctx)
 
     @grudge.command(name="info")
     async def grudge_info(self, ctx: commands.Context[NecroBot], grudge: Grudge):
@@ -338,7 +336,7 @@ class Admin(commands.Cog):
         *,
         message: str = commands.parameter(),
     ):
-        """Sends the given message to the user of the given id. It will then wait for an answer and
+        """Sends the given message to the user of the given id. It will then wait for an answer and \
         print it to the channel it was called it.
 
         {usage}
@@ -410,7 +408,8 @@ class Admin(commands.Cog):
         *,
         guild: discord.Guild = commands.parameter(converter=GuildConverter, default=None),
     ):
-        """Returns invites (if the bot has valid permissions) for each server the bot is on if no guild id is specified.
+        """Returns invites (if the bot has valid permissions) for each server the bot is on if no \
+        guild id is specified.
 
         {usage}"""
 
@@ -497,7 +496,7 @@ class Admin(commands.Cog):
             embed = discord.Embed(
                 title="Command Log",
                 colour=self.bot.bot_color,
-                description=f"{view.page_number}/{view.page_count}",
+                description=f"{view.page_string}",
             )
             embed.set_footer(**self.bot.bot_footer)
             for row in entries:
@@ -511,7 +510,7 @@ class Admin(commands.Cog):
 
             return embed
 
-        await paginate(ctx, results, 5, embed_maker)
+        await Paginator(embed_maker, 5, results, ctx.author).start(ctx)
 
     @commands.command(name="as")
     @commands.is_owner()
@@ -577,13 +576,6 @@ class Admin(commands.Cog):
 
         del self.gates[ctx.channel.id]
         del self.gates[channel.id]
-
-    @commands.command()
-    @commands.is_owner()
-    async def reset(self, ctx: commands.Context[NecroBot]):
-        """{usage}"""
-        self.bot.check_enabled = True
-        await ctx.send(":white_check_mark: | Process checks re-enabled")
 
     #######################################################################
     ## Events

@@ -12,12 +12,11 @@ from PIL import Image, ImageDraw, ImageFont
 
 from rings.utils.checks import has_perms
 from rings.utils.converters import BadgeConverter, MemberConverter, MoneyConverter, RangeConverter
-from rings.utils.ui import Confirm, paginate
+from rings.utils.ui import Confirm, Paginator
 from rings.utils.utils import BotError, DatabaseError, midnight
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 
 class Profile(commands.Cog):
@@ -70,6 +69,28 @@ class Profile(commands.Cog):
                 f":atm: | **{ctx.author.display_name}** you have **{'{:,}'.format(money)}** :euro:"
             )
 
+    async def money_ranking(self, ctx: commands.Context[NecroBot], entries: List[int], server: bool):
+        description = "Ranking of user's money on the server" if server else "Ranking of user's money throughout Discord"
+        def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
+            embed = discord.Embed(
+                title=f"Money Ranking ({view.page_string})",
+                colour=self.bot.bot_color,
+                description=description,
+            )
+
+            embed.set_footer(**self.bot.bot_footer)
+
+            for user in entries:
+                embed.add_field(
+                    name=f"{entries.index(user)+1}. {ctx.guild.get_member(user[0]).display_name}",
+                    value=user[1],
+                    inline=False,
+                )
+
+            return embed
+
+        await Paginator(embed_maker, 10, entries, ctx.author).start(ctx)
+
     @balance.command(name="server")
     async def balance_server(self, ctx: commands.Context[NecroBot]):
         """See the ranking of users with the most money within the server
@@ -84,25 +105,7 @@ class Profile(commands.Cog):
             [x.id for x in ctx.guild.members],
         )
 
-        def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
-            embed = discord.Embed(
-                title=f"Money Ranking ({view.page_number}/{view.page_count})",
-                colour=self.bot.bot_color,
-                description="Ranking of user's money on the server",
-            )
-
-            embed.set_footer(**self.bot.bot_footer)
-
-            for user in entries:
-                embed.add_field(
-                    name=f"{monies.index(user)+1}. {ctx.guild.get_member(user[0]).display_name}",
-                    value=user[1],
-                    inline=False,
-                )
-
-            return embed
-
-        await paginate(ctx, monies, 10, embed_maker)
+        await self.money_ranking(ctx, monies, True)
 
     @balance.command(name="global")
     async def balance_global(self, ctx: commands.Context[NecroBot]):
@@ -118,25 +121,7 @@ class Profile(commands.Cog):
             [x.id for x in self.bot.users],
         )
 
-        def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
-            embed = discord.Embed(
-                title=f"Money Ranking ({view.page_number}/{view.page_count})",
-                colour=self.bot.bot_color,
-                description="Ranking of user's money throughout Discord",
-            )
-
-            embed.set_footer(**self.bot.bot_footer)
-
-            for user in entries:
-                embed.add_field(
-                    name=f"{monies.index(user)+1}. {self.bot.get_user(user[0])}",
-                    value=user[1],
-                    inline=False,
-                )
-
-            return embed
-
-        await paginate(ctx, monies, 10, embed_maker)
+        await self.money_ranking(ctx, monies, False)
 
     @commands.command(name="daily", cooldown_after_parsing=True)
     @commands.cooldown(1, 60, BucketType.user)
@@ -148,7 +133,7 @@ class Profile(commands.Cog):
             converter=MemberConverter, default=commands.Author
         ),
     ):
-        """Adds your daily 200 :euro: to your NecroBot balance. This can be used at anytime once every GMT day. Can
+        """Adds your daily 200 :euro: to your NecroBot balance. This can be used at anytime once every GMT day. Can \
         also be gifted to a user for some extra cash.
 
         {usage}
@@ -362,7 +347,7 @@ class Profile(commands.Cog):
 
     @commands.group(aliases=["badge"], invoke_without_command=True)
     async def badges(self, ctx: commands.Context[NecroBot]):
-        """The badge system allows you to buy badges and place them on profiles. Show the world what your favorite
+        """The badge system allows you to buy badges and place them on profiles. Show the world what your favorite \
         games/movies/books/things are. You can see all the badges from the badge shop.
 
         {usage}
@@ -380,7 +365,7 @@ class Profile(commands.Cog):
         spot: RangeConverter(1, 8),
         badge: BadgeConverter = None,
     ):
-        """Opens the grid menu to allow you to place a badge or reset a badge. Simply supply a badge name to the command to
+        """Opens the grid menu to allow you to place a badge or reset a badge. Simply supply a badge name to the command to \
         place a badge or supply "none" to reset the grid location.
 
         {usage}
@@ -435,7 +420,7 @@ class Profile(commands.Cog):
 
     @badges.group(name="shop", invoke_without_command=True)
     async def badge_shop(self, ctx: commands.Context[NecroBot]):
-        """Open the badge show to browse and preview all the badges. To buy a badge simply pass the name
+        """Open the badge show to browse and preview all the badges. To buy a badge simply pass the name \
         to `{pre}badge buy`.
 
         {usage}
@@ -443,7 +428,7 @@ class Profile(commands.Cog):
 
         def embed_maker(view: Paginator, entry: Dict[str, str]):
             embed = discord.Embed(
-                title=f"Badge Shop ({view.page_number}/{view.page_count})",
+                title=f"Badge Shop ({view.page_string})",
                 description="Here you can browse available badges at your leisure. To buy a badge use the `badge buy` command and pass the name of the badge",
             )
 
@@ -451,7 +436,7 @@ class Profile(commands.Cog):
 
             return embed
 
-        await paginate(ctx, self.bot.settings["shop"], 1, embed_maker)
+        await Paginator(embed_maker, 1, self.bot.settings["shop"], ctx.author).start(ctx)
 
     @badge_shop.command(name="generate")
     @has_perms(6)
@@ -524,11 +509,9 @@ class Profile(commands.Cog):
         key: str = "date",
     ):
         """
-        See all the starred messages of a user or all the ones on the server. Order by most recent first,
+        See all the starred messages of a user or all the ones on the server. Order by most recent first, \
         can change order with keywords:
             - stars : order by highest star
-
-        **Old star command has been move to {pre}starboard force**
 
         {usage}
 
@@ -560,7 +543,7 @@ class Profile(commands.Cog):
                 ]
             )
             embed = discord.Embed(
-                title=f"Stars ({view.page_number}/{view.page_count})",
+                title=f"Stars ({view.page_string})",
                 description=f"Total Stars: {total_stars} \n Total Message: {len(stars)} \n {star_str}",
                 colour=self.bot.bot_color,
             )
@@ -569,11 +552,11 @@ class Profile(commands.Cog):
 
             return embed
 
-        await paginate(ctx, stars, 15, embed_maker)
+        await Paginator(embed_maker, 15, stars, ctx.author).start(ctx)
 
     @stars.group(invoke_without_command=True, name="ranking")
     async def stars_ranking(self, ctx: commands.Context[NecroBot], order: str = "messages"):
-        """Server ranking for amount of starred messages and amount of stars. By default
+        """Server ranking for amount of starred messages and amount of stars. By default \
         ordered by number of starred message, other order keywords can be passed to change this:
             - stars : order users based on their number of stars descending
 
@@ -596,17 +579,21 @@ class Profile(commands.Cog):
                 description += f"- {member.mention if member else 'User Left'}: {row[1]} starred messages ({row[2]} :star:) \n"
 
             embed = discord.Embed(
-                title=f"Starboard Leaderboard ({view.page_number}/{view.page_count})",
+                title=f"Starboard Leaderboard ({view.page_string})",
                 description=f"A leaderboard to rank people by the amount of their messages that were starred. \n {description}",
                 colour=self.bot.bot_color,
             )
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        await paginate(ctx, results, 15, embed_maker)
+        await Paginator(embed_maker, 15, results, ctx.author).start(ctx)
 
     @stars_ranking.command(name="old")
     async def stars_ranking_old(self, ctx: commands.Context[NecroBot]):
+        """This command will soon be deprecated
+        
+        {usage}
+        """
         results = await self.bot.db.query(
             """SELECT user_id, COUNT(message_id) FROM necrobot.Starred 
             WHERE guild_id = $1 AND user_id IS NOT null 
@@ -624,14 +611,14 @@ class Profile(commands.Cog):
                 )
 
             embed = discord.Embed(
-                title=f"Starboard Leaderboard ({view.page_number}/{view.page_count})",
-                description=f"A leaderboard to rank people by the amount of their messages that were starred. \n {description}",
+                title=f"Starboard Leaderboard ({view.page_string})",
+                description=f":warning: **This command is deprecated and will be removed soon**. :warning:\nA leaderboard to rank people by the amount of their messages that were starred. \n {description}",
                 colour=self.bot.bot_color,
             )
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        await paginate(ctx, results, 15, embed_maker)
+        await Paginator(embed_maker, 15, results, ctx.author).start(ctx)
 
 
 async def setup(bot: NecroBot):

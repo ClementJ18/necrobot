@@ -9,12 +9,11 @@ from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
 
 from rings.utils.config import dictionnary_key
-from rings.utils.ui import paginate
+from rings.utils.ui import Paginator
 from rings.utils.utils import BotError
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 
 class Literature(commands.Cog):
@@ -42,7 +41,7 @@ class Literature(commands.Cog):
         def embed_maker(view: Paginator, entry: Dict[str, str]):
             definition = entry["definition"][:2048].replace("[", "").replace("]", "")
             embed = discord.Embed(
-                title=f"{word.title()} ({view.page_number}/{view.page_count})",
+                title=f"{word.title()} ({view.page_string})",
                 url="http://www.urbandictionary.com/",
                 colour=self.bot.bot_color,
                 description=definition,
@@ -57,7 +56,7 @@ class Literature(commands.Cog):
 
             return embed
 
-        await paginate(ctx, definitions, 1, embed_maker)
+        await Paginator(embed_maker, 1, definitions, ctx.author).start(ctx)
 
     async def get_def(self, word: str) -> dict:
         url = f"https://www.dictionaryapi.com/api/v3/references/collegiate/json/{word}?key={dictionnary_key}"
@@ -93,7 +92,7 @@ class Literature(commands.Cog):
         def embed_maker(view: Paginator, entry: Dict[str, str]):
             description = "\n -".join(entry["shortdef"])
             embed = discord.Embed(
-                title=f"{word.title()} ({view.page_number}/{view.page_count})",
+                title=f"{word.title()} ({view.page_string})",
                 url="https://www.merriam-webster.com/",
                 colour=self.bot.bot_color,
                 description=f"-{description}",
@@ -102,7 +101,7 @@ class Literature(commands.Cog):
 
             return embed
 
-        await paginate(ctx, definitions, 1, embed_maker)
+        await Paginator(embed_maker, 1, definitions, ctx.author).start(ctx)
 
     @commands.command()
     async def shuffle(self, ctx: commands.Context[NecroBot], *, sentence: str):

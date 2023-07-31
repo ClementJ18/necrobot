@@ -108,7 +108,6 @@ class NecroBot(commands.Bot):
         self.session: aiohttp.ClientSession = None
         self.pool: asyncpg.pool.Pool = None
         self.maintenance = True
-        self.check_enabled = True
         self.BOT_CHANNEL = 318465643420712962
         self.ERROR_CHANNEL = 415169176693506048
         self.OWNER_ID = 241942232867799040
@@ -444,7 +443,7 @@ async def reload(ctx: commands.Context[NecroBot], *extension_names: str):
 @bot.group(invoke_without_command=True, hidden=True)
 @commands.is_owner()
 async def off(ctx: commands.Context[NecroBot]):
-    """Saves all the data and terminate the bot. (Permission level required: 7+ (The Bot Smith))
+    """Saves all the data and terminate the bot.
 
     {usage}"""
     if not bot.maintenance:
@@ -494,6 +493,10 @@ async def off(ctx: commands.Context[NecroBot]):
 @off.command(name="abort")
 @commands.is_owner()
 async def off_abort(ctx: commands.Context[NecroBot]):
+    """Cancel the shut down process
+    
+    {usage}
+    """
     bot.maintenance = False
     await ctx.send(":white_check_mark: | Shut down cancelled")
 

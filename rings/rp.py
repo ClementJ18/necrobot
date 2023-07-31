@@ -6,12 +6,11 @@ from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 import discord
 from discord.ext import commands
 
-from rings.utils.ui import paginate
+from rings.utils.ui import Paginator
 from rings.utils.utils import time_converter
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 
 class RP(commands.Cog):
@@ -62,7 +61,7 @@ class RP(commands.Cog):
             )
 
             embed = discord.Embed(
-                title=f"Active Channels ({view.page_number}/{view.page_count})",
+                title=f"Active Channels ({view.page_string})",
                 description=f"List of channels that have had a message in the last {time//60} minute(s) \n {formatted_channels}",
                 colour=self.bot.bot_color,
             )
@@ -71,21 +70,22 @@ class RP(commands.Cog):
 
             return embed
 
-        await paginate(ctx, filtered_channels, 10, embed_maker)
+        await Paginator(embed_maker, 10, filtered_channels, ctx.author).start(ctx)
 
     @commands.group(invoke_without_command=True)
     async def activity(self, ctx: commands.Context[NecroBot], *, duration: str = None):
-        """Get a list of channels that have had a message in the last amount of time specified.
+        """Get a list of channels that have had a message in the last amount of time specified. \
         The following times can be used: days (d), hours (h), minutes (m), seconds (s).
 
         {usage}
 
         __Examples__
-        {pre}activity 2d - Get channels that have had a message in the last 2 days
+        `{pre}activity 2d` - Get channels that have had a message in the last 2 days
         """
+        combined: List[Union[discord.TextChannel, discord.Thread]] = [*ctx.guild.text_channels, *ctx.guild.threads]
         channels = [
             (channel, channel.last_message_id)
-            for channel in [*ctx.guild.text_channels, *ctx.guild.threads]
+            for channel in combined
         ]
         await self._activity(ctx, duration, channels)
 
@@ -99,6 +99,15 @@ class RP(commands.Cog):
         *,
         duration: str = None,
     ):
+        """Get a list of channels that have a had a message in the last amount of time specific \
+        but you can also ignore certain channels you don't have to be taken into consideration.
+        
+        {usage}
+        
+        __Examples__
+        `{pre}activity ignore #general #bot 2d` - Get channels that have had a message in the last two days not  \
+        including the bot and general channels.
+        """
         to_ignore = [ctx.channel.id]
 
         for channel in ignored:

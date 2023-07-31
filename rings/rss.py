@@ -17,12 +17,11 @@ from discord.ext import commands
 from rings.utils.checks import has_perms
 from rings.utils.config import twitch_id
 from rings.utils.converters import WritableChannelConverter
-from rings.utils.ui import paginate
+from rings.utils.ui import Paginator
 from rings.utils.utils import BotError
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 
 def convert(t):
@@ -175,7 +174,7 @@ class RSS(commands.Cog):
             converter=WritableChannelConverter, default=None
         ),
     ):
-        """Add/edit a youtube stream. As long as you provide a channel, the stream will be set to that
+        """Add/edit a youtube stream. As long as you provide a channel, the stream will be set to that \
         channelYou can simply pass a channel URL for the ID to be retrieved.
 
         {usage}
@@ -194,14 +193,14 @@ class RSS(commands.Cog):
                     for result in entries
                 ]
                 embed = discord.Embed(
-                    title=f"Subscriptions ({view.page_number}/{view.page_count})",
+                    title=f"Subscriptions ({view.page_string})",
                     description="\n".join(to_string),
                 )
                 embed.set_footer(**self.bot.bot_footer)
 
                 return embed
 
-            return await paginate(ctx, feeds, 15, embed_maker)
+            return await Paginator(embed_maker, 15, feeds, ctx.author).start(ctx)
 
         try:
             async with self.bot.session.get(
@@ -260,9 +259,9 @@ class RSS(commands.Cog):
     async def youtube_filters(
         self, ctx: commands.Context[NecroBot], youtuber_name: str, *, filters: str = ""
     ):
-        """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted.
-        The filter itself is very rudimentary but will work so that any video that has exactly these words (in
-        any case) in that order in the title will be posted. You can clear filters by calling this command with just
+        """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted. \
+        The filter itself is very rudimentary but will work so that any video that has exactly these words (in \
+        any case) in that order in the title will be posted. You can clear filters by calling this command with just \
         a youtuber id. Filters are limited to 200 characters
 
         {usage}
@@ -348,14 +347,14 @@ class RSS(commands.Cog):
                     for result in entries
                 ]
                 embed = discord.Embed(
-                    title=f"Subscriptions ({view.page_number}/{view.page_count})",
+                    title=f"Subscriptions ({view.page_string})",
                     description="\n".join(to_string),
                 )
                 embed.set_footer(**self.bot.bot_footer)
 
                 return embed
 
-            return await paginate(ctx, feeds, 15, embed_maker)
+            return await Paginator(embed_maker, 15, feeds, ctx.author).start(ctx)
 
         if channel is not None:
             twitch = re.sub(r"https?:\/\/(?:(?:www|go|m)\.)?twitch\.tv\/", "", twitch)
@@ -399,10 +398,10 @@ class RSS(commands.Cog):
     async def twitch_filters(
         self, ctx: commands.Context[NecroBot], twitch_name: str, *, filters: str = ""
     ):
-        """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted.
-        The filter itself is very rudimentary but will work so that any video that has exactly these words (in
-        any case) in that order in the title will be posted. You can clear filters by calling this command with just
-        a youtuber id. Filters are limited to 200 characters
+        """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted. \
+        The filter itself is very rudimentary but will work so that any video that has exactly these words (in \
+        any case) in that order in the title will be posted. You can clear filters by calling this command with just \
+        a youtuber id. Filters are limited to 200 characters \
 
         {usage}
 

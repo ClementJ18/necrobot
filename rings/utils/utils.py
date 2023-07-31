@@ -224,7 +224,6 @@ def midnight():
 def default_settings():
     return {
         "blacklist": [],
-        "news": [],
         "disabled": [],
         "shop": [],
         "messages": {},

@@ -16,12 +16,11 @@ from rings.utils.astral import Astral
 from rings.utils.BIG import pack_file
 from rings.utils.checks import has_perms, leaderboard_enabled
 from rings.utils.converters import MemberConverter
-from rings.utils.ui import paginate
+from rings.utils.ui import Paginator
 from rings.utils.utils import BotError, format_dt, time_converter, time_string_parser
 
 if TYPE_CHECKING:
     from bot import NecroBot
-    from rings.utils.ui import Paginator
 
 
 class Utilities(commands.Cog):
@@ -49,6 +48,7 @@ class Utilities(commands.Cog):
         `/` - for divisions
         `**` - for exponents
         `%` - for modulo
+
         More symbols can be used, simply research 'python math symbols'
 
         {usage}
@@ -121,7 +121,7 @@ class Utilities(commands.Cog):
 
     @commands.command()
     async def today(self, ctx: commands.Context[NecroBot], choice: str = None, date: str = None):
-        """Creates a rich information about events/deaths/births that happened today or any day you indicate using the
+        """Creates a rich information about events/deaths/births that happened today or any day you indicate using the \
         `dd/mm` format. The choice argument can be either `events`, `deaths` or `births`.
 
         {usage}
@@ -141,7 +141,7 @@ class Utilities(commands.Cog):
                 title=res["date"],
                 colour=self.bot.bot_color,
                 url=res["url"],
-                description=f"Necrobot is proud to present: **{choice} today in History**\n Page {view.page_number}/{view.page_count}",
+                description=f"Necrobot is proud to present: **{choice} today in History**\n Page {view.page_string}",
             )
 
             embed.set_footer(**self.bot.bot_footer)
@@ -200,13 +200,13 @@ class Utilities(commands.Cog):
                 except aiohttp.ClientResponseError:
                     res = await r.json(content_type="application/javascript")
 
-        await paginate(ctx, res["data"][choice], 5, embed_maker)
+        await Paginator(embed_maker, 5, res["data"][choice], ctx.author).start(ctx)
 
     @commands.group(invoke_without_command=True)
     async def remindme(self, ctx: commands.Context[NecroBot], *, message):
-        """Creates a reminder in seconds. The following times can be used: days (d),
-        hours (h), minutes (m), seconds (s). You can also pass a timestamp to be reminded
-        at a certain date in the format "YYYY/MM/DD HH:MM". You can omit either sides if you
+        """Creates a reminder in seconds. The following times can be used: days (d), \
+        hours (h), minutes (m), seconds (s). You can also pass a timestamp to be reminded \
+        at a certain date in the format "YYYY/MM/DD HH:MM". You can omit either sides if you \
         want to be reminded only on a specific date or only at a specific hour
 
         {usage}
@@ -248,7 +248,7 @@ class Utilities(commands.Cog):
 
     @remindme.command(name="delete")
     async def remindme_delete(self, ctx: commands.Context[NecroBot], reminder_id: int):
-        """Cancels a reminder based on its id on the reminder list. You can check out the id of each
+        """Cancels a reminder based on its id on the reminder list. You can check out the id of each \
         reminder using `remindme list`.
 
         {usage}
@@ -268,7 +268,7 @@ class Utilities(commands.Cog):
 
     @remindme.command(name="list")
     async def remindme_list(self, ctx: commands.Context[NecroBot]):
-        """List all the reminder you currently have in necrobot's typical paginator. All the reminders include their
+        """List all the reminder you currently have in necrobot's typical paginator. All the reminders include their \
         position on the remindme list which can be given to `remindme delete` to cancel a reminder.
 
         {usage}
@@ -280,7 +280,7 @@ class Utilities(commands.Cog):
 
         def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             embed = discord.Embed(
-                title=f"Reminders ({view.page_number}/{view.page_count})",
+                title=f"Reminders ({view.page_string})",
                 description=f"Here is the list of **{user.display_name}**'s currently active reminders.",
                 colour=self.bot.bot_color,
             )
@@ -299,19 +299,19 @@ class Utilities(commands.Cog):
             return embed
 
         reminders = await self.bot.db.get_reminders(user.id)
-        await paginate(ctx, reminders, 10, embed_maker)
+        await Paginator(embed_maker, 10, reminders, ctx.author).start(ctx)
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     async def q(self, ctx: commands.Context[NecroBot]):
-        """Displays the content of the queue at the moment. Queue are shortlive instances, do not use them to
-        hold data for extended periods of time. A queue should atmost only last a couple of days.
+        """Displays the content of the queue at the moment. Queue are shortlived instances, do not use them to \
+        hold data for extended periods of time. A queue should at most only last a couple of days.
 
         {usage}"""
 
         def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             embed = discord.Embed(
-                title=f"Queue ({view.page_number}/{view.page_count})",
+                title=f"Queue ({view.page_string})",
                 description="Here is the list of members currently queued:\n- {}".format(
                     "\n- ".join(entries)
                 ),
@@ -325,7 +325,7 @@ class Utilities(commands.Cog):
         queue = [
             f"**{ctx.guild.get_member(x).display_name}**" for x in self.queue[ctx.guild.id]["list"]
         ]
-        await paginate(ctx, queue, 10, embed_maker)
+        await Paginator(embed_maker, 10, queue, ctx.author).start(ctx)
 
     @q.command(name="start")
     @commands.guild_only()
@@ -357,7 +357,7 @@ class Utilities(commands.Cog):
     @commands.guild_only()
     @has_perms(2)
     async def q_clear(self, ctx: commands.Context[NecroBot]):
-        """Ends a queue and clears it. Users will no longer be able to add themselves and the content of the queue will be
+        """Ends a queue and clears it. Users will no longer be able to add themselves and the content of the queue will be \
         emptied. Use it in order to start a new queue
 
         {usage}"""
@@ -407,7 +407,7 @@ class Utilities(commands.Cog):
     @commands.group(invoke_without_command=True)
     @leaderboard_enabled()
     async def leaderboard(self, ctx: commands.Context[NecroBot]):
-        """Base command for the leaderboard, a fun system built for servers to be able to have their own arbitrary
+        """Base command for the leaderboard, a fun system built for servers to be able to have their own arbitrary \
         point system.
 
         {usage}
@@ -432,7 +432,7 @@ class Utilities(commands.Cog):
             users = "\n\n".join(users)
             msg = f"{message}\n\n{users}"
             embed = discord.Embed(
-                title=f"Leaderboard ({view.page_number}/{view.page_count})",
+                title=f"Leaderboard ({view.page_string})",
                 colour=self.bot.bot_color,
                 description=msg,
             )
@@ -441,7 +441,7 @@ class Utilities(commands.Cog):
 
             return embed
 
-        await paginate(ctx, results, 10, embed_maker)
+        await Paginator(embed_maker, 10, results, ctx.author).start(ctx)
 
     @leaderboard.command(name="message")
     @has_perms(4)
@@ -507,7 +507,7 @@ class Utilities(commands.Cog):
 
     @commands.command()
     async def sun(self, ctx: commands.Context[NecroBot], city: str, date: str = None):
-        """Get the sunrise and sunset for today based on a city, with an
+        """Get the sunrise and sunset for today based on a city, with an \
         optional date in DD/MM/YYYY
 
         {usage}
@@ -556,8 +556,8 @@ class Utilities(commands.Cog):
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     async def giveaway(self, ctx: commands.Context[NecroBot], winners: int, *, time_string: str):
-        """Start a giveaway that will last for the specified time, after that time a number of winners specified
-        with the [winners] argument will be selected. The following times can be used: days (d),
+        """Start a giveaway that will last for the specified time, after that time a number of winners specified \
+        with the [winners] argument will be selected. The following times can be used: days (d), \
         hours (h), minutes (m), seconds (s).
 
         {usage}
@@ -644,7 +644,7 @@ class Utilities(commands.Cog):
                 ]
             )
             embed = discord.Embed(
-                title=f"Giveaways ({view.page_number}/{view.page_count})",
+                title=f"Giveaways ({view.page_string})",
                 colour=self.bot.bot_color,
                 description=ga,
             )
@@ -653,7 +653,7 @@ class Utilities(commands.Cog):
 
             return embed
 
-        await paginate(ctx, ga_entries, 10, embed_maker)
+        await Paginator(embed_maker, 10, ga_entries, ctx.author).start(ctx)
 
     @giveaway.command(name="cancel")
     @commands.guild_only()
@@ -704,9 +704,9 @@ class Utilities(commands.Cog):
     @commands.command()
     @commands.max_concurrency(1)
     async def shortcuts(self, ctx: commands.Context[NecroBot], *, new_shortcuts: str):
-        """Customise your edain shortcuts. Pass a mapping of shortcuts to replace. At
-        the moment this is only available for the english version of Edain and only for
-        a single version. Current version: 4.5.5
+        """Customise your edain shortcuts. Pass a mapping of shortcuts to replace. At \
+        the moment this is only available for the english version of Edain and only for \
+        a single version. Current version: 4.6
 
         Possible key values: y, x, c, v, b
 
