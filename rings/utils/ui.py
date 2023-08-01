@@ -487,13 +487,15 @@ class Paginator(BaseView):
 
         self.message = await channel.send(
             embed=embed,
-            view=self,
+            view=self
         )
 
     async def on_timeout(self):
         self.stop()
         self.clear_items()
-        await self.message.edit(view=self)
+
+        if self.message is not None:
+            await self.message.edit(view=self)
 
     def get_entry_subset(self) -> Union[Any, List[Any]]:
         subset = self.entries[self.index * self.page_size : (self.index + 1) * self.page_size]

@@ -1,18 +1,83 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Mapping, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Mapping, Optional, Union
 import discord
 from discord.ext import commands as cmd
+from discord.interactions import Interaction
 from rings.utils.ui import Paginator
 
 if TYPE_CHECKING:
     from bot import NecroBot
 
-class GroupPaginator(Paginator):
-    pass 
+class CommandSelect(discord.ui.Select):
+    view: Union[GroupPaginator, CogPaginator]
+    async def callback(self, interaction: Interaction[NecroBot]) -> Any:
+        await self.send_command(interaction, self.values[0])
 
-class CogPaginator(Paginator):
-    pass
+    async def send_command(self, interaction: discord.Interaction[NecroBot], command_name: str):
+        command = interaction.client.get_command(command_name)
+        if isinstance(command, cmd.Group):
+            async def embed_maker(view: Union[GroupPaginator, CogPaginator], entry: Union[cmd.Group, cmd.Command]):
+                if isinstance(entry, cmd.Group):
+                    embed = await self.view.help.embed_group(entry)
+                    embed.title += f" ({view.page_string})"
+                    return embed
+                
+                embed = await self.view.help.embed_command(entry)
+                embed.title += f" ({view.page_string})"
+                return embed
+
+            embed = await self.view.help.embed_group(command)
+            paginator = GroupPaginator(self.view.help, embed_maker, 1, [command, *command.commands], self.view.help.context.author)
+
+            entries = paginator.get_entry_subset()
+            embed = await paginator.generate_embed(entries)
+            paginator.view_maker(entries)
+
+            if paginator.max_index == 0:
+                for button in [paginator.first_page, paginator.previous_page, paginator.next_page, paginator.last_page]:
+                    paginator.remove_item(button)
+
+            if not any(isinstance(command, cmd.Group) for command in command.commands):
+                paginator.remove_item(paginator.command_select)
+
+            return await interaction.response.send_message(
+                embed=embed,
+                view=paginator,
+                ephemeral=True
+            )
+        
+        embed = await self.view.help.embed_command(command)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+class HelpPaginator(Paginator):
+    def __init__(self, help: NecrobotHelp, embed_maker: Callable[[Paginator, Any | List[Any]], discord.Embed], page_size: int, entries: List[Any], author: discord.Member, *, timeout: int = 180):
+        super().__init__(embed_maker, page_size, entries, author, timeout=timeout) 
+
+        self.command_select = CommandSelect(disabled=True, row=1, options=[discord.SelectOption(label="None")], placeholder="Learn more about a command")
+        self.add_item(self.command_select)
+
+        self.help = help
+
+    def view_maker(self, entry: Union[cmd.Group, cmd.Command]):
+        if isinstance(entry, cmd.Cog) or (isinstance(entry, cmd.Group) and self.page_number != 1):
+            self.command_select.options = [discord.SelectOption(label=command.name, value=command.qualified_name) for command in self.get_commands(entry)]
+            self.command_select.disabled = False
+            return
+                
+        self.command_select.disabled = True
+
+    def get_commands(self, entry: Union[cmd.Cog, cmd.Group]) -> List[cmd.Command]:
+        raise NotImplementedError
+
+class GroupPaginator(HelpPaginator):
+    def get_commands(self, entry: cmd.Group) -> List[Union[cmd.Command, cmd.Group]]:
+        return entry.commands
+
+class CogPaginator(HelpPaginator):
+    def get_commands(self, entry: cmd.Cog) -> List[Union[cmd.Command, cmd.Group]]:
+        return entry.get_commands()
 
 class NecrobotHelp(cmd.HelpCommand):
     context: cmd.Context[NecroBot]
@@ -63,7 +128,7 @@ class NecrobotHelp(cmd.HelpCommand):
             help = "{usage}"
 
         first_line = help.split("\n")[0]
-        formatted = first_line.format(usage=self.get_command_signature(command))
+        formatted = first_line.format(usage=self.get_command_signature(command), pre=self.context.clean_prefix)
 
         if len(formatted) > 250:
             return formatted[:247] + "..."
@@ -130,7 +195,7 @@ class NecrobotHelp(cmd.HelpCommand):
         return embed
 
     async def send_bot_help(self, mapping: Mapping[Optional[cmd.Cog], List[cmd.Command[Any, ..., Any]]]):
-        async def embed_maker(view: CogPaginator, entry: Tuple[Optional[cmd.Cog], List[cmd.Command[Any, ..., Any]]]):
+        async def embed_maker(view: CogPaginator, entry: Optional[cmd.Cog]):
             if view.index == 0:
                 embed = discord.Embed(
                     title=f":information_source: NecroBot Help Menu {view.page_string} :information_source:",
@@ -140,18 +205,18 @@ class NecrobotHelp(cmd.HelpCommand):
                 embed.set_footer(**self.context.bot.bot_footer)
                 return embed
 
-            embed = await self.embed_cog(entry[0], entry[1])
+            embed = await self.embed_cog(entry, entry.get_commands())
             embed.title += f" ({view.page_string})"
             return embed
 
         sorted_mapping = sorted(mapping.items(), key=lambda item: item[0].qualified_name if item[0] else "None")
-        await CogPaginator(embed_maker, 1, [None, *[m for m in sorted_mapping if m[1] and m[0] is not None]], self.context.author).start(self.get_destination())
+        await CogPaginator(self, embed_maker, 1, [None, *[m[0] for m in sorted_mapping if m[1] and m[0] is not None]], self.context.author).start(self.get_destination())
 
     async def send_cog_help(self, cog: cmd.Cog):
         async def embed_maker(view: CogPaginator, entry: cmd.Cog):
             return await self.embed_cog(entry, entry.get_commands())
 
-        await CogPaginator(embed_maker, 1, [cog], self.context.author).start(self.get_destination())
+        await CogPaginator(self, embed_maker, 1, [cog], self.context.author).start(self.get_destination())
 
     async def send_command_help(self, command: cmd.Command):
         await self.get_destination().send(embed=await self.embed_command(command))
@@ -167,4 +232,8 @@ class NecrobotHelp(cmd.HelpCommand):
             embed.title += f" ({view.page_string})"
             return embed
 
-        await GroupPaginator(embed_maker, 1, [group, *group.commands], self.context.author).start(self.get_destination())
+        paginator = GroupPaginator(self, embed_maker, 1, [group, *group.commands], self.context.author)
+        if not any(isinstance(command, cmd.Group) for command in group.commands):
+            paginator.remove_item(paginator.command_select)
+
+        await paginator.start(self.get_destination())
