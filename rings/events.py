@@ -142,7 +142,7 @@ class Events(commands.Cog):
 
             embed = discord.Embed(
                 title="Command Error",
-                description=f"```py\n{error_traceback[:2048]}\n```",
+                description=f"```py\n{error_traceback[:4000]}\n```",
                 colour=self.bot.bot_color,
             )
             embed.set_footer(**self.bot.bot_footer)

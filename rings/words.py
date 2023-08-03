@@ -3,7 +3,6 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING, Dict
 
-import aiohttp
 import discord
 from discord.ext import commands
 from discord.ext.commands.cooldowns import BucketType
@@ -60,9 +59,8 @@ class Literature(commands.Cog):
 
     async def get_def(self, word: str) -> dict:
         url = f"https://www.dictionaryapi.com/api/v3/references/collegiate/json/{word}?key={dictionnary_key}"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                definition = await resp.json()
+        async with self.bot.session.get(url) as resp:
+            definition = await resp.json()
 
         return definition
 

@@ -278,8 +278,8 @@ class Wiki(commands.Cog):
         {usage}
 
         __Example__
-        `{pre}edain Castellans` - print a rich embed of the Castellans page
-        `{pre}edain Battering Ram` - prints a rich embed of the Battering Ram disambiguation page"""
+        `{pre}aotr Castellans` - print a rich embed of the Castellans page
+        `{pre}aotr Battering Ram` - prints a rich embed of the Battering Ram disambiguation page"""
         async with ctx.typing():
             await self.mediawiki_handler(ctx, article, "aotr")
 

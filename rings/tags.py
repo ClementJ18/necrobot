@@ -258,7 +258,6 @@ class Tags(commands.Cog):
             return embed
 
         await Paginator(embed_maker, 10, [t["alias"] for t in tag_list], ctx.author).start(ctx)
-        
 
     @tag.command(name="info")
     @commands.guild_only()

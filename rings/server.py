@@ -19,8 +19,8 @@ from rings.utils.ui import (
     EmbedRangeConverter,
     EmbedStringConverter,
     MultiInputEmbedView,
-    PollEditorView,
     Paginator,
+    PollEditorView,
 )
 from rings.utils.utils import BotError, DatabaseError, build_format_dict, check_channel
 
@@ -404,7 +404,9 @@ class Server(commands.Cog):
 
         if not mentions:
             ignored = self.bot.guild_data[ctx.guild.id]["ignore-automod"]
-            return await Paginator(embed_maker, 10, self.get_all(ctx, ignored), ctx.author).start(ctx)
+            return await Paginator(embed_maker, 10, self.get_all(ctx, ignored), ctx.author).start(
+                ctx
+            )
 
         to_add = []
         to_remove = []
@@ -491,7 +493,9 @@ class Server(commands.Cog):
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
 
-            return await Paginator(embed_maker, 10, self.get_all(ctx, ignored), ctx.author).start(ctx)
+            return await Paginator(embed_maker, 10, self.get_all(ctx, ignored), ctx.author).start(
+                ctx
+            )
 
         to_add = []
         to_remove = []

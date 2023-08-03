@@ -426,7 +426,7 @@ async def reload(ctx: commands.Context[NecroBot], *extension_names: str):
     """Unload and loads the extension name if in NecroBot's list of rings.
 
     {usage}"""
-    modules = [v for k, v in sys.modules.items() if k.startswith("rings.utils")]
+    modules = [v for k, v in sys.modules.items() if k.startswith(("rings.utils", "tests"))]
     for v in modules:
         importlib.reload(v)
 
@@ -494,7 +494,7 @@ async def off(ctx: commands.Context[NecroBot]):
 @commands.is_owner()
 async def off_abort(ctx: commands.Context[NecroBot]):
     """Cancel the shut down process
-    
+
     {usage}
     """
     bot.maintenance = False

@@ -51,7 +51,7 @@ EquipmentSet = namedtuple("EquipmentSet", "character weapon artefact")
 
 
 class Flowers(commands.Cog):
-    """A server specific economy system. Use it to reward/punish users at you heart's content. 
+    """A server specific economy system. Use it to reward/punish users at you heart's content.
     Also contains a gacha system."""
 
     def __init__(self, bot: NecroBot):
@@ -1545,8 +1545,8 @@ class Flowers(commands.Cog):
         ctx: commands.Context[NecroBot],
         *chars: GachaCharacterConverter(allowed_types=("character",), is_owned=True),
     ):
-        """Start a battle between three of your characters and a random enemy on a random battlefield. \ 
-        In order for characters to be able to compete they must be equipped with weapons and artefacts using  \ 
+        """Start a battle between three of your characters and a random enemy on a random battlefield. \
+        In order for characters to be able to compete they must be equipped with weapons and artefacts using  \
         `{pre}equipment equip`.
         
         {usage}

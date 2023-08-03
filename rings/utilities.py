@@ -301,7 +301,7 @@ class Utilities(commands.Cog):
         reminders = await self.bot.db.get_reminders(user.id)
         await Paginator(embed_maker, 10, reminders, ctx.author).start(ctx)
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, aliases=["queue"])
     @commands.guild_only()
     async def q(self, ctx: commands.Context[NecroBot]):
         """Displays the content of the queue at the moment. Queue are shortlived instances, do not use them to \
@@ -374,7 +374,7 @@ class Utilities(commands.Cog):
 
         {usage}"""
         if self.queue[ctx.guild.id]["end"]:
-            raise BotError(" Sorry, you can no longer add yourself to the queue")
+            raise BotError("Sorry, you can no longer add yourself to the queue")
 
         if ctx.author.id in self.queue[ctx.guild.id]["list"]:
             await ctx.send(":white_check_mark: | You have been removed from the queue")
@@ -392,7 +392,7 @@ class Utilities(commands.Cog):
 
         {usage}"""
         if not self.queue[ctx.guild.id]["list"]:
-            raise BotError(" No users left in that queue")
+            raise BotError("No users left in that queue")
 
         msg = f":bell: | {ctx.guild.get_member(self.queue[ctx.guild.id]['list'][0]).mention}, you're next. Get ready!"
 
@@ -446,7 +446,7 @@ class Utilities(commands.Cog):
     @leaderboard.command(name="message")
     @has_perms(4)
     async def leaderboard_message(self, ctx: commands.Context[NecroBot], *, message: str = ""):
-        """Enable the leaderboard and set a message. (Permission level of 4+)
+        """Enable the leaderboard and set a message.
 
         {usage}
 
@@ -457,7 +457,7 @@ class Utilities(commands.Cog):
         if message == "":
             await ctx.send(":white_check_mark: | Leaderboard disabled")
         elif len(message) > 200:
-            raise BotError(" The message cannot be more than 200 characters")
+            raise BotError("The message cannot be more than 200 characters")
         else:
             await ctx.send(":white_check_mark: | Leaderboard message changed")
 
@@ -467,7 +467,7 @@ class Utilities(commands.Cog):
     @has_perms(4)
     @leaderboard_enabled()
     async def leaderboard_symbol(self, ctx: commands.Context[NecroBot], *, symbol):
-        """Change the symbol for your points (Permission level of 4+)
+        """Change the symbol for your points
 
         {usage}
 
@@ -475,7 +475,7 @@ class Utilities(commands.Cog):
         `{pre}leaderboard symbol $` - make the symbol $
         """
         if len(symbol) > 50:
-            raise BotError(" The symbol cannot be more than 50 characters")
+            raise BotError("The symbol cannot be more than 50 characters")
 
         await ctx.send(":white_check_mark: | Leaderboard symbol changed")
         await self.bot.db.update_leaderboard(ctx.guild.id, symbol=symbol)
@@ -489,8 +489,7 @@ class Utilities(commands.Cog):
         user: discord.Member = commands.parameter(converter=MemberConverter),
         points: int = commands.parameter(),
     ):
-        """Add remove some points. (Permission level of 2+)
-
+        """Add remove some points.
         {usage}
 
         __Examples__
@@ -608,6 +607,9 @@ class Utilities(commands.Cog):
 
             winner_users.append(user.mention)
 
+        if not winner_users:
+            return await msg.reply("No valid entries for giveaway")
+
         if len(winner_users) <= winners:
             winner_mentions = winner_users
         else:
@@ -620,8 +622,8 @@ class Utilities(commands.Cog):
         )
         embed.add_field(name="Giveaway Link", value=f"[Link]({msg.jump_url})")
         embed.set_footer(**self.bot.bot_footer)
-        await ctx.send(
-            f"Giveaway Ended! Congratulations to {' '.join(winner_mentions)}",
+        await msg.reply(
+            f"Giveaway Ended! Congratulations to {', '.join(winner_mentions)}",
             embed=embed,
         )
 
@@ -678,66 +680,6 @@ class Utilities(commands.Cog):
             )
 
         await ctx.send(f":white_check_mark: | Giveaway cancelled. {ga.jump_url}")
-
-    def customise_shortcut(self, mapping):
-        with open("rings/utils/shortcuts/original.str", "r", encoding="Latin-1") as f:
-            content = f.read().splitlines()
-
-        new_content = []
-        for line in content:
-            if not any(x in line for x in mapping):
-                new_content.append(line)
-                continue
-
-            for key, value in mapping.items():
-                if key in line:
-                    new_content.append(line.replace(key, value))
-                    break
-
-        new_string = "\n".join(new_content)
-        with open("rings/utils/shortcuts/data/data/lotr.str", "w", encoding="Latin-1") as f:
-            f.write(new_string)
-
-        file = pack_file("rings/utils/shortcuts/data", io.BytesIO())
-        return discord.File(file, filename="englishpatch201_en.big")
-
-    @commands.command()
-    @commands.max_concurrency(1)
-    async def shortcuts(self, ctx: commands.Context[NecroBot], *, new_shortcuts: str):
-        """Customise your edain shortcuts. Pass a mapping of shortcuts to replace. At \
-        the moment this is only available for the english version of Edain and only for \
-        a single version. Current version: 4.6
-
-        Possible key values: y, x, c, v, b
-
-        {usage}
-
-        __Examples__
-        `{pre}shortcuts y=d c=r v=p`
-        `{pre}shortcuts y=c c=v`
-        """
-
-        new_shortcuts_mapping = {}
-        for sh in new_shortcuts.split():
-            split = sh.upper().split("=")
-            if split[0] not in self.shortcut_mapping:
-                raise BotError(f"{split[0]} in not a valid start shortcut")
-
-            if not split[1].isalpha():
-                raise BotError(f"{split[1]} is not a valid letter")
-
-            if len(split[1]) > 1:
-                raise BotError(f"{split[1]} is more than one letter")
-
-            new_shortcuts_mapping[f"&{split[0]}"] = f"&{split[1]}"
-
-        async with ctx.typing():
-            file = self.customise_shortcut(new_shortcuts_mapping)
-
-        await ctx.send(
-            ":white_check_mark: | Place this file in the `lang` folder of your game installation",
-            file=file,
-        )
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):

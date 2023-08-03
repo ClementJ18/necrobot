@@ -69,8 +69,15 @@ class Profile(commands.Cog):
                 f":atm: | **{ctx.author.display_name}** you have **{'{:,}'.format(money)}** :euro:"
             )
 
-    async def money_ranking(self, ctx: commands.Context[NecroBot], entries: List[int], server: bool):
-        description = "Ranking of user's money on the server" if server else "Ranking of user's money throughout Discord"
+    async def money_ranking(
+        self, ctx: commands.Context[NecroBot], entries: List[int], server: bool
+    ):
+        description = (
+            "Ranking of user's money on the server"
+            if server
+            else "Ranking of user's money throughout Discord"
+        )
+
         def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
             embed = discord.Embed(
                 title=f"Money Ranking ({view.page_string})",
@@ -591,7 +598,7 @@ class Profile(commands.Cog):
     @stars_ranking.command(name="old")
     async def stars_ranking_old(self, ctx: commands.Context[NecroBot]):
         """This command will soon be deprecated
-        
+
         {usage}
         """
         results = await self.bot.db.query(

@@ -83,10 +83,9 @@ class Misc(commands.Cog):
         """Posts a random dog picture from random.dog
 
         {usage}"""
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as cs:
-            async with cs.get("https://random.dog/woof.json") as r:
-                res = await r.json()
-                await ctx.send(embed=discord.Embed().set_image(url=res["url"]))
+        async with self.bot.session.get("https://random.dog/woof.json", ssl=False) as r:
+            res = await r.json()
+            await ctx.send(embed=discord.Embed().set_image(url=res["url"]))
 
     @commands.command()
     async def fight(self, ctx: commands.Context[NecroBot], *, tributes: str):

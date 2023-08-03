@@ -82,11 +82,11 @@ class RP(commands.Cog):
         __Examples__
         `{pre}activity 2d` - Get channels that have had a message in the last 2 days
         """
-        combined: List[Union[discord.TextChannel, discord.Thread]] = [*ctx.guild.text_channels, *ctx.guild.threads]
-        channels = [
-            (channel, channel.last_message_id)
-            for channel in combined
+        combined: List[Union[discord.TextChannel, discord.Thread]] = [
+            *ctx.guild.text_channels,
+            *ctx.guild.threads,
         ]
+        channels = [(channel, channel.last_message_id) for channel in combined]
         await self._activity(ctx, duration, channels)
 
     @activity.command(name="ignore")

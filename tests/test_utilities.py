@@ -1,0 +1,102 @@
+from __future__ import annotations
+
+import asyncio
+from typing import TYPE_CHECKING
+
+import discord
+import pytest
+from discord.ext import commands
+
+from rings.utils.utils import BotError
+from tests.utils import delay
+
+if TYPE_CHECKING:
+    from bot import NecroBot
+
+
+async def test_giveaway(ctx: commands.Context[NecroBot]):
+    command = ctx.bot.get_command("giveaway")
+    await ctx.invoke(command, winner=1, time_string="15s")
+
+    with pytest.raises(BotError):
+        await ctx.invoke(command, winner=1, time_string="0s")
+
+    _ = asyncio.create_task(delay(5, ctx.invoke(command, winner=1, time_string="10s")))
+
+    message: discord.Message = await ctx.bot.wait_for(
+        "message",
+        check=lambda m: m.author.id == ctx.bot.user.id and m.channel.id == ctx.channel.id,
+    )
+    ctx.bot.ongoing_giveaways[message.id]["entries"].append(ctx.bot.user.id)
+
+    await ctx.invoke(ctx.bot.get_command("giveaway list"))
+
+    command_cancel = ctx.bot.get_command("giveaway cancel")
+    _ = asyncio.create_task(delay(5, ctx.invoke(command, winner=1, time_string="60s")))
+    message: discord.Message = await ctx.bot.wait_for(
+        "message",
+        check=lambda m: m.author.id == ctx.bot.user.id and m.channel.id == ctx.channel.id,
+    )
+
+    await ctx.invoke(command_cancel, msg_id=message.id)
+
+    with pytest.raises(BotError):
+        await ctx.invoke(command_cancel, msg_id=message.id)
+
+
+async def test_sun(ctx: commands.Context[NecroBot]):
+    command = ctx.bot.get_command("sun")
+
+    await ctx.invoke(command, city="London")
+    await ctx.invoke(command, city="London", date="22/04/2019")
+
+    with pytest.raises(BotError):
+        await ctx.invoke(command, city="AZEAZEAZ")
+
+
+async def test_leaderboard(ctx: commands.Context[NecroBot]):
+    command = ctx.bot.get_command("leaderboard")
+    command_message = ctx.bot.get_command("leaderboard message")
+
+    await ctx.invoke(command_message, message="Leaderboard for cool kids")
+
+    with pytest.raises(BotError):
+        await ctx.invoke(command_message, message="a" * 201)
+
+    command_symbol = ctx.bot.get_command("leaderboard symbol")
+
+    await ctx.invoke(command_symbol, symbol=":eyes:")
+
+    with pytest.raises(BotError):
+        await ctx.invoke(command_symbol, symbol="a" * 51)
+
+    command_award = ctx.bot.get_command("leaderboard award")
+
+    await ctx.invoke(command_award, user=ctx.bot.user, points=-50)
+    await ctx.invoke(command_award, user=ctx.bot.user, points=50)
+
+    await ctx.invoke(command)
+
+
+async def test_queue(ctx: commands.Context[NecroBot]):
+    pass
+
+
+async def test_remindme(ctx: commands.Context[NecroBot]):
+    pass
+
+
+async def test_today(ctx: commands.Context[NecroBot]):
+    pass
+
+
+async def test_avatar(ctx: commands.Context[NecroBot]):
+    pass
+
+
+async def test_serverinfo(ctx: commands.Context[NecroBot]):
+    pass
+
+
+async def test_calc(ctx: commands.Context[NecroBot]):
+    pass

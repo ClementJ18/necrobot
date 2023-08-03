@@ -67,6 +67,7 @@ class BaseView(discord.ui.View):
 
         return True
 
+
 class PollSelect(discord.ui.Select):
     view: PollView
 
@@ -437,6 +438,7 @@ class Confirm(BaseView):
     async def cancel(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.cancel_action(interaction)
 
+
 class Paginator(BaseView):
     def __init__(
         self,
@@ -460,7 +462,6 @@ class Paginator(BaseView):
         self.message: discord.Message = None
         self.author = author
 
-
     def view_maker(self, entries: Union[Any, List[Any]]):
         pass
 
@@ -471,11 +472,11 @@ class Paginator(BaseView):
     @property
     def page_count(self) -> int:
         return self.max_index + 1
-    
+
     @property
     def page_string(self) -> str:
         return f"{self.page_number}/{self.page_count}"
-    
+
     async def start(self, channel: discord.abc.Messageable):
         entries = self.get_entry_subset()
         embed = await self.generate_embed(entries)
@@ -485,10 +486,7 @@ class Paginator(BaseView):
             for button in [self.first_page, self.previous_page, self.next_page, self.last_page]:
                 self.remove_item(button)
 
-        self.message = await channel.send(
-            embed=embed,
-            view=self
-        )
+        self.message = await channel.send(embed=embed, view=self)
 
     async def on_timeout(self):
         self.stop()
@@ -542,6 +540,7 @@ class Paginator(BaseView):
     @discord.ui.button(label="+10", style=discord.ButtonStyle.grey, row=0)
     async def last_page(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.change_page(interaction, 10)
+
 
 def convert_key_to_label(key: str):
     return key.title().replace("_", " ")

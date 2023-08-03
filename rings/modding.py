@@ -114,7 +114,6 @@ class Modding(commands.Cog):
 
         game = moddb.pages.Game(soup)
         await Paginator(embed_maker, 1, [1, 2, 3], ctx.author).start(ctx)
-        
 
     @commands.command()
     async def mod(self, ctx: commands.Context[NecroBot], *, name: str):

@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 import ast
+import asyncio
 import datetime
+import importlib
+import pkgutil
+import sys
 import traceback
-from typing import TYPE_CHECKING, Dict, Literal, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Union
 
 import discord
 import psutil
 from discord.ext import commands
-from pyparsing import List
 from simpleeval import simple_eval
 
+import tests
 from rings.utils.checks import has_perms
 from rings.utils.converters import (
     BadgeConverter,
@@ -576,6 +580,63 @@ class Admin(commands.Cog):
 
         del self.gates[ctx.channel.id]
         del self.gates[channel.id]
+
+    @commands.command()
+    @commands.is_owner()
+    async def test(self, ctx: commands.Context[NecroBot], *commands: str):
+        modules = [v for k, v in sys.modules.items() if k.startswith("tests")]
+        for v in modules:
+            importlib.reload(v)
+
+        modules = {}
+        status = {}
+        errors = {}
+
+        test_filter = "test_"
+        if commands:
+            test_filter = tuple(f"test_{command.replace(' ', '_')}" for command in commands)
+
+        for module_info in pkgutil.iter_modules(tests.__path__):
+            module = importlib.import_module(f"tests.{module_info.name}")
+            modules[module_info.name] = [
+                getattr(module, func) for func in dir(module) if func.startswith(test_filter)
+            ]
+            status[module_info.name] = []
+
+        await ctx.send("Beginning test phase")
+        for module_name, test_funcs in modules.items():
+            for test_func in test_funcs:
+                try:
+                    await test_func(ctx)
+                    status[module_name].append(True)
+                except Exception as e:
+                    errors[f"{module_name}.{test_func.__name__}"] = e
+                    status[module_name].append(False)
+                finally:
+                    await asyncio.sleep(1)
+
+        description = ""
+        for module_name, results in status.items():
+            description += f"{module_name} ({int(results.count(True)/len(results) * 100)}%) - {''.join('.' if results else 'F' for results in results)}\n"
+
+        def embed_maker(view: Paginator, entry):
+            if view.page_number == 1:
+                embed = discord.Embed(
+                    title="Test Results", description=description, color=self.bot.bot_color
+                )
+                embed.set_footer(**self.bot.bot_footer)
+                return embed
+
+            exception = "\n".join(traceback.format_exception(entry[1]))
+            embed = discord.Embed(
+                title=f"{entry[0]} Error",
+                description=f"```py{exception}```",
+                color=self.bot.bot_color,
+            )
+            embed.set_footer(**self.bot.bot_footer)
+            return embed
+
+        await Paginator(embed_maker, 1, [None, *errors.items()], ctx.author).start(ctx)
 
     #######################################################################
     ## Events
