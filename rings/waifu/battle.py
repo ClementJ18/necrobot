@@ -2,14 +2,9 @@ from __future__ import annotations
 
 import enum
 import logging
-import random
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
-
-from pathfinding.core.diagonal_movement import DiagonalMovement
-from pathfinding.core.grid import Grid
-from pathfinding.finder.a_star import AStarFinder
 
 from .base import Coords, DamageInstance, Size, get_distance, get_symbol
 from .entities import Character, Enemy, StattedEntity
@@ -209,6 +204,21 @@ class Battle:
         except InvalidPosition:
             return False
 
+    def get_enemies(self, entity: StattedEntity) -> List[StattedEntity]:
+        base_list = self.enemies
+
+        for e in [entity, *self.enemies]:
+            e: StattedEntity
+
+            if e.skill_is_active():
+                e.active_skill.on_generate_target_list(self, entity, e, base_list)
+
+            if entity.has_passive():
+                entity.passive_skill.on_generate_target_list(self, entity, e, base_list)
+
+            for modifier in e.modifiers:
+                modifier.on_generate_target_list(self, entity, e, base_list)
+
     def get_positions(self, value: TileType) -> List[Coords]:
         positions = []
         for y, row in enumerate(self.battlefield.tiles):
@@ -310,59 +320,6 @@ class Battle:
 
         self.add_action_log(SkillAction(entity))
         entity.active_skill.was_activated = True
-
-    def pick_ai_action(self, entity: StattedEntity):
-        logger.info("Pathfinding %s at %s", entity.name, entity.position)
-        adjacent = self.get_adjacent_positions(entity.position)
-        targets = [player for player in self.players if player.position in adjacent.values()]
-
-        if targets:
-            return self.attack_entity(entity, random.choice(targets))
-
-        entities = self.players + self.enemies
-        grid = Grid(matrix=self.battlefield.walkable_grid([x.position for x in entities]))
-
-        start = grid.node(*entity.position)
-        ends = [grid.node(*x.position) for x in self.players]
-        finder = AStarFinder(diagonal_movement=DiagonalMovement.never)
-
-        current_path = []
-        neighbors = {neighbor for end in ends for neighbor in grid.neighbors(end)}
-        for neighbor in neighbors:
-            n = (neighbor.x, neighbor.y)
-            logger.info("Evaluating neighbor %s", n)
-            if n in adjacent:
-                logger.info("neighbor %s is adjacent %s", n, adjacent)
-                current_path = [n]
-                break
-
-            grid.cleanup()
-            path, _ = finder.find_path(start, neighbor, grid)
-            if not path:
-                logger.info("could not find path to %s", n)
-                continue
-
-            path.append(n)
-            if len(path) < len(current_path) or not current_path:
-                logger.info("path %s is better than old path %s", path, current_path)
-                current_path = path
-            else:
-                logger.info("path %s is worse than old path %s", path, current_path)
-
-        new_position = (
-            current_path[entity.movement_range]
-            if len(current_path) > entity.movement_range
-            else current_path[-1]
-            if entity.movement_range <= len(current_path)
-            else current_path[-1]
-        )
-        self.move_entity(entity, new_position=new_position)
-
-        adjacent = self.get_adjacent_positions(entity.position)
-        targets = [player for player in self.players if player.position in adjacent.values()]
-
-        if targets:
-            return self.attack_entity(entity, random.choice(targets))
 
     def end_turn(self):
         for e in self.players + self.enemies:

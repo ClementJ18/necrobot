@@ -5,7 +5,7 @@ import datetime
 import io
 import random
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Literal
 
 import aiohttp
 import discord
@@ -120,7 +120,12 @@ class Utilities(commands.Cog):
         await ctx.send(embed=discord.Embed().set_image(url=avatar))
 
     @commands.command()
-    async def today(self, ctx: commands.Context[NecroBot], choice: str = None, date: str = None):
+    async def today(
+        self,
+        ctx: commands.Context[NecroBot],
+        choice: Literal["events", "deaths", "births"] = None,
+        date: str = None,
+    ):
         """Creates a rich information about events/deaths/births that happened today or any day you indicate using the \
         `dd/mm` format. The choice argument can be either `events`, `deaths` or `births`.
 

@@ -77,6 +77,19 @@ class Skill:
         """This is triggered when the active ability of the entity is used."""
         pass
 
+    def on_generate_target_list(
+        self,
+        battle: Battle,
+        owner: StattedEntity,
+        entity: StattedEntity,
+        potential_targets: List[StattedEntity],
+    ):
+        """This is triggered when we create the list of possible targets. This is useful for restricting
+        who we target. owner is the entity the list is being generated for, entity is the entity that the
+        skill/modifier belongs to and potential_targets is the list to be modified.
+        """
+        pass
+
 
 """The main difference between an active and passive skill is the cooldown.
 - Passive skills trigger at every possible instance and have no cooldowns.

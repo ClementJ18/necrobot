@@ -430,14 +430,20 @@ async def reload(ctx: commands.Context[NecroBot], *extension_names: str):
     for v in modules:
         importlib.reload(v)
 
+    success = []
+    if not extension_names:
+        extension_names = ctx.bot.extension_names
+
     for extension_name in extension_names:
         try:
             await bot.reload_extension(f"rings.{extension_name}")
-            await ctx.send(f"{extension_name} reloaded.")
+            success.append(extension_name)
         except commands.ExtensionFailed as e:
             await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
         except (commands.ExtensionNotLoaded, commands.ExtensionNotFound):
             pass
+
+    await ctx.send(f"Successfully reloaded: {', '.join(success)}")
 
 
 @bot.group(invoke_without_command=True, hidden=True)

@@ -200,9 +200,9 @@ class Admin(commands.Cog):
         {usage}
 
         __Example__
-        `{pre}add @NecroBot m+400` - adds 400 to NecroBot's balance"""
+        `{pre}add @NecroBot money+400` - adds 400 to NecroBot's balance"""
         money = await self.bot.db.get_money(user.id)
-        s = equation.replace("m", str(money))
+        s = equation.replace("money", str(money))
         try:
             operation = simple_eval(s)
         except (NameError, SyntaxError) as e:

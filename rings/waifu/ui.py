@@ -72,7 +72,7 @@ class AttackOrder(discord.ui.Select):
                 description=f"Attack {e.name}",
                 emoji=get_symbol(e.index),
             )
-            for index, e in enumerate(battle.enemies)
+            for index, e in enumerate(battle.get_enemies(character))
             if e.position in adjacents.values() and not character.has_attacked
         ]
 
@@ -256,7 +256,7 @@ class CombatView(BaseView):
 
         for enemy in self.battle.enemies:
             start = time.time()
-            self.battle.pick_ai_action(enemy)
+            self.battle.battlefield.objective.pick_ai_action(enemy)
             end = time.time() - start
 
             await interaction.followup.edit_message(

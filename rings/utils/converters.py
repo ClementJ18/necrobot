@@ -1,213 +1,103 @@
 from __future__ import annotations
 
-import re
-from typing import TYPE_CHECKING, Callable, List, Literal, Optional, get_args
+from typing import TYPE_CHECKING, List, Literal, get_args
 
 import discord
 from discord.ext import commands
-from discord.ext.commands.converter import _get_from_guilds
+from rapidfuzz import process
+from unidecode import unidecode
 
-from rings.utils.utils import BotError, time_converter
+from rings.utils.utils import time_converter
 
 if TYPE_CHECKING:
     from bot import NecroBot
 
-utils = discord.utils
-_utils_get = utils.get
 
-
-def get_member_named(members, name) -> Optional[discord.Member]:
-    username, _, discriminator = name.rpartition("#")
-    if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
-        return utils.find(
-            lambda m: m.name.lower() == username.lower() and m.discriminator == discriminator,
-            members,
-        )
-
-    def pred(m: discord.Member) -> bool:
-        return (
-            m.nick.lower() == name.lower()
-            or m.global_name.lower() == name.lower()
-            or m.name.lower() == name.lower()
-        )
-
-    return utils.find(pred, members)
-
-
-def get_member(guild: discord.Guild, user_id: int) -> Optional[discord.Member]:
-    """Returns a member with the given ID.
-
-    Parameters
-    -----------
-    user_id: :class:`int`
-        The ID to search for.
-
-    Returns
-    --------
-    Optional[:class:`Member`]
-        The member or ``None`` if not found.
-    """
-    return guild._members.get(user_id)
-
-
-def _get_from_guilds(bot: NecroBot, getter: str, argument: str):
-    result = None
-    for guild in bot.guilds:
-        result = getattr(guild, getter)(argument)
-        if result:
-            return result
-    return result
-
-
-_utils_get = discord.utils.get
-
-
-class MemberConverter(commands.IDConverter[discord.Member]):
+class MemberConverter(commands.MemberConverter):
     """Member converter but case insensitive"""
 
-    ctx_attr = "author"
-
-    async def query_member_named(
-        self, guild: discord.Guild, argument: str
-    ) -> Optional[discord.Member]:
-        cache = guild._state.member_cache_flags.joined
-        username, _, discriminator = argument.rpartition("#")
-        if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
-            lookup = username.lower()
-            predicate: Callable[[discord.Member], bool] = (
-                lambda m: m.name.lower() == username.lower() and m.discriminator == discriminator
-            )
-        else:
-            lookup = argument.lower()
-            predicate: Callable[[discord.Member], bool] = (
-                lambda m: m.nick.lower() == argument.lower()
-                or m.global_name.lower() == argument.lower()
-                or m.name.lower() == argument.lower()
-            )
-
-        members = await guild.query_members(lookup, limit=100, cache=cache)
-        return discord.utils.find(predicate, members)
-
-    async def query_member_by_id(
-        self, bot: NecroBot, guild: discord.Guild, user_id: int
-    ) -> Optional[discord.Member]:
-        ws = bot._get_websocket(shard_id=guild.shard_id)
-        cache = guild._state.member_cache_flags.joined
-        if ws.is_ratelimited():
-            # If we're being rate limited on the WS, then fall back to using the HTTP API
-            # So we don't have to wait ~60 seconds for the query to finish
-            try:
-                member = await guild.fetch_member(user_id)
-            except discord.HTTPException:
-                return None
-
-            if cache:
-                guild._add_member(member)
-            return member
-
-        # If we're not being rate limited then we can use the websocket to actually query
-        members = await guild.query_members(limit=1, user_ids=[user_id], cache=cache)
-        if not members:
-            return None
-        return members[0]
-
     async def convert(self, ctx: commands.Context[NecroBot], argument: str) -> discord.Member:
-        bot = ctx.bot
-        match = self._get_id_match(argument) or re.match(r"<@!?([0-9]{15,20})>$", argument)
-        guild = ctx.guild
-        result = None
-        user_id = None
-
-        if match is None:
-            # not a mention...
-            if guild:
-                result = get_member_named(guild.members, argument)
-            else:
-                result = _get_from_guilds(bot, "get_member_named", argument)
+        try:
+            basic_member = await super().convert(ctx, argument)
+        except commands.BadArgument:
+            pass
         else:
-            user_id = int(match.group(1))
-            if guild:
-                result = guild.get_member(user_id) or _utils_get(ctx.message.mentions, id=user_id)
-            else:
-                result = _get_from_guilds(bot, "get_member", user_id)
+            return basic_member
 
-        if not isinstance(result, discord.Member):
-            if guild is None:
-                raise discord.errors.MemberNotFound(argument)
+        for attr in ["display_name", "name"]:
+            result = [
+                (m[2], m[1])
+                for m in process.extract(
+                    argument,
+                    {r: unidecode(getattr(r, attr)) for r in ctx.guild.members},
+                    limit=None,
+                    score_cutoff=75,
+                )
+            ]
+            if result:
+                break
+        else:
+            raise commands.BadArgument(f'Member "{argument}" not found.')
 
-            if user_id is not None:
-                result = await self.query_member_by_id(bot, guild, user_id)
-            else:
-                result = await self.query_member_named(guild, argument)
-
-            if not result:
-                raise commands.MemberNotFound(argument)
-
-        return result
+        sorted_result = sorted(result, key=lambda m: m[1], reverse=True)
+        return sorted_result[0][0]
 
 
-class UserConverter(commands.IDConverter[discord.User]):
+class UserConverter(commands.UserConverter):
     """User converter but case insensitive"""
 
-    ctx_attr = "author"
-
     async def convert(self, ctx: commands.Context[NecroBot], argument: str) -> discord.User:
-        match = self._get_id_match(argument) or re.match(r"<@!?([0-9]{15,20})>$", argument)
-        result = None
-        state = ctx._state
-
-        if match is not None:
-            user_id = int(match.group(1))
-            result = ctx.bot.get_user(user_id) or _utils_get(ctx.message.mentions, id=user_id)
-            if result is None:
-                try:
-                    result = await ctx.bot.fetch_user(user_id)
-                except discord.HTTPException:
-                    raise commands.UserNotFound(argument) from None
-
-            return result  # type: ignore
-
-        username, _, discriminator = argument.rpartition("#")
-        if discriminator == "0" or (len(discriminator) == 4 and discriminator.isdigit()):
-            predicate: Callable[[discord.User], bool] = (
-                lambda u: u.name.lower() == username.lower() and u.discriminator == discriminator
-            )
+        try:
+            basic_user = await super().convert(ctx, argument)
+        except commands.BadArgument:
+            pass
         else:
-            predicate: Callable[[discord.User], bool] = (
-                lambda u: u.global_name.lower() == argument.lower()
-                or u.name.lower() == argument.lower()
-            )
+            return basic_user
 
-        result = discord.utils.find(predicate, state._users.values())
-        if result is None:
-            raise commands.UserNotFound(argument)
+        for attr in ["display_name", "name"]:
+            result = [
+                (m[2], m[1])
+                for m in process.extract(
+                    argument,
+                    {r: unidecode(getattr(r, attr)) for r in ctx.bot.users},
+                    limit=None,
+                    score_cutoff=75,
+                )
+            ]
+            if result:
+                break
+        else:
+            raise commands.BadArgument(f'User "{argument}" not found.')
 
-        return result
+        sorted_result = sorted(result, key=lambda m: m[1], reverse=True)
+        return sorted_result[0][0]
 
 
-class RoleConverter(commands.IDConverter[discord.Role]):
+class RoleConverter(commands.RoleConverter):
     """Converts to a role but case insensitive"""
 
-    async def convert(self, ctx: commands.Context[NecroBot], argument):
-        guild = ctx.guild
-        if not guild:
-            raise commands.NoPrivateMessage()
-
-        match = self._get_id_match(argument) or re.match(r"<@&([0-9]+)>$", argument)
-        if match:
-            result = guild.get_role(int(match.group(1)))
+    async def convert(self, ctx: commands.Context[NecroBot], argument) -> discord.Role:
+        try:
+            basic_role = await super().convert(ctx, argument)
+        except commands.BadArgument:
+            pass
         else:
-            result = discord.utils.find(
-                lambda r: r.name.lower() == argument.lower(), guild._roles.values()
-            )
+            return basic_role
 
-        if result is None:
+        result = [
+            (m[2], m[1])
+            for m in process.extract(
+                argument,
+                {r: unidecode(r.name) for r in ctx.guild.roles},
+                limit=None,
+                score_cutoff=75,
+            )
+        ]
+        if not result:
             raise commands.BadArgument(f'Role "{argument}" not found.')
 
-        if result.managed:
-            raise commands.BadArgument(f"Cannot use a managed role.")
-
-        return result
+        sorted_result = sorted(result, key=lambda m: m[1], reverse=True)
+        return sorted_result[0][0]
 
 
 class GuildConverter(commands.IDConverter[discord.Guild]):
@@ -216,7 +106,7 @@ class GuildConverter(commands.IDConverter[discord.Guild]):
         bot = ctx.bot
         guilds = bot.guilds
 
-        result = discord.utils.get(guilds, name=argument)
+        result = discord.utils.find(lambda g: g.name.lower() == argument.lower(), guilds)
 
         if result:
             return result
@@ -227,7 +117,7 @@ class GuildConverter(commands.IDConverter[discord.Guild]):
             if result:
                 return result
 
-        raise commands.BadArgument("Not a known guild")
+        raise commands.BadArgument(f'Guild "{argument}" not found.')
 
 
 class BadgeConverter(commands.Converter[dict]):
@@ -235,7 +125,7 @@ class BadgeConverter(commands.Converter[dict]):
         badge = await ctx.bot.db.get_badge_from_shop(name=argument)
 
         if not badge:
-            raise commands.CheckFailure("Could not find a badge with this name")
+            raise commands.BadArgument(f'Badge "{argument}" not found.')
 
         return badge[0]
 
@@ -286,7 +176,7 @@ def RangeConverter(min_v: int, max_v: int):
 
         value = int(argument)
         if not max_v >= value >= min_v:
-            raise commands.CheckFailure(
+            raise commands.BadArgument(
                 f"Please select a number between **{min_v}** and **{max_v}**"
             )
 
@@ -342,7 +232,7 @@ class WritableChannelConverter(commands.Converter[discord.TextChannel]):
     async def convert(self, ctx: commands.Context[NecroBot], argument: str):
         result = await commands.TextChannelConverter().convert(ctx, argument)
         if not result.permissions_for(result.guild.me).send_messages:
-            raise BotError(f"I cannot send messages in {result.mention}")
+            raise commands.BadArgument(f"I cannot send messages in {result.mention}")
 
         return result
 
@@ -406,7 +296,7 @@ class GachaCharacterConverter(commands.Converter[dict]):
                 query[0]["id"],
             )
             if not owned:
-                raise BotError(f"You do not own this {query[0]['type']}.")
+                raise commands.BadArgument(f"You do not own this {query[0]['type']}.")
 
         return query[0]
 

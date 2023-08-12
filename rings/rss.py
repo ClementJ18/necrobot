@@ -282,7 +282,7 @@ class RSS(commands.Cog):
             )
 
     async def twitch_request(self, route, payload):
-        if not hasattr(self.bot, "twitch_token"):
+        if self.bot.twitch_token.get("expires") is None:
             await self.bot.meta.refresh_token()
 
         if time.time() > self.bot.twitch_token["expires"]:

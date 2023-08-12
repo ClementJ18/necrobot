@@ -87,16 +87,34 @@ async def test_remindme(ctx: commands.Context[NecroBot]):
 
 
 async def test_today(ctx: commands.Context[NecroBot]):
-    pass
+    command = ctx.bot.get_command("today")
+
+    await ctx.invoke(command)
+    await ctx.invoke(command, date="14/02")
+    await ctx.invoke(command, choice="events")
+    await ctx.invoke(command, choice="events", date="14/02")
+    await ctx.invoke(command, choice="deaths")
+    await ctx.invoke(command, choice="deaths", date="14/02")
+    await ctx.invoke(command, choice="births")
+    await ctx.invoke(command, choice="births", date="14/02")
 
 
 async def test_avatar(ctx: commands.Context[NecroBot]):
-    pass
+    command = ctx.bot.get_command("avatar")
+
+    await ctx.invoke(command)
+    await ctx.invoke(command, user=ctx.author)
 
 
 async def test_serverinfo(ctx: commands.Context[NecroBot]):
-    pass
+    await ctx.invoke(ctx.bot.get_command("serverinfo"))
 
 
 async def test_calc(ctx: commands.Context[NecroBot]):
-    pass
+    command = ctx.bot.get_command("calc")
+
+    await ctx.invoke(command, equation="2+2")
+    await ctx.invoke(command, equation="(4 + 5) * 3 / (2 - 1)")
+
+    with pytest.raises(BotError):
+        await ctx.invoke(command, equation="ctx.bot._http.token")
