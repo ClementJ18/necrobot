@@ -5,6 +5,7 @@ from typing import Tuple
 
 Coords = Tuple[int, int]  # (x, y)
 Size = namedtuple("Size", "length height")
+EquipmentSet = namedtuple("EquipmentSet", "character weapon artefact")
 
 POSITION_EMOJIS = [
     ":zero:",

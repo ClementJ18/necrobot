@@ -389,7 +389,7 @@ SKILLS = {
             "modifier": GrantBuff,
         },
         "class": GrantModifierInArea,
-        "description": "The fiery aura of the Nether Dweller flares, envelopping all those around him in it's power and granting them increase magical offense.",
+        "description": "The fiery aura of the Nether Dweller flares, enveloping all those around him in it's power and granting them increase magical offense.",
     },
     "Refreshing Drinks": {
         "values": {
@@ -417,12 +417,12 @@ SKILLS = {
             "allowed_char": ("The Merman",),
         },
         "class": MapWideAura,
-        "description": "As leader, the Merman captain provides additionaly physical stats to merman around him.",
+        "description": "As leader, the Merman captain provides additionally physical stats to merman around him.",
     },
     "Ghostly Body": {
         "values": {"stats": StatBlock(secondary_health=(False, 10))},
         "class": RecoverHealth,
-        "description": "Swirling energies surround and protect the Ghost, striken pierce its mist but never seem to connect.",
+        "description": "Swirling energies surround and protect the Ghost, strikes pierce its mist but never seem to connect.",
     },
     "Rivalries": {
         "values": {"stats": StatBlock(physical_attack=(True, 15), magical_attack=(True, 15))},

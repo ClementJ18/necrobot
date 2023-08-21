@@ -35,10 +35,10 @@ from rings.utils.ui import (
 )
 from rings.utils.utils import BotError, DatabaseError, check_channel
 
-from .base import DUD_TEMPLATES, POSITION_EMOJIS, Stat, StatBlock
+from .base import DUD_TEMPLATES, POSITION_EMOJIS, EquipmentSet, Stat, StatBlock
 from .battle import Battle, Battlefield, Character, is_wakable
 from .enemies import POTENTIAL_ENEMIES
-from .entities import StattedEntity
+from .entities import StattedEntity, make_character_from_equipment
 from .fields import POTENTIAL_FIELDS
 from .skills import get_skill
 from .ui import CombatView, EmbedSkillConverter, EmbedStatConverter
@@ -47,7 +47,6 @@ if TYPE_CHECKING:
     from bot import NecroBot
 
 LOG_SIZE = 7
-EquipmentSet = namedtuple("EquipmentSet", "character weapon artefact")
 
 
 class Flowers(commands.Cog):
@@ -1540,6 +1539,7 @@ class Flowers(commands.Cog):
         return embed
 
     @gacha.command(name="battle")
+    @commands.max_concurrency(1, commands.BucketType.member)
     async def gacha_battle(
         self,
         ctx: commands.Context[NecroBot],
@@ -1563,19 +1563,7 @@ class Flowers(commands.Cog):
         if len(equipment_sets) != 3:
             raise BotError("Please submit characters with valid equipment sets.")
 
-        characters = [
-            Character(
-                name=es.character["name"],
-                stats=StatBlock.from_dict(es.character),
-                weapon=StattedEntity(name=es.weapon["name"], stats=StatBlock.from_dict(es.weapon)),
-                artefact=StattedEntity(
-                    name=es.artefact["name"], stats=StatBlock.from_dict(es.artefact)
-                ),
-                active_skill=get_skill(es.character["active_skill"]),
-                passive_skill=get_skill(es.character["passive_skill"]),
-            )
-            for es in equipment_sets
-        ]
+        characters = [make_character_from_equipment(es) for es in equipment_sets]
 
         # field = copy.deepcopy(random.choice(POTENTIAL_FIELDS))
         field = copy.deepcopy(POTENTIAL_FIELDS[1])
@@ -1599,6 +1587,37 @@ class Flowers(commands.Cog):
             await cmd.message.edit(content="The battle ended in victory", view=cmd)
         else:
             await cmd.message.edit(content="The battle ended in defeat", view=cmd)
+
+    @gacha.group(name="admin")
+    @has_perms(6)
+    async def gacha_admin(self, ctx: commands.Context[NecroBot]):
+        """Admin commands for gacha
+
+        {usage}
+        """
+
+    @gacha_admin.command(name="skills")
+    async def gacha_admin_skills(self, ctx: commands.Context[NecroBot]):
+        """Check all skills used by weapons, characters and artefacts to make sure they exist.
+
+        {usage}
+        """
+        skills = await self.bot.db.query(
+            "SELECT active_skill, passive_skill FROM necrobot.Characters WHERE active_skill IS NOT null OR passive_skill IS NOT null"
+        )
+        bad_skills = set()
+
+        for skill in skills:
+            for skill_type in ["active_skill", "passive_skill"]:
+                if skill[skill_type] is not None and get_skill(skill[skill_type]) is None:
+                    bad_skills.add(skill[skill_type])
+
+        if bad_skills:
+            await ctx.send(
+                f":negative_squared_cross_mark: | Finished checking, the following skills did not exist: {', '.join(bad_skills)} "
+            )
+        else:
+            await ctx.send(f":white_check_mark: | Finished checking, all skills ok.")
 
     #######################################################################
     ## Events

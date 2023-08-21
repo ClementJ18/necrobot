@@ -1,8 +1,24 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from .base import Coords, DamageInstance, DataClass, StatBlock
-from .skills import ActiveSkill, Modifier, PassiveSkill
+from .skills import ActiveSkill, Modifier, PassiveSkill, get_skill
+
+if TYPE_CHECKING:
+    from .base import EquipmentSet
+
+
+def make_character_from_equipment(es: EquipmentSet) -> Character:
+    return Character(
+        name=es.character["name"],
+        stats=StatBlock.from_dict(es.character),
+        weapon=StattedEntity(name=es.weapon["name"], stats=StatBlock.from_dict(es.weapon)),
+        artefact=StattedEntity(name=es.artefact["name"], stats=StatBlock.from_dict(es.artefact)),
+        active_skill=get_skill(es.character["active_skill"]),
+        passive_skill=get_skill(es.character["passive_skill"]),
+    )
 
 
 @dataclass(kw_only=True)
