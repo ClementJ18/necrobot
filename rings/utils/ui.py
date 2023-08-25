@@ -30,7 +30,7 @@ def strip_emoji(content):
 
 
 class BaseView(discord.ui.View):
-    author: discord.User
+    author: discord.Member | discord.User
 
     async def on_error(
         self, interaction: Interaction[NecroBot], error: Exception, item: Item[Any]
@@ -445,7 +445,7 @@ class Paginator(BaseView):
         embed_maker: Callable[[Paginator, Union[Any, List[Any]]], discord.Embed],
         page_size: int,
         entries: List[Any],
-        author: discord.Member,
+        author: discord.Member | discord.User,
         *,
         timeout: int = 180,
     ):
