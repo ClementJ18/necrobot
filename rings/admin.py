@@ -93,6 +93,7 @@ class Admin(commands.Cog):
         )
 
     @grudge.command(name="list")
+    @commands.is_owner()
     async def grudge_list(self, ctx: commands.Context[NecroBot], user: Union[UserConverter, int]):
         """See all the grudges for a user
 
@@ -129,6 +130,7 @@ class Admin(commands.Cog):
         await Paginator(embed_maker, 10, grudges, ctx.author).start(ctx)
 
     @grudge.command(name="info")
+    @commands.is_owner()
     async def grudge_info(self, ctx: commands.Context[NecroBot], grudge: Grudge):
         """Get the full info about a specific grudge
 
@@ -232,7 +234,7 @@ class Admin(commands.Cog):
         pass
 
     @admin.command(name="permissions", aliases=["perms"])
-    @commands.check_any(commands.is_owner(), has_perms(6))
+    @has_perms(6)
     async def admin_perms(
         self,
         ctx: commands.Context[NecroBot],
@@ -254,13 +256,13 @@ class Admin(commands.Cog):
         )
 
     @admin.command(name="disable")
-    @commands.check_any(commands.is_owner(), has_perms(6))
+    @has_perms(6)
     async def admin_disable(self, ctx: commands.Context[NecroBot], *, command: str):
         """For when regular disable isn't enough. Disables command discord-wide.
 
         {usage}
         """
-        command = self.bot.get_command(command)
+        command: commands.Command = self.bot.get_command(command)
         if command.enabled:
             command.enabled = False
             self.bot.settings["disabled"].append(command.name)
@@ -269,7 +271,7 @@ class Admin(commands.Cog):
             raise BotError(f"Command **{command.name}** already disabled")
 
     @admin.command(name="enable")
-    @commands.check_any(commands.is_owner(), has_perms(6))
+    @has_perms(6)
     async def admin_enable(self, ctx: commands.Context[NecroBot], *, command: str):
         """For when regular enable isn't enough. Re-enables the command discord-wide.
 
@@ -284,7 +286,7 @@ class Admin(commands.Cog):
         await ctx.send(f":white_check_mark: | Enabled **{command.name}**")
 
     @admin.command(name="badges")
-    @commands.check_any(commands.is_owner(), has_perms(6))
+    @has_perms(6)
     async def admin_badges(
         self,
         ctx: commands.Context[NecroBot],
@@ -318,7 +320,7 @@ class Admin(commands.Cog):
             raise BotError("Users has/doesn't have the badge")
 
     @admin.command(name="blacklist")
-    @commands.is_owner()
+    @has_perms(6)
     async def admin_blacklist(self, ctx: commands.Context[NecroBot], object_id: int):
         """Blacklist a user
 
@@ -403,31 +405,6 @@ class Admin(commands.Cog):
             return
 
         await msg.edit(content="Nothing found with that ID")
-
-    @commands.command()
-    @commands.is_owner()
-    async def invites(
-        self,
-        ctx: commands.Context[NecroBot],
-        *,
-        guild: discord.Guild = commands.parameter(converter=GuildConverter, default=None),
-    ):
-        """Returns invites (if the bot has valid permissions) for each server the bot is on if no \
-        guild id is specified.
-
-        {usage}"""
-
-        async def get_invite(guild):
-            try:
-                invite = await guild.invites()[0]
-                return f"Server: {guild.name}({guild.id}) - <{invite.url}>"
-            except (discord.Forbidden, IndexError) as e:
-                return f"Server: {guild.name}({guild.id}) - <{e}>"
-
-        if guild:
-            await ctx.send(await get_invite(guild))
-        else:
-            await ctx.send("\n".join([await get_invite(guild) for guild in self.bot.guilds]))
 
     @commands.command()
     @commands.is_owner()
@@ -598,10 +575,15 @@ class Admin(commands.Cog):
 
         for module_info in pkgutil.iter_modules(tests.__path__):
             module = importlib.import_module(f"tests.{module_info.name}")
-            modules[module_info.name] = [
+            filtered_tests = [
                 getattr(module, func) for func in dir(module) if func.startswith(test_filter)
             ]
-            status[module_info.name] = []
+            if filtered_tests:
+                modules[module_info.name] = filtered_tests
+                status[module_info.name] = []
+
+        if not modules:
+            raise BotError("No tests selected")
 
         await ctx.send("Beginning test phase")
         for module_name, test_funcs in modules.items():
@@ -617,6 +599,9 @@ class Admin(commands.Cog):
 
         description = ""
         for module_name, results in status.items():
+            if not results:
+                continue
+
             description += f"{module_name} ({int(results.count(True)/len(results) * 100)}%) - {''.join('.' if results else 'F' for results in results)}\n"
 
         def embed_maker(view: Paginator, entry):

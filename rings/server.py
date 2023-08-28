@@ -27,13 +27,22 @@ from rings.utils.utils import BotError, DatabaseError, build_format_dict, check_
 if TYPE_CHECKING:
     from bot import NecroBot
 
+
 class GivemePaginator(Paginator):
-    @discord.ui.select(options=[discord.SelectOption(label="Placeholder")], min_values=0, max_values=1)
-    async def select_role(self, interaction: discord.Interaction[NecroBot], select: discord.ui.Select):
+    @discord.ui.select(
+        options=[discord.SelectOption(label="Placeholder")], min_values=0, max_values=1
+    )
+    async def select_role(
+        self, interaction: discord.Interaction[NecroBot], select: discord.ui.Select
+    ):
         entries: List[discord.Role] = self.get_entry_subset()
 
         roles_to_add = [interaction.guild.get_role(int(role_id)) for role_id in select.values]
-        roles_to_remove = [interaction.user.get_role(role.id) for role in entries if interaction.user.get_role(role.id) and str(role.id) not in select.values]
+        roles_to_remove = [
+            interaction.user.get_role(role.id)
+            for role in entries
+            if interaction.user.get_role(role.id) and str(role.id) not in select.values
+        ]
 
         if roles_to_add:
             await interaction.user.add_roles(*roles_to_add)
@@ -42,13 +51,21 @@ class GivemePaginator(Paginator):
             await interaction.user.remove_roles(*roles_to_remove)
 
         self.view_maker(entries)
-        await interaction.response.edit_message(embed=await self.generate_embed(entries), view=self)
+        await interaction.response.edit_message(
+            embed=await self.generate_embed(entries), view=self
+        )
         if roles_to_add or roles_to_remove:
             await interaction.followup.send(":white_check_mark: | Roles updated", ephemeral=True)
 
     def view_maker(self, entries: List[discord.Role]):
-        self.select_role.options = [discord.SelectOption(label=role.name, value=role.id, default=self.author.get_role(role.id) is not None) for role in entries]
+        self.select_role.options = [
+            discord.SelectOption(
+                label=role.name, value=role.id, default=self.author.get_role(role.id) is not None
+            )
+            for role in entries
+        ]
         self.select_role.max_values = len(self.select_role.options)
+
 
 class Server(commands.Cog):
     """Contains all the commands related to customising Necrobot's behavior on your server and to your server members. Contains
@@ -1018,18 +1035,25 @@ class Server(commands.Cog):
         `{pre}giveme Good` - gives or remove the role 'Good' to the user if it is in the list of self assignable roles"""
 
         if role is None:
+
             def embed_maker(view: GivemePaginator, entries: List[discord.Role]):
                 embed = discord.Embed(
                     title=f"Self Assignable Roles ({view.page_string})",
-                    description="\n".join([f"- {role.mention} ({len(role.members)})" for role in entries]),
+                    description="\n".join(
+                        [f"- {role.mention} ({len(role.members)})" for role in entries]
+                    ),
                     colour=self.bot.bot_color,
                 )
 
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
 
-            roles = [ctx.guild.get_role(role_id) for role_id in self.bot.guild_data[ctx.guild.id]["self-roles"] if ctx.guild.get_role(role_id) is not None]
-            return await GivemePaginator(embed_maker, 10, roles, ctx.author).start(ctx)
+            roles = [
+                ctx.guild.get_role(role_id)
+                for role_id in self.bot.guild_data[ctx.guild.id]["self-roles"]
+                if ctx.guild.get_role(role_id) is not None
+            ]
+            return await GivemePaginator(embed_maker, 20, roles, ctx.author).start(ctx)
 
         if role.id in self.bot.guild_data[ctx.guild.id]["self-roles"]:
             if role not in ctx.author.roles:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections import defaultdict
 import datetime
 import importlib
 import json
@@ -9,7 +10,18 @@ import sys
 import time
 import traceback
 from logging.handlers import RotatingFileHandler
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    DefaultDict,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import aiohttp
 import asyncpg
@@ -20,7 +32,17 @@ from rings.db import SyncDatabase
 from rings.utils.config import DEBUG, token
 from rings.utils.help import NecrobotHelp
 from rings.utils.ui import Confirm
-from rings.utils.utils import Event, Giveaway, Guild, PendingPost, default_settings, get_pre
+from rings.utils.utils import (
+    BotError,
+    BotSettings,
+    Event,
+    Giveaway,
+    Guild,
+    PendingPost,
+    Queue,
+    default_settings,
+    get_pre,
+)
 
 if TYPE_CHECKING:
     from rings.bridge import Bridge
@@ -131,8 +153,13 @@ class NecroBot(commands.Bot):
 
         self.loaded: asyncio.Event = None
 
+        def factory():
+            return {"end": True, "list": []}
+
+        self.queue: DefaultDict[int, Queue] = defaultdict(factory)
+
         with open("rings/utils/data/settings.json", "rb") as infile:
-            self.settings = {**default_settings(), **json.load(infile)}
+            self.settings: BotSettings = {**default_settings(), **json.load(infile)}
 
     @property
     def bot_channel(self) -> discord.TextChannel:
@@ -423,27 +450,38 @@ async def unload(ctx: commands.Context[NecroBot], *extension_names: str):
 @bot.command(hidden=True)
 @commands.is_owner()
 async def reload(ctx: commands.Context[NecroBot], *extension_names: str):
-    """Unload and loads the extension name if in NecroBot's list of rings.
+    """Unload and loads the extension name if in NecroBot's list of rings. If no extensions are \
+    passed this will hot reload the entire bot including non-extension modules.
 
-    {usage}"""
-    modules = [v for k, v in sys.modules.items() if k.startswith(("rings.utils", "tests"))]
-    for v in modules:
-        importlib.reload(v)
-
+    {usage}
+    """
     success = []
     if not extension_names:
         extension_names = ctx.bot.extension_names
+
+        modules = [v for k, v in sys.modules.items() if k.startswith("rings.utils")]
+        for v in modules:
+            importlib.reload(v)
+
+    to_reload = [x for x in ctx.bot.extension_names if x in extension_names]
+    if not to_reload:
+        raise BotError("No valid extensions to reload")
 
     for extension_name in extension_names:
         try:
             await bot.reload_extension(f"rings.{extension_name}")
             success.append(extension_name)
         except commands.ExtensionFailed as e:
-            await ctx.send(f"```py\n{type(e).__name__}: {e}\n```")
+            await ctx.send(
+                f"Failed to reload {extension_name}\n```py\n{type(e).__name__}: {e}\n```"
+            )
         except (commands.ExtensionNotLoaded, commands.ExtensionNotFound):
             pass
 
-    await ctx.send(f"Successfully reloaded: {', '.join(success)}")
+    if success:
+        await ctx.send(f"Successfully reloaded: {', '.join(success)}")
+    else:
+        await ctx.send("No extensions succesfully reloaded")
 
 
 @bot.group(invoke_without_command=True, hidden=True)

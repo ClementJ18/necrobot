@@ -27,10 +27,12 @@ class Events(commands.Cog):
 
     async def dm_reaction_handler(self, payload: discord.RawReactionActionEvent):
         if payload.emoji.name == "\N{WASTEBASKET}":
+            message = self.bot.get_channel(payload.channel_id).get_partial_message(
+                payload.message_id
+            )
+
             try:
-                await self.bot._connection.http.delete_message(
-                    payload.channel_id, payload.message_id
-                )
+                await message.delete()
             except (discord.Forbidden, discord.HTTPException):
                 pass
 
@@ -41,7 +43,9 @@ class Events(commands.Cog):
             return
 
         if not payload.message_id in self.bot.potential_stars:
-            message = self.bot._connection._get_message(payload.message_id)
+            message = self.bot.get_channel(payload.channel_id).get_partial_message(
+                payload.message_id
+            )
             if message is not None:
                 self.bot.potential_stars[payload.message_id] = {
                     "message": message,

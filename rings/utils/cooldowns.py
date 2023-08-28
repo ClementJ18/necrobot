@@ -38,12 +38,12 @@ def _long_channel():
 
 
 def _small_server():
-    return _small_cooldown(), BucketType.server
+    return _small_cooldown(), BucketType.guild
 
 
 def _medium_server():
-    return _medium_cooldown(), BucketType.server
+    return _medium_cooldown(), BucketType.guild
 
 
 def _long_server():
-    return _long_cooldown(), BucketType.server
+    return _long_cooldown(), BucketType.guild

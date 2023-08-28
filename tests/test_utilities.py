@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import random
 from typing import TYPE_CHECKING
 
 import discord
@@ -72,18 +73,44 @@ async def test_leaderboard(ctx: commands.Context[NecroBot]):
 
     command_award = ctx.bot.get_command("leaderboard award")
 
-    await ctx.invoke(command_award, user=ctx.bot.user, points=-50)
-    await ctx.invoke(command_award, user=ctx.bot.user, points=50)
+    await ctx.invoke(command_award, user=ctx.bot.user, points=random.randint(-200, 0))
+    await ctx.invoke(command_award, user=ctx.bot.user, points=random.randint(0, 200))
 
     await ctx.invoke(command)
 
 
 async def test_queue(ctx: commands.Context[NecroBot]):
-    pass
+    command = ctx.bot.get_command("q")
+    command_clear = ctx.bot.get_command("q clear")
+    command_end = ctx.bot.get_command("q end")
+    command_next = ctx.bot.get_command("q next")
+    command_me = ctx.bot.get_command("q me")
+    command_start = ctx.bot.get_command("q start")
+
+    await ctx.invoke(command_clear)
+
+    with pytest.raises(BotError):
+        await ctx.invoke(command_next)
+
+    with pytest.raises(BotError):
+        await ctx.invoke(command_me)
+
+    await ctx.invoke(command_start)
+
+    with pytest.raises(BotError):
+        await ctx.invoke(command)
+
+    await ctx.invoke(command_me)
+    await ctx.invoke(command)
+    await ctx.invoke(command_next)
+    await ctx.invoke(command_me)
+
+    await ctx.invoke(command_end)
+    await ctx.invoke(command_next)
 
 
 async def test_remindme(ctx: commands.Context[NecroBot]):
-    pass
+    command = await ctx.bot.get_command("remindme")
 
 
 async def test_today(ctx: commands.Context[NecroBot]):

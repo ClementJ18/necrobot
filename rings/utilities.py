@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-import io
 import random
-from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Literal
 
 import aiohttp
@@ -13,7 +11,6 @@ from discord.ext import commands
 from simpleeval import simple_eval
 
 from rings.utils.astral import Astral
-from rings.utils.BIG import pack_file
 from rings.utils.checks import has_perms, leaderboard_enabled
 from rings.utils.converters import MemberConverter
 from rings.utils.ui import Paginator
@@ -29,11 +26,6 @@ class Utilities(commands.Cog):
     def __init__(self, bot: NecroBot):
         self.bot = bot
         self.shortcut_mapping = ["Y", "X", "C", "V", "B"]
-
-        def factory():
-            return {"end": True, "list": []}
-
-        self.queue = defaultdict(factory)
 
     #######################################################################
     ## Commands
@@ -315,11 +307,10 @@ class Utilities(commands.Cog):
         {usage}"""
 
         def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
+            description = "\n".join(entries)
             embed = discord.Embed(
                 title=f"Queue ({view.page_string})",
-                description="Here is the list of members currently queued:\n- {}".format(
-                    "\n- ".join(entries)
-                ),
+                description=f"Here is the list of members currently queued:\n{description}",
                 colour=self.bot.bot_color,
             )
 
@@ -328,46 +319,46 @@ class Utilities(commands.Cog):
             return embed
 
         queue = [
-            f"**{ctx.guild.get_member(x).display_name}**" for x in self.queue[ctx.guild.id]["list"]
+            f"**{index+1}.** {ctx.guild.get_member(x).display_name}"
+            for index, x in enumerate(self.bot.queue[ctx.guild.id]["list"])
         ]
-        await Paginator(embed_maker, 10, queue, ctx.author).start(ctx)
+        await Paginator(embed_maker, 15, queue, ctx.author).start(ctx)
 
     @q.command(name="start")
-    @commands.guild_only()
     @has_perms(2)
     async def q_start(self, ctx: commands.Context[NecroBot]):
-        """Starts a queue, if there is already an ongoing queue it will fail. The ongoing queue must be cleared first
-        using `{pre}q clear`.
+        """Starts a queue, if there is already an existing queue this will resume it. The ongoing queue must \
+        be cleared first using `{pre}q clear`.
 
         {usage}"""
-        if self.queue[ctx.guild.id]["list"]:
-            raise BotError("A queue is already ongoing, please clear the queue first")
+        if not self.bot.queue[ctx.guild.id]["end"]:
+            raise BotError("Current queue has not ended, end the queue first.")
 
-        self.queue[ctx.guild.id] = {"end": False, "list": []}
-        await ctx.send(":white_check_mark: | Queue initialized")
+        self.bot.queue[ctx.guild.id]["end"] = False
+
+        if self.bot.queue[ctx.guild.id]["list"]:
+            await ctx.send(":white_check_mark: | Exising queue resumed")
+        else:
+            await ctx.send(":white_check_mark: | New queue started")
 
     @q.command(name="end")
-    @commands.guild_only()
     @has_perms(2)
     async def q_end(self, ctx: commands.Context[NecroBot]):
-        """Ends a queue but does not clear it. Users will no longer be able to use `{pre}q me`
+        """Ends a queue but does not clear it. Users will no longer be able to use `{pre}q me` \
+        but you can still resume the same queue and keep going through it.
 
         {usage}"""
-        self.queue[ctx.guild.id]["end"] = True
-        await ctx.send(
-            ":white_check_mark: | Users will now not be able to add themselves to queue"
-        )
+        self.bot.queue[ctx.guild.id]["end"] = True
+        await ctx.send(":white_check_mark: | Users will now be unable to add themselves to queue")
 
     @q.command(name="clear")
-    @commands.guild_only()
     @has_perms(2)
     async def q_clear(self, ctx: commands.Context[NecroBot]):
         """Ends a queue and clears it. Users will no longer be able to add themselves and the content of the queue will be \
-        emptied. Use it in order to start a new queue
+        emptied. Use it in order to start a new queue.
 
         {usage}"""
-        self.queue[ctx.guild.id]["list"] = []
-        self.queue[ctx.guild.id]["end"] = True
+        self.bot.queue[ctx.guild.id] = self.bot.queue.default_factory()
         await ctx.send(
             ":white_check_mark: | Queue cleared and ended. Please start a new queue to be able to add users again"
         )
@@ -375,39 +366,84 @@ class Utilities(commands.Cog):
     @q.command(name="me")
     @commands.guild_only()
     async def q_me(self, ctx: commands.Context[NecroBot]):
-        """Queue the user that used the command to the current queue. Will fail if queue has been ended or cleared.
+        """Queue the user that used the command to the current queue. Will fail if queue has been ended. \
+        :warning: **If the user is already in the queue it will remove them, check whether you are in the \
+        queue first** :warning: 
 
         {usage}"""
-        if self.queue[ctx.guild.id]["end"]:
+        if self.bot.queue[ctx.guild.id]["end"]:
             raise BotError("Sorry, you can no longer add yourself to the queue")
 
-        if ctx.author.id in self.queue[ctx.guild.id]["list"]:
+        if ctx.author.id in self.bot.queue[ctx.guild.id]["list"]:
             await ctx.send(":white_check_mark: | You have been removed from the queue")
-            self.queue[ctx.guild.id]["list"].remove(ctx.author.id)
+            self.bot.queue[ctx.guild.id]["list"].remove(ctx.author.id)
             return
 
-        self.queue[ctx.guild.id]["list"].append(ctx.author.id)
-        await ctx.send(":white_check_mark: |  You have been added to the queue")
+        self.bot.queue[ctx.guild.id]["list"].append(ctx.author.id)
+        position = len(self.bot.queue[ctx.guild.id]["list"])
+        await ctx.send(
+            f":white_check_mark: |  You have been added to the queue at position **{position}**"
+        )
 
     @q.command(name="next")
-    @commands.guild_only()
     @has_perms(2)
     async def q_next(self, ctx: commands.Context[NecroBot]):
         """Mentions the next user and the one after that so they can get ready.
 
         {usage}"""
-        if not self.queue[ctx.guild.id]["list"]:
+        if not self.bot.queue[ctx.guild.id]["list"]:
             raise BotError("No users left in that queue")
 
-        msg = f":bell: | {ctx.guild.get_member(self.queue[ctx.guild.id]['list'][0]).mention}, you're next. Get ready!"
+        msg = f":bell: | {ctx.guild.get_member(self.bot.queue[ctx.guild.id]['list'][0]).mention}, you're next. Get ready!"
 
-        if len(self.queue[ctx.guild.id]["list"]) > 1:
-            msg += f" \n{ctx.guild.get_member(self.queue[ctx.guild.id]['list'][1]).mention}, you're right after them. Start warming up!"
+        if len(self.bot.queue[ctx.guild.id]["list"]) > 1:
+            msg += f" \n{ctx.guild.get_member(self.bot.queue[ctx.guild.id]['list'][1]).mention}, you're right after them. Start warming up!"
         else:
             msg += "\nThat's the last user in the queue"
 
         await ctx.send(msg)
-        self.queue[ctx.guild.id]["list"].pop(0)
+        self.bot.queue[ctx.guild.id]["list"].pop(0)
+
+    @q.command(name="edit")
+    @has_perms(2)
+    async def q_edit(
+        self,
+        ctx: commands.Context[NecroBot],
+        member: discord.Member = commands.parameter(converter=MemberConverter),
+        position: int = None,
+    ):
+        """Remove or add a user in a queue. If the user is in the queue this will remove then. \
+        If they are not, this will add them. You can add a user at a specific spot in the \
+        queue with the position argument.
+        
+        {usage}
+        
+        __Examples__
+        `{pre}q edit @Necro` - given Necro is in the queue, this will remove them from the queue
+        `{pre}q edit @Necro` - given Necro is not in the queue, this will add then to the last spot
+        `{pre}q edit @Necro 1` - this will move or add Necro to the first position in the queue
+        `{pre}q edit @Necro 5` - this will move or add Necro to the fifth position in the queue
+        """
+        max_len = len(self.bot.queue[ctx.guild.id]["list"]) + 1
+        new_position = max_len
+        if position is not None:
+            new_position = position
+
+        if 1 > new_position > max_len:
+            raise BotError(f"New position must be between 1 and {max_len}")
+
+        if member.id in self.bot.queue[ctx.guild.id]["list"]:
+            self.bot.queue[ctx.guild.id]["list"].remove(member.id)
+
+            if position is None:
+                return await ctx.send(
+                    f":white_check_mark: | **{member.display_name}** has been removed from the queue"
+                )
+
+        self.bot.queue[ctx.guild.id]["list"].insert(new_position - 1, member.id)
+        await ctx.send(
+            f":white_check_mark: | **{member.display_name}** has been inserted into position **{new_position}**"
+        )
 
     @commands.group(invoke_without_command=True)
     @leaderboard_enabled()

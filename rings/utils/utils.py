@@ -17,6 +17,11 @@ class BotError(Exception):
     pass
 
 
+class Queue(TypedDict):
+    end: bool
+    list: List[int]
+
+
 class PotentialStar(TypedDict):
     message: discord.Message
     count: int
@@ -62,6 +67,21 @@ Guild = TypedDict(
         "mutes": List[int],
     },
 )
+
+
+class RankingDict(TypedDict):
+    factions: List[str]
+    emotes: List[int]
+    msg: List[int]
+    victories: List[int]
+
+
+class BotSettings(TypedDict):
+    blacklist: List[int]
+    disabled: List[str]
+    shop: List[str]
+    messages: RankingDict
+    day: int
 
 
 class DatabaseError(Exception):

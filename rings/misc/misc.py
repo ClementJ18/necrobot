@@ -461,7 +461,7 @@ class Misc(commands.Cog):
     #######################################################################
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if payload.channel_id != 840220523865702400:
             return
 
@@ -481,22 +481,20 @@ class Misc(commands.Cog):
         enemy_index = self.bot.settings["messages"]["emotes"].index(payload.emoji.id)
         enemy_name = self.bot.settings["messages"]["factions"][enemy_index]
 
-        def check(pay):
+        def check(pay: discord.RawReactionActionEvent):
             return (
                 pay.user_id == payload.user_id
                 and pay.message_id == payload.message_id
                 and str(pay.emoji) == "\N{WHITE HEAVY CHECK MARK}"
             )
 
+        message = self.bot.get_channel(payload.channel_id).get_partial_message(payload.message_id)
         try:
-            checkmark = await self.bot.wait_for("raw_reaction_add", check=check, timeout=15)
-        except asyncio.TimeoutError:
-            return await self.bot._connection.http.remove_reaction(
-                payload.channel_id,
-                payload.message_id,
-                payload.emoji._as_reaction(),
-                payload.user_id,
+            checkmark: discord.RawReactionActionEvent = await self.bot.wait_for(
+                "raw_reaction_add", check=check, timeout=15
             )
+        except asyncio.TimeoutError:
+            return await message.remove_reaction(payload.emoji, discord.Object(id=payload.user_id))
 
         await asyncio.sleep(2)
         await self.bot.db.query(
@@ -519,15 +517,5 @@ class Misc(commands.Cog):
             True,
         )
 
-        await self.bot._connection.http.remove_reaction(
-            payload.channel_id,
-            payload.message_id,
-            payload.emoji._as_reaction(),
-            payload.user_id,
-        )
-        await self.bot._connection.http.remove_reaction(
-            payload.channel_id,
-            payload.message_id,
-            checkmark.emoji._as_reaction(),
-            payload.user_id,
-        )
+        await message.remove_reaction(payload.emoji, discord.Object(id=payload.user_id))
+        await message.remove_reaction(checkmark.emoji, discord.Object(id=payload.user_id))
