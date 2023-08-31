@@ -1200,17 +1200,15 @@ class Server(commands.Cog):
         ctx: commands.Context[NecroBot],
         channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter),
     ):
-        """Create a reaction poll for your server in the specified channel. This will also ask you to specify a \
-        maximum number of reactions. This number will limit how many options users can vote for.
+        """Start the creation process for a poll in a given channel.
 
         {usage}
 
         __Examples__
-        `{pre}poll #general Which character do you prefer: **Aragorn** :crossed_swords: or **Gimli** :axe:` - post a reaction poll \
-        two possible answers: :axe: and :crossed_swords:
+        `{pre}poll #general` - Start the creation process for a poll to be sent in #general
         """
         view = PollEditorView(channel, self.bot, ctx.author)
-        await ctx.send("Let's start making your poll", view=view)
+        await ctx.send(f"Let's start making your poll in {channel.mention}", view=view)
 
 
 async def setup(bot: NecroBot):

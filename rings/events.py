@@ -43,19 +43,17 @@ class Events(commands.Cog):
             return
 
         if not payload.message_id in self.bot.potential_stars:
-            message = self.bot.get_channel(payload.channel_id).get_partial_message(
-                payload.message_id
-            )
-            if message is not None:
-                self.bot.potential_stars[payload.message_id] = {
-                    "message": message,
-                    "count": 0,
-                }
-            else:
+            message = self.bot.get_message(payload.message_id)
+            if message is None:
                 return
 
+            self.bot.potential_stars[payload.message_id] = {
+                "message": message,
+                "count": 0,
+            }
+
         message = self.bot.potential_stars[payload.message_id]
-        if not message["message"].author.id == payload.user_id:
+        if message["message"].author.id != payload.user_id:
             message["count"] += 1
 
         if message["count"] == self.bot.guild_data[payload.guild_id]["starboard-limit"]:

@@ -330,7 +330,7 @@ class PollEditorView(BaseView):
     async def cancel_poll(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         self.clear_items()
         self.stop()
-        await interaction.response.edit_message(view=self)
+        await interaction.response.edit_message(content="Poll creation cancelled", view=self)
 
 
 class Select(discord.ui.Select):
