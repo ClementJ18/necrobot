@@ -254,8 +254,7 @@ class Meta(commands.Cog):
             )
 
     async def rotate_status(self):
-        status = self.bot.statuses.pop(0)
-        self.bot.statuses.append(status)
+        status = next(self.bot.statuses)
         await self.bot.change_presence(
             activity=discord.Game(
                 status.format(guild=len(self.bot.guilds), members=len(self.bot.users))

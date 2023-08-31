@@ -1,4 +1,5 @@
-from .battle import Battlefield
+from . import enemies
+from .battle import Battlefield, EnemyAmount
 
 # 0 : non-walkable
 # 1 : walkable
@@ -6,8 +7,8 @@ from .battle import Battlefield
 # 3 : enemy placements
 
 default_field = (
-    (0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1),
-    (0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+    (0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 3, 1),
+    (0, 0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1),
     (1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1),
     (3, 1, 0, 0, 3, 1, 1, 0, 1, 1, 0, 0),
     (1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1),
@@ -49,16 +50,30 @@ jagged_peaks = (
     (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 )
 
-POTENTIAL_FIELDS = (
+
+FIELDS = (
+    Battlefield(
+        tiles=test_field,
+        name="Debug Time",
+        description="How'd you get here?",
+        potential_enemies_groups=[
+            (0, [(EnemyAmount.Max, enemies.Goblin)]),
+        ],
+    ),
     Battlefield(
         tiles=default_field,
         name="Large Plain",
         description="A large plains with some holes",
+        potential_enemies_groups=[
+            (0, [(EnemyAmount.Max, enemies.Goblin)]),
+        ],
     ),
-    Battlefield(tiles=test_field, name="Debug Time", description="How'd you get here?"),
     Battlefield(
         tiles=jagged_peaks,
         name="Valley of the Jagged Peaks",
         description="This peaceful valley is the home of the adventurers of the Jagged Peaks, in this land they settled and started anew.",
+        potential_enemies_groups=[
+            (0, [(EnemyAmount.Max, enemies.Goblin)]),
+        ],
     ),
 )

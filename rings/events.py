@@ -126,7 +126,7 @@ class Events(commands.Cog):
         elif isinstance(error, commands.CommandNotFound):
             return
         elif isinstance(error, commands.MaxConcurrencyReached):
-            msg = f"Cannot have more than {error.number} of this command running per {error.per}"
+            msg = f"Cannot have more than **{error.number}** of this command running per **{error.per.name}**"
         elif isinstance(error, commands.BadLiteralArgument):
             msg = f"`{error.param}` must be any of **{', '.join(error.literals)}"
         elif isinstance(error, discord.Forbidden):

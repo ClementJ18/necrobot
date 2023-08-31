@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import asyncio
-from collections import defaultdict
 import datetime
 import importlib
+import itertools
 import json
 import logging
 import sys
 import time
 import traceback
+from collections import defaultdict
 from logging.handlers import RotatingFileHandler
 from typing import (
     TYPE_CHECKING,
@@ -105,12 +106,14 @@ class NecroBot(commands.Bot):
         self.version = 3.10
         self.prefixes = ["n!", "N!"]
         self.new_commands = ["gacha", "banners", "characters", "poll"]
-        self.statuses = [
-            "n!help for help",
-            "currently in {guild} guilds",
-            "with {members} members",
-            "n!report for bug/suggestions",
-        ]
+        self.statuses = itertools.cycle(
+            [
+                "n!help for help",
+                "currently in {guild} guilds",
+                "with {members} members",
+                "n!report for bug/suggestions",
+            ]
+        )
         self.perms_name = [
             "User",
             "Helper",

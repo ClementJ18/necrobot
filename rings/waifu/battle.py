@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import copy
 import enum
 import logging
+import random
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Dict, List, Tuple, Union
@@ -38,10 +40,10 @@ class MoveAction(ActionLog):
     entity: StattedEntity
     distance: int
 
-    def eq(self, other: "MoveAction") -> bool:
+    def eq(self, other: MoveAction) -> bool:
         return self.entity == other.entity
 
-    def __add__(self, other: "MoveAction") -> "MoveAction":
+    def __add__(self, other: MoveAction) -> MoveAction:
         return MoveAction(self.entity, self.distance + other.distance)
 
     def __str__(self) -> str:
@@ -54,10 +56,10 @@ class AttackAction(ActionLog):
     damage: DamageInstance
     attackee: StattedEntity
 
-    def eq(self, other: "AttackAction") -> bool:
+    def eq(self, other: AttackAction) -> bool:
         return self.attacker == other.attacker and self.attackee == other.attackee
 
-    def __add__(self, other: "AttackAction") -> "AttackAction":
+    def __add__(self, other: AttackAction) -> AttackAction:
         return AttackAction(self.attacker, self.damage + other.damage, other.attackee)
 
     def __str__(self) -> str:
@@ -68,7 +70,7 @@ class AttackAction(ActionLog):
 class SkillAction(ActionLog):
     entity: StattedEntity
 
-    def eq(self, other: "SkillAction") -> bool:
+    def eq(self, other: SkillAction) -> bool:
         return False
 
     def __add__(self, other: object) -> object:
@@ -113,18 +115,24 @@ class BattleOverException(Exception):
         self.victory = victory
 
 
+class EnemyAmount(enum.Enum):
+    Max = enum.auto()
+
+
 @dataclass
 class Battlefield:
     tiles: List[List[int]]
     name: str
     description: str
-    grid: List[List[int]] = ()
-    objective: Objective = StandardObjective()
+    grid: List[List[int]] = field(default_factory=list)
+    objective: Objective = field(default_factory=lambda: StandardObjective())
 
     size: Size = Size(0, 0)
     enemy_count: int = 0
 
-    enemies: List[StattedEntity] = ()
+    potential_enemies_groups: List[
+        Tuple[int, List[Tuple[int | EnemyAmount, StattedEntity]]]
+    ] = field(default_factory=list)
 
     def __post_init__(self):
         self.size = Size(len(self.tiles[0]), len(self.tiles))
@@ -134,7 +142,30 @@ class Battlefield:
         # transform into a matrix for pathfinding
         self.grid = [[max(1, cell) for cell in row] for row in self.tiles]
 
-    def walkable_grid(self, non_walkable: List = ()):
+    def get_enemy_group(self, difficulty: int = None):
+        groups = self.potential_enemies_groups
+        if difficulty is not None:
+            groups = [e for e in self.potential_enemies_groups if e[0] == difficulty]
+
+        group = random.choice(groups)[1]
+        enemies = []
+        for enemy in group:
+            if isinstance(enemy[0], int):
+                enemies.extend(copy.deepcopy(enemy[1]) for _ in range(enemy[0]))
+            elif enemy[0] is EnemyAmount.Max:
+                enemies.extend(
+                    copy.deepcopy(enemy[1]) for _ in range(self.enemy_count - len(enemies))
+                )
+
+        if len(enemies) > self.enemy_count:
+            raise ValueError(f"More enemies generated for {self.name} than enemy count.")
+
+        return enemies
+
+    def walkable_grid(self, non_walkable: List = None):
+        if non_walkable is None:
+            non_walkable = []
+
         return [
             [0 if cell < 1 or (x, y) in non_walkable else 1 for x, cell in enumerate(row)]
             for y, row in enumerate(self.tiles)
@@ -149,23 +180,11 @@ class Battlefield:
 
 
 @dataclass
-class RandomBattlefield(Battlefield):
-    """The random in random battlefield is for the randomized enemies."""
-
-    weighted_choices: List[Tuple(int, StattedEntity)] = ()
-
-
-@dataclass
-class SetBattlefield(Battlefield):
-    ordered_enemies: List[StattedEntity] = ()
-
-
-@dataclass
 class Battle:
     _players: List[Character]
-    _enemies: List[Enemy]
     battlefield: Battlefield
     action_logs: List[ActionLog] = field(default_factory=list)
+    _enemies: List[Enemy] = field(default_factory=list)
 
     @property
     def players(self):
@@ -219,6 +238,8 @@ class Battle:
             for modifier in e.modifiers:
                 modifier.on_generate_target_list(self, entity, e, base_list)
 
+        return base_list
+
     def get_positions(self, value: TileType) -> List[Coords]:
         positions = []
         for y, row in enumerate(self.battlefield.tiles):
@@ -252,7 +273,9 @@ class Battle:
         else:
             self.action_logs.append(log)
 
-    def initialise(self):
+    def initialise(self, difficulty: int = None):
+        self._enemies = self.battlefield.get_enemy_group(difficulty)
+
         player_count = len(self.players)
         enemy_count = len(self.enemies)
 
@@ -271,7 +294,7 @@ class Battle:
         self.battlefield.initialise()
 
     def move_entity(
-        self, entity: StattedEntity, *, new_position: Coords = (), change: Coords = ()
+        self, entity: StattedEntity, *, new_position: Coords = None, change: Coords = None
     ):
         if not new_position and not change:
             raise ValueError("Specify either change or new_position")

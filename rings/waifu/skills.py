@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import enum
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, List, Type, Union
 
 from .base import DamageInstance, StatBlock, get_distance
@@ -218,7 +218,7 @@ class ChangeDamageType(ActiveSkill):
 class MapWideAura(PassiveSkill):
     turns: int = 0
     stats: StatBlock = None
-    allowed_char: List[str] = ()
+    allowed_char: List[str] = field(default_factory=list)
 
     def on_start_turn(self, battle: Battle, entity: StattedEntity):
         for e in battle.players:

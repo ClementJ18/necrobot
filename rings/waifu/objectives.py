@@ -33,7 +33,7 @@ class Objective:
 
         return self.defeat_condition
 
-    def pick_ai_action(self, battle: Battle):
+    def take_ai_action(self, battle: Battle, entity: StattedEntity):
         raise NotImplementedError
 
 
@@ -46,9 +46,9 @@ class StandardObjective(Objective):
         return not bool(battle.players)
 
     def is_victory(self, battle: Battle) -> bool:
-        return bool(battle.enemies)
+        return not bool(battle.enemies)
 
-    def pick_ai_action(self, battle: Battle, entity: StattedEntity):
+    def take_ai_action(self, battle: Battle, entity: StattedEntity):
         logger.info("Pathfinding %s at %s", entity.name, entity.position)
         adjacent = battle.get_adjacent_positions(entity.position)
         targets = [player for player in battle.players if player.position in adjacent.values()]

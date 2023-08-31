@@ -6,17 +6,18 @@ import logging
 import math
 import re
 import traceback
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, TypeVar, Union
 
 import discord
 from discord.ext import commands
-from discord.interactions import Interaction
-from discord.ui.item import Item
 
 from rings.utils.utils import BotError
 
 if TYPE_CHECKING:
+    from discord.interactions import Interaction
+    from discord.ui.item import Item
+
     from bot import NecroBot
 
 CUSTOM_EMOJI = r"<:[^\s]+:([0-9]*)>"
@@ -51,9 +52,11 @@ class BaseView(discord.ui.View):
         except discord.HTTPException as e:
             logger.exception(f"Failed to send error interaction: {e}")
 
-        await interaction.response.send_message(
-            f":negative_squared_cross_mark: | Error with interaction: {error}", ephemeral=True
-        )
+        msg = f":negative_squared_cross_mark: | Error with interaction: {error}"
+        try:
+            await interaction.response.send_message(msg, ephemeral=True)
+        except discord.InteractionResponded:
+            await interaction.followup.send(msg, ephemeral=True)
 
     async def interaction_check(self, interaction: Interaction[NecroBot]):
         if not hasattr(self, "author"):
@@ -609,7 +612,7 @@ class EmbedRangeConverter(EmbedIntegerConverter):
 
 @dataclass
 class EmbedChoiceConverter(EmbedDefaultConverter):
-    choices: List[str] = ()
+    choices: List[str] = field(default_factory=list)
 
     def convert(self, argument: str) -> str:
         argument = argument.strip().lower()

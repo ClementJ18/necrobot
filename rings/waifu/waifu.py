@@ -6,7 +6,6 @@ import itertools
 import json
 import math
 import random
-from collections import namedtuple
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 import asyncpg
@@ -35,11 +34,10 @@ from rings.utils.ui import (
 )
 from rings.utils.utils import BotError, DatabaseError, check_channel
 
-from .base import DUD_TEMPLATES, POSITION_EMOJIS, EquipmentSet, Stat, StatBlock
+from .base import DUD_TEMPLATES, POSITION_EMOJIS, EntityDict, EquipmentSet, Stat, StatBlock
 from .battle import Battle, Battlefield, Character, is_wakable
-from .enemies import POTENTIAL_ENEMIES
 from .entities import StattedEntity, make_character_from_equipment
-from .fields import POTENTIAL_FIELDS
+from .fields import FIELDS
 from .skills import get_skill
 from .ui import CombatView, EmbedSkillConverter, EmbedStatConverter
 
@@ -186,7 +184,7 @@ class Flowers(commands.Cog):
 
         return weight
 
-    def embed_character(self, character: dict, admin: bool = False) -> discord.Embed:
+    def embed_character(self, character: EntityDict, admin: bool = False) -> discord.Embed:
         embed = discord.Embed(
             title=character["name"],
             colour=self.bot.bot_color,
@@ -270,12 +268,12 @@ class Flowers(commands.Cog):
             cost,
         )
 
-    async def get_characters(self):
+    async def get_characters(self) -> List[EntityDict]:
         return await self.bot.db.query(
             "SELECT * FROM necrobot.Characters ORDER BY tier DESC, universe ASC, name ASC"
         )
 
-    def pull(self, characters: List[dict], pity: int = 0, guarantee: bool = False):
+    def pull(self, characters: List[EntityDict], pity: int = 0, guarantee: bool = False):
         duds = [
             random.choice(DUD_TEMPLATES)
             for _ in range(math.ceil(len(characters) * self.DUD_PERCENT))
@@ -446,7 +444,7 @@ class Flowers(commands.Cog):
         if for_banner:
             characters = [character for character in characters if character["obtainable"]]
 
-        def embed_maker(view: Paginator, entry: dict):
+        def embed_maker(view: Paginator, entry: EntityDict):
             mutable_entry = dict(entry)
             mutable_entry["name"] = f"{entry['name']} ({view.page_string})"
             return self.embed_character(mutable_entry, True)
@@ -464,7 +462,7 @@ class Flowers(commands.Cog):
         """
         characters = await self.get_characters()
 
-        def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
+        def embed_maker(view: Paginator, entries: List[EntityDict]):
             description = "\n".join(
                 [
                     f"- {entry['id']} - {entry['name']} ({entry['universe']}): **{entry['tier']}**:star:"
@@ -484,7 +482,9 @@ class Flowers(commands.Cog):
 
     @characters.command(name="get")
     async def characters_get(
-        self, ctx: commands.Context[NecroBot], character: GachaCharacterConverter
+        self,
+        ctx: commands.Context[NecroBot],
+        character: EntityDict = commands.parameter(converter=GachaCharacterConverter),
     ):
         """Get info on a specific character.
 
@@ -566,7 +566,7 @@ class Flowers(commands.Cog):
         if not view.value:
             return
 
-        final_values = view.convert_values()
+        final_values: EntityDict = view.convert_values()
         char_id = await self.bot.db.query(
             "INSERT INTO necrobot.Characters VALUES(DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id",
             name,
@@ -604,7 +604,6 @@ class Flowers(commands.Cog):
         __Example__
         `{pre}characters edit Amelan title Big Boy` - Edit Amelan's title to "Big Boy"
         """
-        char_id = char["id"]
         defaults = {
             "description": EmbedStringConverter(
                 default=char["description"], style=discord.TextStyle.paragraph
@@ -630,7 +629,7 @@ class Flowers(commands.Cog):
         if not view.value:
             return
 
-        final_values = view.convert_values()
+        final_values: EntityDict = view.convert_values()
         await self.bot.db.query(
             """
                 UPDATE necrobot.Characters 
@@ -671,7 +670,9 @@ class Flowers(commands.Cog):
     @characters.command(name="delete")
     @has_perms(6)
     async def characters_delete(
-        self, ctx: commands.Context[NecroBot], char: GachaCharacterConverter
+        self,
+        ctx: commands.Context[NecroBot],
+        char: EntityDict = commands.parameter(converter=GachaBannerConverter),
     ):
         """Delete a character and remove them from all player's accounts
 
@@ -704,7 +705,9 @@ class Flowers(commands.Cog):
     @characters.command(name="toggle")
     @has_perms(6)
     async def characters_toggle(
-        self, ctx: commands.Context[NecroBot], char: GachaCharacterConverter
+        self,
+        ctx: commands.Context[NecroBot],
+        char: EntityDict = commands.parameter(converter=GachaBannerConverter),
     ):
         """Toggle whether or not a character can be obtained as part of a banner
 
@@ -728,9 +731,9 @@ class Flowers(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         user: discord.Member = commands.parameter(converter=MemberConverter),
-        char: GachaCharacterConverter(
-            allowed_types=("character", "artefact", "weapon")
-        ) = commands.parameter(),
+        char: EntityDict = commands.parameter(
+            converter=GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
+        ),
     ):
         """Add a level of character to a player's account
 
@@ -762,9 +765,9 @@ class Flowers(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         user: discord.Member = commands.parameter(converter=MemberConverter),
-        char: GachaCharacterConverter(
-            allowed_types=("character", "artefact", "weapon")
-        ) = commands.parameter(),
+        char: EntityDict = commands.parameter(
+            converter=GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
+        ),
         amount: int = 1,
     ):
         """Remove a level of character to a player's account
@@ -946,7 +949,9 @@ class Flowers(commands.Cog):
         ctx: commands.Context[NecroBot],
         banner: GachaBannerConverter(False),
         *,
-        char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon")),
+        char: EntityDict = commands.parameter(
+            converter=GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
+        ),
     ):
         """Add characters to a banner
 
@@ -976,7 +981,9 @@ class Flowers(commands.Cog):
         ctx: commands.Context[NecroBot],
         banner: GachaBannerConverter(False),
         *,
-        char: GachaCharacterConverter(allowed_types=("character", "artefact", "weapon")),
+        char: EntityDict = commands.parameter(
+            converter=GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
+        ),
     ):
         """Remove characters from a banner
 
@@ -1055,7 +1062,7 @@ class Flowers(commands.Cog):
 
         __Examples__
         `{pre}gacha char` - List your characters"""
-        characters = await self.bot.db.query(
+        characters: List[EntityDict] = await self.bot.db.query(
             """
             SELECT c.*, rc.level FROM necrobot.RolledCharacters as rc 
                 JOIN necrobot.Characters as c ON rc.char_id = c.id 
@@ -1247,8 +1254,13 @@ class Flowers(commands.Cog):
     async def equipment_equip(
         self,
         ctx: commands.Context[NecroBot],
-        character: GachaCharacterConverter(allowed_types=("character",), is_owned=True),
-        *equipments: GachaCharacterConverter(allowed_types=("weapon", "artefact"), is_owned=True),
+        character: EntityDict = commands.parameter(
+            converter=GachaCharacterConverter(allowed_types=("character",), is_owned=True)
+        ),
+        *,
+        equipments: List[EntityDict] = commands.parameter(
+            converter=GachaCharacterConverter(allowed_types=("weapon", "artefact"), is_owned=True)
+        ),
     ):
         """Equip a character you own with weapons or artefacts.
 
@@ -1339,7 +1351,9 @@ class Flowers(commands.Cog):
     async def equipment_remove(
         self,
         ctx: commands.Context[NecroBot],
-        character: GachaCharacterConverter(allowed_types=("character",), is_owned=True),
+        character: EntityDict = commands.parameter(
+            converter=GachaCharacterConverter(allowed_types=("character",), is_owned=True)
+        ),
     ):
         """Remove the equipment set of a character so that it can be given to another character.
 
@@ -1401,7 +1415,7 @@ class Flowers(commands.Cog):
         embed = discord.Embed(
             title=name,
             colour=self.bot.bot_color,
-            description=f"- Character: {entry.character['name']} ({entry.character['tier'] * ':star:'})\n- Weapon: {entry.weapon['name']} ({entry.weapon['tier'] * ':star:'})\n- Artefact: {entry.artefact['name']} ({entry.artefact['tier'] * ':star:'})",
+            description=f"- Character: {entry.character['id']} - {entry.character['name']} ({entry.character['tier'] * ':star:'})\n- Weapon: {entry.weapon['id']} - {entry.weapon['name']} ({entry.weapon['tier'] * ':star:'})\n- Artefact: {entry.artefact['id']} - {entry.artefact['name']} ({entry.artefact['tier'] * ':star:'})",
         )
         embed.set_footer(**self.bot.bot_footer)
 
@@ -1526,7 +1540,7 @@ class Flowers(commands.Cog):
                 (f"{modifier.name} ({modifier.duration})" for modifier in character.modifiers)
             )
             string = (
-                f"- Symbol: {POSITION_EMOJIS[character.index]} \n"
+                f"- Symbol: {POSITION_EMOJIS[character.index]}\n"
                 f"- Health: {character.stats.current_primary_health}/{character.stats.max_primary_health} ({character.stats.current_secondary_health}/{character.stats.max_secondary_health}) \n"
                 f"- Modifiers: {modifiers}\n"
                 f"- PA: {self.c(character.calculate_stat('physical_attack'))}\n"
@@ -1534,7 +1548,14 @@ class Flowers(commands.Cog):
                 f"- PD: {self.c(character.calculate_stat('physical_defense'))}\n"
                 f"- MD: {self.c(character.calculate_stat('magical_defense'))}"
             )
-            embed.add_field(name=character.name, value=string)
+
+            if character.active_skill is not None:
+                string += f"\n- Active: {character.active_skill.name} - {character.active_skill.description}"
+
+            if character.passive_skill is not None:
+                string += f"\n- Passive: {character.passive_skill.name} - {character.passive_skill.description}"
+
+            embed.add_field(name=f"{character.name} ({page}/3)", value=string)
 
         return embed
 
@@ -1543,7 +1564,11 @@ class Flowers(commands.Cog):
     async def gacha_battle(
         self,
         ctx: commands.Context[NecroBot],
-        *chars: GachaCharacterConverter(allowed_types=("character",), is_owned=True),
+        chars: List[EntityDict] = commands.parameter(
+            converter=commands.Greedy[
+                GachaCharacterConverter(allowed_types=("character",), is_owned=True)
+            ]
+        ),
     ):
         """Start a battle between three of your characters and a random enemy on a random battlefield. \
         In order for characters to be able to compete they must be equipped with weapons and artefacts using  \
@@ -1566,13 +1591,9 @@ class Flowers(commands.Cog):
         characters = [make_character_from_equipment(es) for es in equipment_sets]
 
         # field = copy.deepcopy(random.choice(POTENTIAL_FIELDS))
-        field = copy.deepcopy(POTENTIAL_FIELDS[1])
-        enemies = [
-            copy.deepcopy(random.choice(POTENTIAL_ENEMIES)) for _ in range(field.enemy_count)
-        ]
+        field = copy.deepcopy(FIELDS[1])
         battle = Battle(
             characters,
-            enemies,
             field,
         )
         battle.initialise()

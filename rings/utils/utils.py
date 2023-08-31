@@ -85,11 +85,11 @@ class BotSettings(TypedDict):
 
 
 class DatabaseError(Exception):
-    def __init__(self, message: str, query: Optional[str] = None, args: List[Any] = ()):
+    def __init__(self, message: str, query: Optional[str] = None, args: List[Any] = None):
         super().__init__(message)
         self.message = message
         self.query = query
-        self.args = args
+        self.args = args if args is not None else []
 
     def embed(self, bot: NecroBot):
         formatted = traceback.format_exception(type(self), self, self.__traceback__, chain=False)

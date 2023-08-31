@@ -204,7 +204,7 @@ class CharacterUI(discord.ui.Select):
 
 class CombatView(BaseView):
     def __init__(self, battle: Battle, embed_maker, author: discord.Member):
-        super().__init__()
+        super().__init__(300)
 
         self.battle = battle
         self.set_ui(CharacterUI(battle.players, battle, embed_maker))
@@ -256,7 +256,7 @@ class CombatView(BaseView):
 
         for enemy in self.battle.enemies:
             start = time.time()
-            self.battle.battlefield.objective.pick_ai_action(enemy)
+            self.battle.battlefield.objective.take_ai_action(self.battle, enemy)
             end = time.time() - start
 
             await interaction.followup.edit_message(

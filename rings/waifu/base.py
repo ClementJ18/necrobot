@@ -1,7 +1,7 @@
 import inspect
 from collections import namedtuple
 from dataclasses import dataclass, fields
-from typing import Tuple
+from typing import Tuple, TypedDict, Union
 
 Coords = Tuple[int, int]  # (x, y)
 Size = namedtuple("Size", "length height")
@@ -134,6 +134,26 @@ class StatBlock(DataClass):
 
     def stat_is_raw(self, stat_name):
         return not getattr(self, stat_name).is_percent
+
+
+class EntityDict(TypedDict):
+    id: int
+    name: str
+    title: str
+    description: str
+    image_url: str
+    tier: int
+    obtainable: bool
+    universe: str
+    type: str
+    primary_health: Union[Tuple[bool, int], Stat]
+    secondary_health: Union[Tuple[bool, int], Stat]
+    physical_defense: Union[Tuple[bool, int], Stat]
+    physical_attack: Union[Tuple[bool, int], Stat]
+    magical_defense: Union[Tuple[bool, int], Stat]
+    magical_attack: Union[Tuple[bool, int], Stat]
+    active_skill: str
+    passive_skill: str
 
 
 """

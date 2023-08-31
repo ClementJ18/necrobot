@@ -245,7 +245,7 @@ class GachaCharacterConverter(commands.Converter[dict]):
         self,
         *,
         respect_obtainable: bool = False,
-        allowed_types: List[CharacterType] = (),
+        allowed_types: List[CharacterType] = None,
         is_owned: bool = False,
     ):
         """
@@ -259,7 +259,7 @@ class GachaCharacterConverter(commands.Converter[dict]):
             Only consider characters that are owned by the author
         """
         self.respect_obtainable = respect_obtainable
-        self.allowed_types = allowed_types
+        self.allowed_types = allowed_types if allowed_types is not None else []
         self.is_owned = is_owned
 
     async def convert(self, ctx: commands.Context[NecroBot], argument: str):

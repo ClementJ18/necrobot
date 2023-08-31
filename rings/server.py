@@ -1058,10 +1058,10 @@ class Server(commands.Cog):
         if role.id in self.bot.guild_data[ctx.guild.id]["self-roles"]:
             if role not in ctx.author.roles:
                 await ctx.author.add_roles(role)
-                await ctx.send(f":white_check_mark: | Role {role.name} added.")
+                await ctx.send(f":white_check_mark: | Role **{role.name}** added.")
             else:
                 await ctx.author.remove_roles(role)
-                await ctx.send(f":white_check_mark: | Role {role.name} removed.")
+                await ctx.send(f":white_check_mark: | Role **{role.name}** removed.")
 
         else:
             raise BotError("Role not self assignable")
