@@ -105,15 +105,13 @@ class Modding(commands.Cog):
         except IndexError as e:
             raise BotError("No game with that name found") from e
 
-        url = moddb.utils.join(
-            soup.find("div", class_="table").find("h4", string=search_return).a["href"]
-        )
+        url = moddb.utils.join(soup.find("div", class_="table").find("h4", string=search_return).a["href"])
 
         async with self.bot.session.get(url) as resp:
             soup = BeautifulSoup(await resp.text(), "html.parser")
 
         game = moddb.pages.Game(soup)
-        await Paginator(embed_maker, 1, [1, 2, 3], ctx.author).start(ctx)
+        await Paginator(1, [1, 2, 3], ctx.author, embed_maker=embed_maker).start(ctx)
 
     @commands.command()
     async def mod(self, ctx: commands.Context[NecroBot], *, name: str):
@@ -170,9 +168,7 @@ class Modding(commands.Cog):
                     inline=False,
                 )
             elif page == 3:
-                suggestion_list = [
-                    f"[{suggestion.name}]({suggestion.url})" for suggestion in mod.suggestions
-                ]
+                suggestion_list = [f"[{suggestion.name}]({suggestion.url})" for suggestion in mod.suggestions]
                 embed.add_field(
                     name="You may also like",
                     value=" -" + " \n- ".join(suggestion_list),
@@ -193,15 +189,13 @@ class Modding(commands.Cog):
         except IndexError as e:
             raise BotError("No mod with that name found") from e
 
-        url = moddb.utils.join(
-            soup.find("div", class_="table").find("h4", string=search_return).a["href"]
-        )
+        url = moddb.utils.join(soup.find("div", class_="table").find("h4", string=search_return).a["href"])
 
         async with self.bot.session.get(url) as resp:
             soup = BeautifulSoup(await resp.text(), "html.parser")
 
         mod = moddb.pages.Mod(soup)
-        await Paginator(embed_maker, 1, [1, 2, 3], ctx.author).start(ctx)
+        await Paginator(1, [1, 2, 3], ctx.author, embed_maker=embed_maker).start(ctx)
 
 
 async def setup(bot: NecroBot):

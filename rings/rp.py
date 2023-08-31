@@ -44,15 +44,11 @@ class RP(commands.Cog):
             time = time_converter(duration)
 
         filtered_channels = [
-            channel
-            for channel in channels
-            if is_active(channel[0]) and channel[0].id != ctx.channel.id
+            channel for channel in channels if is_active(channel[0]) and channel[0].id != ctx.channel.id
         ]
         filtered_channels.sort(key=lambda x: (now - discord.utils.snowflake_time(x[1])).seconds)
 
-        def embed_maker(
-            view: Paginator, entries: List[Tuple[discord.TextChannel, datetime.datetime]]
-        ):
+        def embed_maker(view: Paginator, entries: List[Tuple[discord.TextChannel, datetime.datetime]]):
             formatted_channels = "\n".join(
                 [
                     f"{channel.mention} - {(now - discord.utils.snowflake_time(last_message_id)).seconds // 60} minute(s) ago"
@@ -70,7 +66,7 @@ class RP(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 10, filtered_channels, ctx.author).start(ctx)
+        await Paginator(10, filtered_channels, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @commands.group(invoke_without_command=True)
     async def activity(self, ctx: commands.Context[NecroBot], *, duration: str = None):
@@ -93,9 +89,7 @@ class RP(commands.Cog):
     async def activity_ignore(
         self,
         ctx: commands.Context[NecroBot],
-        ignored: commands.Greedy[
-            Union[discord.TextChannel, discord.CategoryChannel, discord.Thread]
-        ],
+        ignored: commands.Greedy[Union[discord.TextChannel, discord.CategoryChannel, discord.Thread]],
         *,
         duration: str = None,
     ):

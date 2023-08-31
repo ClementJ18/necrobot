@@ -46,9 +46,7 @@ class Support(commands.Cog):
         )
         embed.add_field(name="Version", value=self.bot.version)
         uptime = (
-            str(timedelta(seconds=time.time() - self.bot.uptime_start))
-            .partition(".")[0]
-            .replace(":", "{}")
+            str(timedelta(seconds=time.time() - self.bot.uptime_start)).partition(".")[0].replace(":", "{}")
         )
         embed.add_field(name="Uptime", value=uptime.format("hours, ", "minutes and ") + "seconds")
         embed.add_field(

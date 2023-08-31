@@ -35,9 +35,7 @@ class Database(commands.Cog):
         return f"AND guild_id = ${pos}"
 
     async def create_pool(self) -> asyncpg.pool.Pool:
-        self.bot.pool = await asyncpg.create_pool(
-            database="postgres", user=dbusername, password=dbpass
-        )
+        self.bot.pool = await asyncpg.create_pool(database="postgres", user=dbusername, password=dbpass)
 
     async def get_conn(self) -> asyncpg.Connection:
         if self.bot.pool is None:
@@ -53,10 +51,8 @@ class Database(commands.Cog):
         )
 
     async def update_money(self, user_id, *, update=None, add=None):
-        query = (
-            "UPDATE necrobot.Users SET necroins = {} WHERE user_id = $1 RETURNING necroins".format(
-                self.math_builder("necroins", 2, update, add),
-            )
+        query = "UPDATE necrobot.Users SET necroins = {} WHERE user_id = $1 RETURNING necroins".format(
+            self.math_builder("necroins", 2, update, add),
         )
 
         return await self.query(query, user_id, update if update is not None else add)
@@ -276,9 +272,7 @@ class Database(commands.Cog):
         )
 
     async def update_tutorial(self, user_id, value=True):
-        await self.query(
-            "UPDATE necrobot.Users SET tutorial = $2 WHERE user_id = $1", user_id, value
-        )
+        await self.query("UPDATE necrobot.Users SET tutorial = $2 WHERE user_id = $1", user_id, value)
 
     # mixup with column names
     # - 'starred' in the code is the message that has received the stars
@@ -474,9 +468,7 @@ class Database(commands.Cog):
 
     async def update_invites(self, guild: discord.Guild):
         try:
-            invites: List[discord.Invite] = sorted(
-                await guild.invites(), key=lambda x: x.created_at
-            )
+            invites: List[discord.Invite] = sorted(await guild.invites(), key=lambda x: x.created_at)
         except discord.Forbidden:
             return
 
@@ -495,9 +487,7 @@ class Database(commands.Cog):
 
     async def sync_invites(self, guild: discord.Guild):
         try:
-            invites: List[discord.Invite] = sorted(
-                await guild.invites(), key=lambda x: x.created_at
-            )
+            invites: List[discord.Invite] = sorted(await guild.invites(), key=lambda x: x.created_at)
         except discord.Forbidden:
             return
 
@@ -770,9 +760,7 @@ class SyncDatabase:
         for g in self.cur.fetchall():
             guilds[g["guild_id"]]["ignore-command"] = g["ids"]
 
-        self.cur.execute(
-            "SELECT guild_id, array_agg(id) as roles FROM necrobot.SelfRoles GROUP BY guild_id;"
-        )
+        self.cur.execute("SELECT guild_id, array_agg(id) as roles FROM necrobot.SelfRoles GROUP BY guild_id;")
         for g in self.cur.fetchall():
             guilds[g["guild_id"]]["self-roles"] = g["roles"]
 

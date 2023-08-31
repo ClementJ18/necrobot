@@ -176,9 +176,7 @@ def RangeConverter(min_v: int, max_v: int):
 
         value = int(argument)
         if not max_v >= value >= min_v:
-            raise commands.BadArgument(
-                f"Please select a number between **{min_v}** and **{max_v}**"
-            )
+            raise commands.BadArgument(f"Please select a number between **{min_v}** and **{max_v}**")
 
         return value
 
@@ -190,9 +188,7 @@ class Grudge(commands.Converter[dict]):
         if not argument.isdigit():
             raise commands.BadArgument("Please supply a valid id")
 
-        grudge = await ctx.bot.db.query(
-            "SELECT * FROM necrobot.Grudges WHERE id = $1", int(argument)
-        )
+        grudge = await ctx.bot.db.query("SELECT * FROM necrobot.Grudges WHERE id = $1", int(argument))
 
         if not grudge:
             raise commands.BadArgument("No grudge with such id")

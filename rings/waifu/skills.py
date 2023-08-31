@@ -46,18 +46,14 @@ class Skill:
         defense stat. The returned value is added to the rest."""
         return 0
 
-    def on_take_damage(
-        self, entity: StattedEntity, attacker: StattedEntity, damage: DamageInstance
-    ) -> int:
+    def on_take_damage(self, entity: StattedEntity, attacker: StattedEntity, damage: DamageInstance) -> int:
         """This is triggered when damage is taken. The return of this is the final damage.
 
         This value is not affected by modifier, often called "true" damage.
         """
         return damage
 
-    def on_deal_damage(
-        self, entity: StattedEntity, attackee: StattedEntity, damage: DamageInstance
-    ) -> int:
+    def on_deal_damage(self, entity: StattedEntity, attackee: StattedEntity, damage: DamageInstance) -> int:
         """This is triggered when damage is dealt. The return of this is the final damage.
 
         This value is not affected by modifier, often called "true" damage."""
@@ -145,9 +141,7 @@ class ActiveSkill(Skill):
 
 @dataclass
 class ShieldPiercing(PassiveSkill):
-    def on_deal_damage(
-        self, entity: StattedEntity, attackee: StattedEntity, damage: DamageInstance
-    ):
+    def on_deal_damage(self, entity: StattedEntity, attackee: StattedEntity, damage: DamageInstance):
         damage.secondary = False
         return damage
 
@@ -244,9 +238,7 @@ class GrantModifierInArea(ActiveSkill):
                 continue
 
             if get_distance(e.position, entity.position) <= self.distance:
-                e.add_modifier(
-                    self.modifier(duration=self.turns, stats=self.stats, name=self.name)
-                )
+                e.add_modifier(self.modifier(duration=self.turns, stats=self.stats, name=self.name))
 
 
 @dataclass

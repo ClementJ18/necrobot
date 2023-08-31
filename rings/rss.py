@@ -125,9 +125,7 @@ class RSS(commands.Cog):
 
         for stream in streams:
             if (
-                datetime.datetime.strptime(
-                    stream["started_at"].replace("Z", "+00:00"), "%Y-%m-%dT%H:%M:%S%z"
-                )
+                datetime.datetime.strptime(stream["started_at"].replace("Z", "+00:00"), "%Y-%m-%dT%H:%M:%S%z")
                 <= last_time
             ):
                 continue
@@ -170,9 +168,7 @@ class RSS(commands.Cog):
         ctx: commands.Context[NecroBot],
         youtube: str = None,
         *,
-        channel: discord.TextChannel = commands.parameter(
-            converter=WritableChannelConverter, default=None
-        ),
+        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=None),
     ):
         """Add/edit a youtube stream. As long as you provide a channel, the stream will be set to that \
         channelYou can simply pass a channel URL for the ID to be retrieved.
@@ -200,7 +196,7 @@ class RSS(commands.Cog):
 
                 return embed
 
-            return await Paginator(embed_maker, 15, feeds, ctx.author).start(ctx)
+            return await Paginator(15, feeds, ctx.author, embed_maker=embed_maker).start(ctx)
 
         try:
             async with self.bot.session.get(
@@ -211,9 +207,7 @@ class RSS(commands.Cog):
                     raise BotError("This channel does not exist, double check the youtuber id.")
 
                 try:
-                    youtuber_id = re.findall(
-                        r'"external(?:Channel)?Id":"([^,.]*)"', await resp.text()
-                    )[0]
+                    youtuber_id = re.findall(r'"external(?:Channel)?Id":"([^,.]*)"', await resp.text())[0]
                 except IndexError as e:
                     raise BotError("Could not find the user ID") from e
         except Exception as e:
@@ -250,9 +244,7 @@ class RSS(commands.Cog):
         if not deleted:
             raise BotError("No channel with that name")
 
-        await ctx.send(
-            f":white_check_mark: | Deleted channel **{'**, **'.join([x[0] for x in deleted])}**"
-        )
+        await ctx.send(f":white_check_mark: | Deleted channel **{'**, **'.join([x[0] for x in deleted])}**")
 
     @youtube.command(name="filters")
     @has_perms(3)
@@ -326,9 +318,7 @@ class RSS(commands.Cog):
         ctx: commands.Context[NecroBot],
         twitch: str = None,
         *,
-        channel: discord.TextChannel = commands.parameter(
-            converter=WritableChannelConverter, default=None
-        ),
+        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=None),
     ):
         """Add/edit twitch streams. Simply provide a channel name or url to get started
 
@@ -354,7 +344,7 @@ class RSS(commands.Cog):
 
                 return embed
 
-            return await Paginator(embed_maker, 15, feeds, ctx.author).start(ctx)
+            return await Paginator(15, feeds, ctx.author, embed_maker=embed_maker).start(ctx)
 
         if channel is not None:
             twitch = re.sub(r"https?:\/\/(?:(?:www|go|m)\.)?twitch\.tv\/", "", twitch)
@@ -366,9 +356,7 @@ class RSS(commands.Cog):
             )
         else:
             await self.bot.db.delete_tw_rss_channel(ctx.guild.id, twitch_name=twitch)
-            await ctx.send(
-                f":white_check_mark: | Live stream notifications for **{twitch}** disabled."
-            )
+            await ctx.send(f":white_check_mark: | Live stream notifications for **{twitch}** disabled.")
 
     @twitch.command(name="delete")
     @has_perms(3)
@@ -389,15 +377,11 @@ class RSS(commands.Cog):
         if not deleted:
             raise BotError("No channel with that name")
 
-        await ctx.send(
-            f":white_check_mark: | Deleted channel **{'**, **'.join([x[0] for x in deleted])}**"
-        )
+        await ctx.send(f":white_check_mark: | Deleted channel **{'**, **'.join([x[0] for x in deleted])}**")
 
     @twitch.command(name="filters")
     @has_perms(3)
-    async def twitch_filters(
-        self, ctx: commands.Context[NecroBot], twitch_name: str, *, filters: str = ""
-    ):
+    async def twitch_filters(self, ctx: commands.Context[NecroBot], twitch_name: str, *, filters: str = ""):
         """This subcommand allows you to set a filter so that only videos which posses these keywords will be posted. \
         The filter itself is very rudimentary but will work so that any video that has exactly these words (in \
         any case) in that order in the title will be posted. You can clear filters by calling this command with just \

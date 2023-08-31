@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import dice
 import discord
@@ -115,39 +115,45 @@ class Decisions(commands.Cog):
             raise BotError(e) from e
 
         if isinstance(dice_list, int):
-            return await ctx.send(
-                f":game_die: | **{ctx.author.display_name}** rolled **{dice_list}**."
-            )
+            total = dice_list
+            dice_list = []
+        else:
+            total = sum(dice_list)
 
-        total = sum(dice_list)
-        dice_list_string = ", ".join([str(x) for x in dice_list])
+        chunk_size = 1800
         chunks = []
-        chunk_size = 2000
-        index = 0
-        while True:
-            chunk = dice_list_string[index : index + chunk_size]
-            if len(chunk) < chunk_size:
-                chunks.append(chunk)
-                break
+        current_chunk = []
+        current_length = 0
+        for roll in dice_list:
+            roll_lenght = len(str(roll)) + 2
+            if roll_lenght + current_length > chunk_size:
+                chunks.append(current_chunk)
+                current_chunk = []
+                current_length = 0
 
-            i = chunk.rfind(",")
-            chunks.append(chunk[: i - 1])
-            index = i + 2
+            current_chunk.append(str(roll))
+            current_length += roll_lenght
 
-        def embed_maker(view: Paginator, entry: str):
-            embed = discord.Embed(
-                title=f"Dice Roll ({view.page_string})",
-                description=entry,
-                color=self.bot.bot_color,
-            )
-            embed.add_field(name="Total", value=total)
-            embed.add_field(name="Roll", value=dices)
-            embed.add_field(name="Dice on page", value=entry.count(",") + 1)
-            embed.set_footer(**self.bot.bot_footer)
+        chunks.append(current_chunk)
 
-            return embed
+        def content_maker(view: Paginator, entry: List[str]):
+            if not entry:
+                string = "none"
+                d = "nothing"
+            else:
+                string = ", ".join(entry)
+                d = dices
 
-        await Paginator(embed_maker, 1, chunks, ctx.author).start(ctx)
+            if view.max_index > 0 and view.index < view.max_index:
+                string = string + "..."
+
+            if view.index > 0:
+                string = "..." + string
+
+            page_string = f" **({view.page_string})** "
+            return f":game_die: | **{ctx.author.display_name}** rolled **{d}** for a total of **{total}**. The dice were{page_string if view.max_index > 0 else ''}: {string}"
+
+        await Paginator(1, chunks, ctx.author, content_maker=content_maker).start(ctx)
 
     @commands.command(name="8ball")
     async def ball8(self, ctx: commands.Context[NecroBot], *, message: str = None):

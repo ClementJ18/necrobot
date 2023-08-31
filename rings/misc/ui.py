@@ -24,9 +24,7 @@ class FightError(Exception):
 
     def embed(self, bot: NecroBot):
         error_traceback = f"```py\n{traceback.format_exc()}\n```"
-        embed = discord.Embed(
-            title="Fight Error", description=error_traceback, colour=bot.bot_color
-        )
+        embed = discord.Embed(title="Fight Error", description=error_traceback, colour=bot.bot_color)
         embed.add_field(name="Error String", value=self.event["string"], inline=False)
         embed.add_field(name="Error Tribute Number", value=self.event["tributes"], inline=False)
         embed.add_field(name="Error Tribute Killed", value=self.event["killed"], inline=False)
@@ -116,8 +114,7 @@ class HungerGames(BaseView):
                 [
                     event
                     for event in idle_events
-                    if event["tributes"] <= len(idle_tributes)
-                    and len(event["killed"]) < len(self.tributes)
+                    if event["tributes"] <= len(idle_tributes) and len(event["killed"]) < len(self.tributes)
                 ]
             )
             tributes = random.sample(idle_tributes, event["tributes"])

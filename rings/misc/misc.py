@@ -163,7 +163,9 @@ class Misc(commands.Cog):
 
                 total = entry[3] + entry[2]
                 percent = entry[3] / total if total > 0 else 0
-                description += f"{emoji} **{entry['enemy']}** - {entry['victories']}/{total} ({int(percent*100)}%)\n"
+                description += (
+                    f"{emoji} **{entry['enemy']}** - {entry['victories']}/{total} ({int(percent*100)}%)\n"
+                )
 
                 wins += entry[3]
                 games += total
@@ -220,7 +222,7 @@ class Misc(commands.Cog):
 
             stats.sort(key=lambda x: x["faction"])
             stats = itertools.groupby(stats, lambda x: x["faction"])
-            await Paginator(embed_maker, 1, [list(y) for _, y in stats], ctx.author).start(ctx)
+            await Paginator(1, [list(y) for _, y in stats], ctx.author, embed_maker=embed_maker).start(ctx)
 
     @matchups.command(name="reset")
     @guild_only(496617962334060545)
@@ -244,9 +246,7 @@ class Misc(commands.Cog):
         await view.wait()
 
         if view.value:
-            await self.bot.db.query(
-                "UPDATE necrobot.InternalRanked SET defeats = 0, victories = 0"
-            )
+            await self.bot.db.query("UPDATE necrobot.InternalRanked SET defeats = 0, victories = 0")
             await self.bot.db.query("DELETE FROM necrobot.InternalRankedLogs")
 
     @matchups.command(name="logs")
@@ -323,9 +323,7 @@ class Misc(commands.Cog):
 
         filter_check = {"user": user, "winner": winner, "loser": loser}
 
-        logs = await self.bot.db.query(
-            "SELECT * FROM necrobot.InternalRankedLogs ORDER BY log_date DESC"
-        )
+        logs = await self.bot.db.query("SELECT * FROM necrobot.InternalRankedLogs ORDER BY log_date DESC")
 
         filters = {}
         if args is not None:
@@ -335,7 +333,7 @@ class Misc(commands.Cog):
 
             logs = [log for log in logs if check_entry(log)]
 
-        await Paginator(embed_maker, 15, logs, ctx.author).start(ctx)
+        await Paginator(15, logs, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @matchups.command(name="delete")
     @guild_only(496617962334060545)
@@ -391,14 +389,10 @@ class Misc(commands.Cog):
                 victory = int(not log["faction_won"])
 
             previous = faction_data[log[key]][-1]
-            faction_data[log[key]].append(
-                (previous[0] + 1, previous[1] + victory, log["log_date"], log[key])
-            )
+            faction_data[log[key]].append((previous[0] + 1, previous[1] + victory, log["log_date"], log[key]))
 
         entries = [value for tup in faction_data.values() for value in tup]
-        df = pds.DataFrame.from_records(
-            entries, columns=["Total Matches", "Victories", "Date", "Faction"]
-        )
+        df = pds.DataFrame.from_records(entries, columns=["Total Matches", "Victories", "Date", "Faction"])
         df = df.reset_index(drop=True).set_index("Date")
         df["percent"] = (df["Victories"] / df["Total Matches"]) * 100
         df = (

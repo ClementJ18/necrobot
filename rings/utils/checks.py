@@ -60,9 +60,7 @@ def leaderboard_enabled() -> Callable[[commands.Context[NecroBot]], bool]:
         if settings != "":
             return True
 
-        raise commands.CheckFailure(
-            "Leaderboard isn't currently enabled, enable it by setting a message"
-        )
+        raise commands.CheckFailure("Leaderboard isn't currently enabled, enable it by setting a message")
 
     return commands.check(predicate)
 

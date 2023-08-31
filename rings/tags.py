@@ -150,9 +150,7 @@ class Tags(commands.Cog):
                 ctx.author.id,
             )
 
-            await self.bot.db.query(
-                "INSERT INTO necrobot.Aliases VALUES ($1, $1, $2)", tag, ctx.guild.id
-            )
+            await self.bot.db.query("INSERT INTO necrobot.Aliases VALUES ($1, $1, $2)", tag, ctx.guild.id)
 
             await ctx.send(f":white_check_mark: | Tag {tag} added")
         except DatabaseError as e:
@@ -257,7 +255,7 @@ class Tags(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 10, [t["alias"] for t in tag_list], ctx.author).start(ctx)
+        await Paginator(10, [t["alias"] for t in tag_list], ctx.author, embed_maker=embed_maker).start(ctx)
 
     @tag.command(name="info")
     @commands.guild_only()

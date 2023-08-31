@@ -86,9 +86,7 @@ class Utilities(commands.Cog):
         channels = ", ".join(channel_list) if len(", ".join(channel_list)) < 1024 else ""
         role_list = [role.name for role in guild.roles]
         roles = ", ".join(role_list) if len(", ".join(role_list)) < 1024 else ""
-        embed.add_field(
-            name="**Channels**", value=f"{len(channel_list)}: {channels}", inline=False
-        )
+        embed.add_field(name="**Channels**", value=f"{len(channel_list)}: {channels}", inline=False)
         embed.add_field(name="**Roles**", value=f"{len(role_list)}: {roles}", inline=False)
 
         await ctx.send(embed=embed)
@@ -98,9 +96,7 @@ class Utilities(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        user: discord.Member = commands.parameter(
-            converter=MemberConverter, default=commands.Author
-        ),
+        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
     ):
         """Returns a link to the given user's profile pic
 
@@ -146,9 +142,7 @@ class Utilities(commands.Cog):
             for event in entries:
                 try:
                     if choice == "Events":
-                        link_list = "".join(
-                            [f"\n-[{x['title']}]({x['link']})" for x in event["links"]]
-                        )
+                        link_list = "".join([f"\n-[{x['title']}]({x['link']})" for x in event["links"]])
                         embed.add_field(
                             name=f"Year {event['year']}",
                             value=f"{event['text']}\n__Links__{link_list}",
@@ -186,9 +180,7 @@ class Utilities(commands.Cog):
             choice = random.choice(["Deaths", "Births", "Events"])
 
         if choice not in ["Deaths", "Births", "Events"]:
-            raise BotError(
-                "Not a correct choice. Correct choices are `Deaths`, `Births` or `Events`."
-            )
+            raise BotError("Not a correct choice. Correct choices are `Deaths`, `Births` or `Events`.")
 
         async with ctx.typing():
             async with self.bot.session.get(url, headers={"Connection": "keep-alive"}) as r:
@@ -197,7 +189,7 @@ class Utilities(commands.Cog):
                 except aiohttp.ClientResponseError:
                     res = await r.json(content_type="application/javascript")
 
-        await Paginator(embed_maker, 5, res["data"][choice], ctx.author).start(ctx)
+        await Paginator(5, res["data"][choice], ctx.author, embed_maker=embed_maker).start(ctx)
 
     @commands.group(invoke_without_command=True)
     async def remindme(self, ctx: commands.Context[NecroBot], *, message):
@@ -286,8 +278,7 @@ class Utilities(commands.Cog):
 
             for reminder in entries:
                 stamp = format_dt(
-                    reminder["start_date"]
-                    + datetime.timedelta(seconds=time_converter(reminder["timer"])),
+                    reminder["start_date"] + datetime.timedelta(seconds=time_converter(reminder["timer"])),
                     style="f",
                 )
                 text = reminder["reminder"][:500] if reminder["reminder"][:500] else "`No Text`"
@@ -296,7 +287,7 @@ class Utilities(commands.Cog):
             return embed
 
         reminders = await self.bot.db.get_reminders(user.id)
-        await Paginator(embed_maker, 10, reminders, ctx.author).start(ctx)
+        await Paginator(10, reminders, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @commands.group(invoke_without_command=True, aliases=["queue"])
     @commands.guild_only()
@@ -322,7 +313,7 @@ class Utilities(commands.Cog):
             f"**{index+1}.** {ctx.guild.get_member(x).display_name}"
             for index, x in enumerate(self.bot.queue[ctx.guild.id]["list"])
         ]
-        await Paginator(embed_maker, 15, queue, ctx.author).start(ctx)
+        await Paginator(15, queue, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @q.command(name="start")
     @has_perms(2)
@@ -381,9 +372,7 @@ class Utilities(commands.Cog):
 
         self.bot.queue[ctx.guild.id]["list"].append(ctx.author.id)
         position = len(self.bot.queue[ctx.guild.id]["list"])
-        await ctx.send(
-            f":white_check_mark: |  You have been added to the queue at position **{position}**"
-        )
+        await ctx.send(f":white_check_mark: |  You have been added to the queue at position **{position}**")
 
     @q.command(name="next")
     @has_perms(2)
@@ -482,7 +471,7 @@ class Utilities(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 10, results, ctx.author).start(ctx)
+        await Paginator(10, results, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @leaderboard.command(name="message")
     @has_perms(4)
@@ -583,12 +572,8 @@ class Utilities(commands.Cog):
         sun = location.sun(date)
 
         date_string = custom_strftime("%A {S} %B, %Y", date)
-        description = (
-            f"**Sunrise**: {to_string(sun['sunrise'])} \n**Sunset**: {to_string(sun['sunset'])}"
-        )
-        embed = discord.Embed(
-            colour=self.bot.bot_color, title=date_string, description=description
-        )
+        description = f"**Sunrise**: {to_string(sun['sunrise'])} \n**Sunset**: {to_string(sun['sunset'])}"
+        embed = discord.Embed(colour=self.bot.bot_color, title=date_string, description=description)
         embed.set_footer(**self.bot.bot_footer)
 
         await ctx.send(embed=embed)
@@ -674,9 +659,7 @@ class Utilities(commands.Cog):
         """Get a list of all current giveaways in this server
 
         {usage}"""
-        ga_entries = [
-            x for x in self.bot.ongoing_giveaways.values() if x["msg"].guild.id == ctx.guild.id
-        ]
+        ga_entries = [x for x in self.bot.ongoing_giveaways.values() if x["msg"].guild.id == ctx.guild.id]
         ga_entries.sort(key=lambda x: x["limit"])
 
         def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
@@ -696,7 +679,7 @@ class Utilities(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 10, ga_entries, ctx.author).start(ctx)
+        await Paginator(10, ga_entries, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @giveaway.command(name="cancel")
     @commands.guild_only()

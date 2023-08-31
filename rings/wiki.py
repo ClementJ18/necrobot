@@ -76,9 +76,9 @@ class Wiki(commands.Cog):
             # it hasn't been long enough since the last API call
             # so wait until we're in the clear to make the request
 
-            wait_time = (
-                self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT
-            ) - datetime.datetime.now(datetime.timezone.utc)
+            wait_time = (self.RATE_LIMIT_LAST_CALL + self.RATE_LIMIT_MIN_WAIT) - datetime.datetime.now(
+                datetime.timezone.utc
+            )
             await asyncio.sleep(int(wait_time.total_seconds()))
 
         async with self.bot.session.get(api_url, params=params, headers=headers) as resp:
@@ -143,9 +143,7 @@ class Wiki(commands.Cog):
         _check_error_response(request, page_id)
         return request
 
-    async def mediawiki_handler(
-        self, ctx: commands.Context[NecroBot], article: str, fandom: str = None
-    ):
+    async def mediawiki_handler(self, ctx: commands.Context[NecroBot], article: str, fandom: str = None):
 
         if fandom is not None:
             base = f"https://{fandom}.wikia.com"
@@ -241,9 +239,7 @@ class Wiki(commands.Cog):
 
         sections = await self.get_sections("3908", mod)
         questions = [
-            re.sub(r"<.+?>", "", x["line"])
-            for x in sections["parse"]["sections"]
-            if x["toclevel"] == 2
+            re.sub(r"<.+?>", "", x["line"]) for x in sections["parse"]["sections"] if x["toclevel"] == 2
         ]
         matches = process.extract(question, questions, limit=5)
         message = []

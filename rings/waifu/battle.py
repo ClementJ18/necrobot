@@ -77,9 +77,7 @@ class SkillAction(ActionLog):
         return SkillAction(self.entity)
 
     def __str__(self):
-        return (
-            f"{get_symbol(self.entity.index)} - {self.entity} used {self.entity.active_skill.name}"
-        )
+        return f"{get_symbol(self.entity.index)} - {self.entity} used {self.entity.active_skill.name}"
 
 
 class InvalidPosition(Exception):
@@ -130,9 +128,9 @@ class Battlefield:
     size: Size = Size(0, 0)
     enemy_count: int = 0
 
-    potential_enemies_groups: List[
-        Tuple[int, List[Tuple[int | EnemyAmount, StattedEntity]]]
-    ] = field(default_factory=list)
+    potential_enemies_groups: List[Tuple[int, List[Tuple[int | EnemyAmount, StattedEntity]]]] = field(
+        default_factory=list
+    )
 
     def __post_init__(self):
         self.size = Size(len(self.tiles[0]), len(self.tiles))
@@ -153,9 +151,7 @@ class Battlefield:
             if isinstance(enemy[0], int):
                 enemies.extend(copy.deepcopy(enemy[1]) for _ in range(enemy[0]))
             elif enemy[0] is EnemyAmount.Max:
-                enemies.extend(
-                    copy.deepcopy(enemy[1]) for _ in range(self.enemy_count - len(enemies))
-                )
+                enemies.extend(copy.deepcopy(enemy[1]) for _ in range(self.enemy_count - len(enemies)))
 
         if len(enemies) > self.enemy_count:
             raise ValueError(f"More enemies generated for {self.name} than enemy count.")
@@ -293,9 +289,7 @@ class Battle:
 
         self.battlefield.initialise()
 
-    def move_entity(
-        self, entity: StattedEntity, *, new_position: Coords = None, change: Coords = None
-    ):
+    def move_entity(self, entity: StattedEntity, *, new_position: Coords = None, change: Coords = None):
         if not new_position and not change:
             raise ValueError("Specify either change or new_position")
 

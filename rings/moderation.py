@@ -99,9 +99,7 @@ class Moderation(commands.Cog):
 
         if soft:
             await ctx.guild.unban(user)
-            await ctx.message.add_reaction(
-                "\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}"
-            )
+            await ctx.message.add_reaction("\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}")
 
         automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
         if automod is not None:
@@ -135,9 +133,7 @@ class Moderation(commands.Cog):
         `{pre}nick @NecroBot Lord of All Bots` - renames NecroBot to 'Lord of All Bots'
         `{pre}nick @NecroBot` - will reset NecroBot's nickname"""
         if await self.bot.db.compare_user_permission(ctx.author.id, ctx.guild.id, user.id) < 1:
-            raise BotError(
-                "You do not have the required NecroBot permissions to rename this user."
-            )
+            raise BotError("You do not have the required NecroBot permissions to rename this user.")
 
         if not nickname:
             msg = f":white_check_mark: | User **{user.display_name}**'s nickname reset"
@@ -239,9 +235,7 @@ class Moderation(commands.Cog):
             await ctx.send(":white_check_mark: | Reset mute role")
         else:
             await self.bot.db.update_mute_role(ctx.guild.id, role.id)
-            await ctx.send(
-                f":white_check_mark: | Okay, the mute role for your server will be {role.mention}"
-            )
+            await ctx.send(f":white_check_mark: | Okay, the mute role for your server will be {role.mention}")
 
     @mute_role.command(name="create")
     @has_perms(4)
@@ -302,9 +296,7 @@ class Moderation(commands.Cog):
         __Example__
         `{pre}unmute @NecroBot` - unmutes NecroBot if he is muted"""
         if not self.bot.guild_data[ctx.guild.id]["mute"]:
-            raise BotError(
-                f"Please set up the mute role with `{ctx.prefix}mute role [rolename]` first."
-            )
+            raise BotError(f"Please set up the mute role with `{ctx.prefix}mute role [rolename]` first.")
 
         role = discord.utils.get(ctx.guild.roles, id=self.bot.guild_data[ctx.guild.id]["mute"])
         if role in user.roles:
@@ -342,18 +334,14 @@ class Moderation(commands.Cog):
         if await self.bot.db.compare_user_permission(ctx.author.id, ctx.guild.id, user.id) < 1:
             raise BotError("You do not have the required NecroBot permissions to warn this user.")
 
-        warning_id = await self.bot.db.insert_warning(
-            user.id, ctx.author.id, ctx.guild.id, message
-        )
+        warning_id = await self.bot.db.insert_warning(user.id, ctx.author.id, ctx.guild.id, message)
         await ctx.send(
             f":white_check_mark: | Warning added to warning list of user **{user.display_name}** with ID `{warning_id}`"
         )
 
         if self.bot.guild_data[ctx.guild.id]["pm-warning"]:
             try:
-                await user.send(
-                    f"You have been warned on {ctx.guild.name}, the warning is: \n {message}"
-                )
+                await user.send(f"You have been warned on {ctx.guild.name}, the warning is: \n {message}")
             except discord.Forbidden:
                 pass
 
@@ -401,9 +389,7 @@ class Moderation(commands.Cog):
     async def warn_list(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(
-            converter=MemberConverter, default=commands.Author
-        ),
+        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
     ):
         """List a user's warnings
 
@@ -437,7 +423,7 @@ class Moderation(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 5, warnings, ctx.author).start(ctx)
+        await Paginator(5, warnings, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @warn.command(name="get")
     async def warn_get(self, ctx: commands.Context[NecroBot], warn_id: int):
@@ -468,13 +454,9 @@ class Moderation(commands.Cog):
         issuer = self.bot.get_user(warning["issuer_id"])
         embed.add_field(
             name="Issuer",
-            value=issuer.mention
-            if not issuer is None
-            else f"User has left ({warning['issuer_id']})",
+            value=issuer.mention if not issuer is None else f"User has left ({warning['issuer_id']})",
         )
-        embed.add_field(
-            name="Date Issued", value=warning["date_issued"].strftime("%Y-%m-%d %H:%M")
-        )
+        embed.add_field(name="Date Issued", value=warning["date_issued"].strftime("%Y-%m-%d %H:%M"))
 
         embed.set_footer(**self.bot.bot_footer)
 
@@ -528,9 +510,7 @@ class Moderation(commands.Cog):
         elif check == "image":
             deleted = await ctx.channel.purge(limit=number, check=lambda m: m.attachments)
         elif check == "bot":
-            deleted = await ctx.channel.purge(
-                limit=number, check=lambda m: m.author == self.bot.user
-            )
+            deleted = await ctx.channel.purge(limit=number, check=lambda m: m.author == self.bot.user)
         else:
             deleted = await ctx.channel.purge(limit=number)
 
@@ -610,9 +590,7 @@ class Moderation(commands.Cog):
                 if x.name not in self.bot.guild_data[ctx.guild.id]["disabled"]
             ]
             await self.bot.db.insert_disabled(ctx.guild.id, *disabled_commands)
-            return await ctx.send(
-                f":white_check_mark: | All commands in **{name}** are now disabled"
-            )
+            return await ctx.send(f":white_check_mark: | All commands in **{name}** are now disabled")
 
         raise BotError("No such command/cog")
 
@@ -648,14 +626,10 @@ class Moderation(commands.Cog):
 
         if cog:
             enabled_commands = [
-                x.name
-                for x in cog.get_commands()
-                if x.name in self.bot.guild_data[ctx.guild.id]["disabled"]
+                x.name for x in cog.get_commands() if x.name in self.bot.guild_data[ctx.guild.id]["disabled"]
             ]
             await self.bot.db.delete_disabled(ctx.guild.id, *enabled_commands)
-            return await ctx.send(
-                f":white_check_mark: | All commands in **{name}** are now enabled"
-            )
+            return await ctx.send(f":white_check_mark: | All commands in **{name}** are now enabled")
 
         raise BotError("No such command/cog")
 
@@ -689,9 +663,7 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        role = discord.utils.get(
-            member.guild.roles, id=self.bot.guild_data[member.guild.id]["mute"]
-        )
+        role = discord.utils.get(member.guild.roles, id=self.bot.guild_data[member.guild.id]["mute"])
         if role is None:
             return
 

@@ -29,12 +29,8 @@ if TYPE_CHECKING:
 
 
 class GivemePaginator(Paginator):
-    @discord.ui.select(
-        options=[discord.SelectOption(label="Placeholder")], min_values=0, max_values=1
-    )
-    async def select_role(
-        self, interaction: discord.Interaction[NecroBot], select: discord.ui.Select
-    ):
+    @discord.ui.select(options=[discord.SelectOption(label="Placeholder")], min_values=0, max_values=1)
+    async def select_role(self, interaction: discord.Interaction[NecroBot], select: discord.ui.Select):
         entries: List[discord.Role] = self.get_entry_subset()
 
         roles_to_add = [interaction.guild.get_role(int(role_id)) for role_id in select.values]
@@ -51,9 +47,7 @@ class GivemePaginator(Paginator):
             await interaction.user.remove_roles(*roles_to_remove)
 
         self.view_maker(entries)
-        await interaction.response.edit_message(
-            embed=await self.generate_embed(entries), view=self
-        )
+        await interaction.response.edit_message(embed=await self.generate_embed(entries), view=self)
         if roles_to_add or roles_to_remove:
             await interaction.followup.send(":white_check_mark: | Roles updated", ephemeral=True)
 
@@ -162,9 +156,7 @@ class Server(commands.Cog):
         `{pre}perms @NecroBot 5` - set the NecroBot permission level to 5"""
         if level is None and user is not None:
             level = await self.bot.db.get_permission(user.id, ctx.guild.id)
-            return await ctx.send(
-                f"**{user.display_name}** is **{level}** ({self.bot.perms_name[level]})"
-            )
+            return await ctx.send(f"**{user.display_name}** is **{level}** ({self.bot.perms_name[level]})")
 
         if level is None and user is None:
             members = await self.bot.db.query(
@@ -188,7 +180,7 @@ class Server(commands.Cog):
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
 
-            return await Paginator(embed_maker, 10, members, ctx.author).start(ctx)
+            return await Paginator(10, members, ctx.author, embed_maker=embed_maker).start(ctx)
 
         if await self.bot.db.compare_user_permission(ctx.author.id, ctx.guild.id, user.id) > 1:
             current_level = await self.bot.db.get_permission(user.id, ctx.guild.id)
@@ -208,15 +200,11 @@ class Server(commands.Cog):
                 )
 
         else:
-            raise BotError(
-                "You do not have the required NecroBot permission to grant this permission level"
-            )
+            raise BotError("You do not have the required NecroBot permission to grant this permission level")
 
     @permissions.command(name="commands")
     @has_perms(1)
-    async def permissions_commands(
-        self, ctx: commands.Context[NecroBot], level: RangeConverter(1, 7)
-    ):
+    async def permissions_commands(self, ctx: commands.Context[NecroBot], level: RangeConverter(1, 7)):
         """See what permission level has access to which commands
 
         {usage}
@@ -227,9 +215,7 @@ class Server(commands.Cog):
             if command.hidden:
                 continue
 
-            perms_check = discord.utils.find(
-                lambda x: x.__qualname__.startswith("has_perms"), command.checks
-            )
+            perms_check = discord.utils.find(lambda x: x.__qualname__.startswith("has_perms"), command.checks)
             if perms_check is not None and perms_check.level <= level:
                 c.append(f"- {command.name} ({perms_check.level}+)")
 
@@ -244,7 +230,7 @@ class Server(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        await Paginator(embed_maker, 10, c, ctx.author).start(ctx)
+        await Paginator(10, c, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @permissions.command(name="bind")
     @has_perms(4)
@@ -279,9 +265,7 @@ class Server(commands.Cog):
 
             string = ""
             for r in roles:
-                string += (
-                    f"- {ctx.guild.get_role(r[2]).mention}: {self.bot.perms_name[r[1]]} ({r[1]})\n"
-                )
+                string += f"- {ctx.guild.get_role(r[2]).mention}: {self.bot.perms_name[r[1]]} ({r[1]})\n"
 
             embed = discord.Embed(
                 title="Roles tied to permissions",
@@ -443,7 +427,7 @@ class Server(commands.Cog):
 
         if not mentions:
             ignored = self.bot.guild_data[ctx.guild.id]["ignore-automod"]
-            return await Paginator(embed_maker, 10, self.get_all(ctx, ignored), ctx.author).start(
+            return await Paginator(10, self.get_all(ctx, ignored, embed_maker=embed_maker), ctx.author).start(
                 ctx
             )
 
@@ -532,7 +516,7 @@ class Server(commands.Cog):
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
 
-            return await Paginator(embed_maker, 10, self.get_all(ctx, ignored), ctx.author).start(
+            return await Paginator(10, self.get_all(ctx, ignored, embed_maker=embed_maker), ctx.author).start(
                 ctx
             )
 
@@ -543,8 +527,7 @@ class Server(commands.Cog):
         for x in mentions:
             if (
                 isinstance(x, discord.Member)
-                and (await self.bot.db.compare_user_permission(ctx.author.id, ctx.guild.id, x.id))
-                < 1
+                and (await self.bot.db.compare_user_permission(ctx.author.id, ctx.guild.id, x.id)) < 1
             ):
                 raise BotError(f"You don't have the permissions required to ignore {x.mention}")
 
@@ -595,16 +578,12 @@ class Server(commands.Cog):
             name="Mute Role",
             value=ctx.guild.get_role(server["mute"]).mention if server["mute"] else "Disabled",
         )
-        embed.add_field(
-            name="Prefix", value=f'`{server["prefix"]}`' if server["prefix"] else "`n!`"
-        )
+        embed.add_field(name="Prefix", value=f'`{server["prefix"]}`' if server["prefix"] else "`n!`")
 
         embed.add_field(name="PM Warnings", value=server["pm-warning"], inline=False)
         embed.add_field(
             name="Auto Role",
-            value=ctx.guild.get_role(server["auto-role"]).mention
-            if server["auto-role"]
-            else "Disabled",
+            value=ctx.guild.get_role(server["auto-role"]).mention if server["auto-role"] else "Disabled",
         )
         embed.add_field(
             name="Auto Role Time Limit",
@@ -612,9 +591,7 @@ class Server(commands.Cog):
         )
         embed.add_field(
             name="Automod Channel",
-            value=self.bot.get_channel(server["automod"]).mention
-            if server["automod"]
-            else "Disabled",
+            value=self.bot.get_channel(server["automod"]).mention if server["automod"] else "Disabled",
             inline=False,
         )
         embed.add_field(
@@ -656,9 +633,7 @@ class Server(commands.Cog):
                 test = message.format(
                     **build_format_dict(member=ctx.author, guild=ctx.guild, channel=ctx.channel)
                 )
-                await ctx.send(
-                    f":white_check_mark: | Your server's welcome message will be: \n{test}"
-                )
+                await ctx.send(f":white_check_mark: | Your server's welcome message will be: \n{test}")
             except KeyError as e:
                 raise BotError(
                     f"{e.args[0]} is not a valid argument. Check the help guide to see what you can use the command with."
@@ -692,9 +667,7 @@ class Server(commands.Cog):
                 test = message.format(
                     **build_format_dict(member=ctx.author, guild=ctx.guild, channel=ctx.channel)
                 )
-                await ctx.send(
-                    f":white_check_mark: | Your server's farewell message will be: \n{test}"
-                )
+                await ctx.send(f":white_check_mark: | Your server's farewell message will be: \n{test}")
             except KeyError as e:
                 raise BotError(
                     f"{e.args[0]} is not a valid argument. Check the help guide to see what you can use the command with."
@@ -718,9 +691,7 @@ class Server(commands.Cog):
     async def welcome_channel(
         self,
         ctx: commands.Context[NecroBot],
-        channel: discord.TextChannel = commands.parameter(
-            converter=WritableChannelConverter, default=0
-        ),
+        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=0),
     ):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention/name/id. The welcome \
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use \
@@ -740,9 +711,7 @@ class Server(commands.Cog):
     async def farewell_channel(
         self,
         ctx: commands.Context[NecroBot],
-        channel: discord.TextChannel = commands.parameter(
-            converter=WritableChannelConverter, default=0
-        ),
+        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=0),
     ):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention. The welcome \
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use \
@@ -850,7 +819,7 @@ class Server(commands.Cog):
             "SELECT * FROM necrobot.Broadcasts WHERE guild_id = $1", ctx.guild.id
         )
 
-        await Paginator(embed_maker, 1, broadcasts, ctx.author).start(ctx)
+        await Paginator(1, broadcasts, ctx.author, embed_maker=embed_maker).start(ctx)
 
     async def broadcast_editor(
         self,
@@ -864,9 +833,7 @@ class Server(commands.Cog):
             )
 
             embed.add_field(name="Channel", value=channel.mention)
-            embed.add_field(
-                name="Start Time", value=f"{values['start']}h (Current hour: {self.bot.counter})"
-            )
+            embed.add_field(name="Start Time", value=f"{values['start']}h (Current hour: {self.bot.counter})")
             embed.add_field(name="Interval", value=f"Every {values['interval']} hours")
 
             embed.set_footer(**self.bot.bot_footer)
@@ -954,9 +921,7 @@ class Server(commands.Cog):
             "start": EmbedRangeConverter(default=str(query[0]["start_time"]), min=0, max=23),
             "interval": EmbedRangeConverter(default=str(query[0]["interval"]), min=1, max=24),
         }
-        view = await self.broadcast_editor(
-            defaults, ctx.guild.get_channel(query[0]["channel_id"]), ctx
-        )
+        view = await self.broadcast_editor(defaults, ctx.guild.get_channel(query[0]["channel_id"]), ctx)
         if not view.value:
             return
 
@@ -1039,9 +1004,7 @@ class Server(commands.Cog):
             def embed_maker(view: GivemePaginator, entries: List[discord.Role]):
                 embed = discord.Embed(
                     title=f"Self Assignable Roles ({view.page_string})",
-                    description="\n".join(
-                        [f"- {role.mention} ({len(role.members)})" for role in entries]
-                    ),
+                    description="\n".join([f"- {role.mention} ({len(role.members)})" for role in entries]),
                     colour=self.bot.bot_color,
                 )
 
@@ -1053,7 +1016,7 @@ class Server(commands.Cog):
                 for role_id in self.bot.guild_data[ctx.guild.id]["self-roles"]
                 if ctx.guild.get_role(role_id) is not None
             ]
-            return await GivemePaginator(embed_maker, 20, roles, ctx.author).start(ctx)
+            return await GivemePaginator(20, roles, ctx.author, embed_maker=embed_maker).start(ctx)
 
         if role.id in self.bot.guild_data[ctx.guild.id]["self-roles"]:
             if role not in ctx.author.roles:
@@ -1087,9 +1050,7 @@ class Server(commands.Cog):
             raise BotError("Role already in list of self assignable roles")
 
         await self.bot.db.insert_self_roles(ctx.guild.id, role.id)
-        await ctx.send(
-            f":white_check_mark: | Added role **{role.name}** to list of self assignable roles."
-        )
+        await ctx.send(f":white_check_mark: | Added role **{role.name}** to list of self assignable roles.")
 
     @giveme.command(name="delete")
     @has_perms(4)
@@ -1109,9 +1070,7 @@ class Server(commands.Cog):
             raise BotError("Role not in self assignable list")
 
         await self.bot.db.delete_self_roles(ctx.guild.id, role.id)
-        await ctx.send(
-            f":white_check_mark: | Role **{role.name}** removed from self assignable roles"
-        )
+        await ctx.send(f":white_check_mark: | Role **{role.name}** removed from self assignable roles")
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -1119,9 +1078,7 @@ class Server(commands.Cog):
     async def starboard(
         self,
         ctx: commands.Context[NecroBot],
-        channel: discord.TextChannel = commands.parameter(
-            converter=WritableChannelConverter, default=None
-        ),
+        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=None),
     ):
         """Sets a channel for the starboard messages, required in order for starboard to be enabled. Call the command \
         without a channel to disable starboard.
@@ -1138,9 +1095,7 @@ class Server(commands.Cog):
         else:
             check_channel(channel)
             await self.bot.db.update_starboard_channel(ctx.guild.id, channel.id)
-            await ctx.send(
-                f":white_check_mark: | Starred messages will now be sent to {channel.mention}"
-            )
+            await ctx.send(f":white_check_mark: | Starred messages will now be sent to {channel.mention}")
 
     @starboard.command(name="limit")
     @has_perms(4)
@@ -1177,9 +1132,7 @@ class Server(commands.Cog):
         try:
             message = await ctx.channel.fetch_message(message_id)
         except Exception as e:
-            raise BotError(
-                "Message not found, make sure you are in the channel with the message."
-            ) from e
+            raise BotError("Message not found, make sure you are in the channel with the message.") from e
 
         await self.bot.meta.star_message(message)
         automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])

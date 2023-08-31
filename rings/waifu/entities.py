@@ -85,14 +85,10 @@ class StattedEntity(DataClass):
 
         attack_buff = 0
         if self.skill_is_active():
-            attack_buff += self.active_skill.on_calculate_attack(
-                self, attackee, attack, self.is_physical
-            )
+            attack_buff += self.active_skill.on_calculate_attack(self, attackee, attack, self.is_physical)
 
         if self.has_passive():
-            attack_buff += self.passive_skill.on_calculate_attack(
-                self, attackee, attack, self.is_physical
-            )
+            attack_buff += self.passive_skill.on_calculate_attack(self, attackee, attack, self.is_physical)
 
         for modifier in self.modifiers:
             attack_buff += modifier.on_calculate_attack(self, attackee, attack, self.is_physical)

@@ -126,9 +126,7 @@ class Flowers(commands.Cog):
 
         return query
 
-    async def remove_character_from_user(
-        self, guild_id: int, user_id: int, char_id: int, amount: int
-    ):
+    async def remove_character_from_user(self, guild_id: int, user_id: int, char_id: int, amount: int):
         conn = await self.bot.db.get_conn()
         async with conn.transaction():
             level = await self.bot.db.query(
@@ -274,10 +272,7 @@ class Flowers(commands.Cog):
         )
 
     def pull(self, characters: List[EntityDict], pity: int = 0, guarantee: bool = False):
-        duds = [
-            random.choice(DUD_TEMPLATES)
-            for _ in range(math.ceil(len(characters) * self.DUD_PERCENT))
-        ]
+        duds = [random.choice(DUD_TEMPLATES) for _ in range(math.ceil(len(characters) * self.DUD_PERCENT))]
         pool = [*characters, *duds]
         weights = [self.calculate_weight(char["tier"], char["modifier"], pity) for char in pool]
 
@@ -356,9 +351,7 @@ class Flowers(commands.Cog):
     async def flowers_balance(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(
-            converter=MemberConverter, default=commands.Author
-        ),
+        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
     ):
         """Check your or a user's balance of flowers
 
@@ -449,7 +442,7 @@ class Flowers(commands.Cog):
             mutable_entry["name"] = f"{entry['name']} ({view.page_string})"
             return self.embed_character(mutable_entry, True)
 
-        await Paginator(embed_maker, 1, characters, ctx.author).start(ctx)
+        await Paginator(1, characters, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @characters.command(name="list")
     async def characters_list(self, ctx: commands.Context[NecroBot]):
@@ -478,7 +471,7 @@ class Flowers(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 10, characters, ctx.author).start(ctx)
+        await Paginator(10, characters, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @characters.command(name="get")
     async def characters_get(
@@ -612,9 +605,7 @@ class Flowers(commands.Cog):
             "title": EmbedStringConverter(default=char["title"], optional=True),
             "tier": EmbedRangeConverter(default=char["tier"], min=1, max=5),
             "universe": EmbedStringConverter(default=char["universe"]),
-            "type": EmbedChoiceConverter(
-                default=char["type"], choices=["character", "weapon", "artefact"]
-            ),
+            "type": EmbedChoiceConverter(default=char["type"], choices=["character", "weapon", "artefact"]),
             "primary_health": EmbedStatConverter(default=char["primary_health"]),
             "secondary_health": EmbedStatConverter(default=char["secondary_health"]),
             "physical_attack": EmbedStatConverter(default=char["physical_attack"]),
@@ -787,9 +778,7 @@ class Flowers(commands.Cog):
         if not view.value:
             return
 
-        level, is_deleted = await self.remove_character_from_user(
-            ctx.guild.id, user.id, char["id"], amount
-        )
+        level, is_deleted = await self.remove_character_from_user(ctx.guild.id, user.id, char["id"], amount)
         if not level and not is_deleted:
             await view.message.edit(
                 content=":negative_squared_cross_mark: | User does not have that character",
@@ -843,7 +832,7 @@ class Flowers(commands.Cog):
             ]
             return self.embed_banner(mutable_entry, archive)
 
-        await Paginator(embed_maker, 1, banners, ctx.author).start(ctx)
+        await Paginator(1, banners, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @banners.command(name="create")
     @has_perms(4)
@@ -923,9 +912,7 @@ class Flowers(commands.Cog):
 
     @banners.command(name="toggle")
     @has_perms(4)
-    async def banners_toggle(
-        self, ctx: commands.Context[NecroBot], banner: GachaBannerConverter(False)
-    ):
+    async def banners_toggle(self, ctx: commands.Context[NecroBot], banner: GachaBannerConverter(False)):
         """Toggle whether or not a banner is currently running
 
         {usage}
@@ -1005,9 +992,7 @@ class Flowers(commands.Cog):
                 f":white_check_mark: | Characters **{char['name']}** removed from banner **{banner['name']}**."
             )
         else:
-            raise BotError(
-                f"Characters **{char['name']}** not present on banner **{banner['name']}**."
-            )
+            raise BotError(f"Characters **{char['name']}** not present on banner **{banner['name']}**.")
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -1024,9 +1009,7 @@ class Flowers(commands.Cog):
             ctx.guild.id,
         )
         if guild[0]["guaranteed"] >= 0:
-            guarantee = (
-                f"You are guaranteed a character after **{guild[0]['guaranteed'] + 1}** rolls."
-            )
+            guarantee = f"You are guaranteed a character after **{guild[0]['guaranteed'] + 1}** rolls."
         else:
             guarantee = "You are not guaranteed a character after any amount of rolls."
 
@@ -1039,9 +1022,7 @@ class Flowers(commands.Cog):
     async def gacha_balance(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(
-            converter=MemberConverter, default=commands.Author
-        ),
+        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
     ):
         """Check your or a user's balance of flowers
 
@@ -1077,7 +1058,7 @@ class Flowers(commands.Cog):
             mutable_entry["name"] = f"{entry['name']} ({view.page_string})"
             return self.embed_character(mutable_entry)
 
-        await Paginator(embed_maker, 1, characters, ctx.author).start(ctx)
+        await Paginator(1, characters, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @gacha.group(name="roll", invoke_without_command=True, aliases=["pull"])
     @commands.guild_only()
@@ -1106,9 +1087,7 @@ class Flowers(commands.Cog):
 
         if query:
             pity = query[0]["tier_5_pity"]
-            guarantee = (
-                query[0]["tier_4_pity"] >= data[0]["guaranteed"] and data[0]["guaranteed"] >= 0
-            )
+            guarantee = query[0]["tier_4_pity"] >= data[0]["guaranteed"] and data[0]["guaranteed"] >= 0
             roll_count = query[0]["roll_count"]
 
         if banner["max_rolls"] > 0 and roll_count >= banner["max_rolls"]:
@@ -1124,9 +1103,7 @@ class Flowers(commands.Cog):
         )
 
         mutable_banner = dict(banner)
-        mutable_banner["characters"] = [
-            f"{char['name']} ({char['tier']} :star:)" for char in characters
-        ]
+        mutable_banner["characters"] = [f"{char['name']} ({char['tier']} :star:)" for char in characters]
 
         view = Confirm(ctx.author, confirm_msg=None)
         view.message = await ctx.send(
@@ -1151,18 +1128,14 @@ class Flowers(commands.Cog):
             pull_animation = "https://media.tenor.com/rOuL0G1uRpMAAAAd/genshin-impact-pull.gif"
         elif pulled_char["tier"] == 4:
             pity_increase = 3
-            pull_animation = (
-                "https://media.tenor.com/pVzBgcp1RPQAAAAd/genshin-impact-animation.gif"
-            )
+            pull_animation = "https://media.tenor.com/pVzBgcp1RPQAAAAd/genshin-impact-animation.gif"
         else:
             sleep = 2
             pity_increase = 2
             pull_animation = "https://media.tenor.com/-0gPdn6GMVAAAAAC/genshin3star-wish.gif"
 
         if pulled_char.get("id"):  # not a dud
-            level = await self.add_characters_to_user(
-                ctx.guild.id, ctx.author.id, pulled_char["id"]
-            )
+            level = await self.add_characters_to_user(ctx.guild.id, ctx.author.id, pulled_char["id"])
             pulled_char["level"] = level
         else:
             pity = 1
@@ -1319,9 +1292,7 @@ class Flowers(commands.Cog):
                 view = Confirm(ctx.author, confirm_msg=None)
                 view.message = await ctx.send(
                     "With the new equipment the character will have the following stats:",
-                    embed=self.embed_equipment_set(
-                        current_equipment.character["name"], current_equipment
-                    ),
+                    embed=self.embed_equipment_set(current_equipment.character["name"], current_equipment),
                     view=view,
                 )
 
@@ -1343,9 +1314,7 @@ class Flowers(commands.Cog):
                 )
 
         except DatabaseError as e:
-            raise BotError(
-                f"You cannot equip the same weapon/artefact to multiple characters."
-            ) from e
+            raise BotError(f"You cannot equip the same weapon/artefact to multiple characters.") from e
 
     @equipment.command(name="remove")
     async def equipment_remove(
@@ -1404,12 +1373,8 @@ class Flowers(commands.Cog):
         character = Character(
             name=entry.character["name"],
             stats=StatBlock.from_dict(entry.character),
-            weapon=StattedEntity(
-                name=entry.weapon["name"], stats=StatBlock.from_dict(entry.weapon)
-            ),
-            artefact=StattedEntity(
-                name=entry.artefact["name"], stats=StatBlock.from_dict(entry.artefact)
-            ),
+            weapon=StattedEntity(name=entry.weapon["name"], stats=StatBlock.from_dict(entry.weapon)),
+            artefact=StattedEntity(name=entry.artefact["name"], stats=StatBlock.from_dict(entry.artefact)),
         )
 
         embed = discord.Embed(
@@ -1445,12 +1410,10 @@ class Flowers(commands.Cog):
         `{pre}equipment list` - list all your equipped characters"""
 
         def embed_maker(view: Paginator, entry: EquipmentSet):
-            return self.embed_equipment_set(
-                f"{entry.character['name']} ({view.page_string})", entry
-            )
+            return self.embed_equipment_set(f"{entry.character['name']} ({view.page_string})", entry)
 
         entries = await self.get_equipment_set(ctx.guild.id, ctx.author.id)
-        await Paginator(embed_maker, 1, entries, ctx.author).start(ctx)
+        await Paginator(1, entries, ctx.author, embed_maker=embed_maker).start(ctx)
 
     def convert_battlefield_to_str(
         self, field: Battlefield, characters: List[Character], character_range: Character = None
@@ -1481,9 +1444,7 @@ class Flowers(commands.Cog):
             empty_board.append(empty_row)
 
         for character in characters:
-            empty_board[character.position[1]][character.position[0]] = POSITION_EMOJIS[
-                character.index
-            ]
+            empty_board[character.position[1]][character.position[0]] = POSITION_EMOJIS[character.index]
 
         return "\n".join(["".join(row) for row in empty_board])
 
@@ -1518,10 +1479,7 @@ class Flowers(commands.Cog):
                         str,
                         reversed(
                             (
-                                (
-                                    ["\N{BLACK CIRCLE FOR RECORD}\N{VARIATION SELECTOR-16} -"]
-                                    * LOG_SIZE
-                                )
+                                (["\N{BLACK CIRCLE FOR RECORD}\N{VARIATION SELECTOR-16} -"] * LOG_SIZE)
                                 + battle.action_logs
                             )[-LOG_SIZE:]
                         ),
@@ -1553,7 +1511,9 @@ class Flowers(commands.Cog):
                 string += f"\n- Active: {character.active_skill.name} - {character.active_skill.description}"
 
             if character.passive_skill is not None:
-                string += f"\n- Passive: {character.passive_skill.name} - {character.passive_skill.description}"
+                string += (
+                    f"\n- Passive: {character.passive_skill.name} - {character.passive_skill.description}"
+                )
 
             embed.add_field(name=f"{character.name} ({page}/3)", value=string)
 
@@ -1565,9 +1525,7 @@ class Flowers(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         chars: List[EntityDict] = commands.parameter(
-            converter=commands.Greedy[
-                GachaCharacterConverter(allowed_types=("character",), is_owned=True)
-            ]
+            converter=commands.Greedy[GachaCharacterConverter(allowed_types=("character",), is_owned=True)]
         ),
     ):
         """Start a battle between three of your characters and a random enemy on a random battlefield. \

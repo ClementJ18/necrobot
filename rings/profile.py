@@ -47,9 +47,7 @@ class Profile(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        user: discord.Member = commands.parameter(
-            converter=MemberConverter, default=commands.Author
-        ),
+        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
     ):
         """Prints the given user's NecroBot balance, if no user is supplied then it will print your own NecroBot balance.
 
@@ -60,18 +58,14 @@ class Profile(commands.Cog):
         `{pre}balance` - prints your own balance"""
         if user != ctx.author:
             money = await self.bot.db.get_money(user.id)
-            await ctx.send(
-                f":atm: | **{user.display_name}** has **{'{:,}'.format(money)}** :euro:"
-            )
+            await ctx.send(f":atm: | **{user.display_name}** has **{'{:,}'.format(money)}** :euro:")
         else:
             money = await self.bot.db.get_money(ctx.author.id)
             await ctx.send(
                 f":atm: | **{ctx.author.display_name}** you have **{'{:,}'.format(money)}** :euro:"
             )
 
-    async def money_ranking(
-        self, ctx: commands.Context[NecroBot], entries: List[int], server: bool
-    ):
+    async def money_ranking(self, ctx: commands.Context[NecroBot], entries: List[int], server: bool):
         description = (
             "Ranking of user's money on the server"
             if server
@@ -96,7 +90,7 @@ class Profile(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 10, entries, ctx.author).start(ctx)
+        await Paginator(10, entries, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @balance.command(name="server")
     async def balance_server(self, ctx: commands.Context[NecroBot]):
@@ -136,9 +130,7 @@ class Profile(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        member: discord.Member = commands.parameter(
-            converter=MemberConverter, default=commands.Author
-        ),
+        member: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
     ):
         """Adds your daily 200 :euro: to your NecroBot balance. This can be used at anytime once every GMT day. Can \
         also be gifted to a user for some extra cash.
@@ -206,9 +198,7 @@ class Profile(commands.Cog):
             raise BotError("You no longer have enough money") from e
 
         try:
-            await payee.send(
-                f":m: | **{payer.display_name}** has transferred **{amount}$** to your profile"
-            )
+            await payee.send(f":m: | **{payer.display_name}** has transferred **{amount}$** to your profile")
         except (discord.Forbidden, discord.HTTPException, AttributeError):
             pass
 
@@ -218,9 +208,7 @@ class Profile(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        user: discord.Member = commands.parameter(
-            converter=MemberConverter, default=commands.Author
-        ),
+        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
     ):
         """Returns a rich embed of the given user's info. If no user is provided it will return your own info.
 
@@ -262,9 +250,7 @@ class Profile(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        user: discord.Member = commands.parameter(
-            converter=MemberConverter, default=commands.Author
-        ),
+        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
     ):
         """Shows your profile information in a picture
 
@@ -284,9 +270,7 @@ class Profile(commands.Cog):
 
             pfp = Image.open(BytesIO(image_bytes)).resize((170, 170)).convert("RGBA")
             perms_level = (
-                Image.open(f"rings/utils/profile/perms_level/{level}.png")
-                .resize((50, 50))
-                .convert("RGBA")
+                Image.open(f"rings/utils/profile/perms_level/{level}.png").resize((50, 50)).convert("RGBA")
             )
 
             im.paste(self.overlay, box=(0, 0, 1024, 512), mask=self.overlay)
@@ -295,9 +279,7 @@ class Profile(commands.Cog):
 
             for badge, spot in badges:
                 badge_img = (
-                    Image.open(f"rings/utils/profile/badges/{badge}")
-                    .resize((100, 100))
-                    .convert("RGBA")
+                    Image.open(f"rings/utils/profile/badges/{badge}").resize((100, 100)).convert("RGBA")
                 )
                 index = spot - 1
                 im.paste(badge_img, box=self.badges_coords[index], mask=badge_img)
@@ -443,7 +425,7 @@ class Profile(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 1, self.bot.settings["shop"], ctx.author).start(ctx)
+        await Paginator(1, self.bot.settings["shop"], ctx.author, embed_maker=embed_maker).start(ctx)
 
     @badge_shop.command(name="generate")
     @has_perms(6)
@@ -469,9 +451,7 @@ class Profile(commands.Cog):
                 W_modif = 183 * (counter % 3)
                 H_modif = 183 * (counter // 3)
 
-                badge = Image.open(f"rings/utils/profile/badges/{entry['file_name']}").resize(
-                    (101, 101)
-                )
+                badge = Image.open(f"rings/utils/profile/badges/{entry['file_name']}").resize((101, 101))
                 im.paste(badge, (41 + W_modif, 43 + H_modif), mask=badge)
 
                 draw_centered_text(draw, entry["name"], 91 + W_modif, 29 + H_modif, self.font20)
@@ -559,7 +539,7 @@ class Profile(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 15, stars, ctx.author).start(ctx)
+        await Paginator(15, stars, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @stars.group(invoke_without_command=True, name="ranking")
     async def stars_ranking(self, ctx: commands.Context[NecroBot], order: str = "messages"):
@@ -593,7 +573,7 @@ class Profile(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        await Paginator(embed_maker, 15, results, ctx.author).start(ctx)
+        await Paginator(15, results, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @stars_ranking.command(name="old")
     async def stars_ranking_old(self, ctx: commands.Context[NecroBot]):
@@ -613,9 +593,7 @@ class Profile(commands.Cog):
             description = ""
             for row in entries:
                 member = ctx.guild.get_member(row[0])
-                description += (
-                    f"- {member.mention if member else 'User Left'}: {row[1]} starred messages \n"
-                )
+                description += f"- {member.mention if member else 'User Left'}: {row[1]} starred messages \n"
 
             embed = discord.Embed(
                 title=f"Starboard Leaderboard ({view.page_string})",
@@ -625,7 +603,7 @@ class Profile(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        await Paginator(embed_maker, 15, results, ctx.author).start(ctx)
+        await Paginator(15, results, ctx.author, embed_maker=embed_maker).start(ctx)
 
 
 async def setup(bot: NecroBot):

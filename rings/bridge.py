@@ -119,9 +119,7 @@ class Bridge(commands.Cog):
         while True:
             post = await self.bot.queued_posts.get()
             try:
-                await post["message"].remove_reaction(
-                    "\N{SLEEPING SYMBOL}", post["message"].guild.me
-                )
+                await post["message"].remove_reaction("\N{SLEEPING SYMBOL}", post["message"].guild.me)
                 await self.mu_poster(post)
                 await asyncio.sleep(120)
             except Exception as e:
@@ -178,9 +176,7 @@ class Bridge(commands.Cog):
             if retry < 3:
                 await self.mu_poster(pending, retry + 1)
             else:
-                raise ValueError(
-                    f"Retried three times, unable to get form for {pending['message'].id}"
-                )
+                raise ValueError(f"Retried three times, unable to get form for {pending['message'].id}")
 
         content = pending["content"]
         author = pending["message"].author
@@ -189,9 +185,7 @@ class Bridge(commands.Cog):
         del form.fields["preview"]
 
         if pending["message"].channel.id == self.TEST_CHANNEL:
-            await self.bot.bot_channel.send(
-                f"Payload sent. {form.serialize().data}"
-            )  # dud debug test
+            await self.bot.bot_channel.send(f"Payload sent. {form.serialize().data}")  # dud debug test
         else:
             await self.submit_form(form)  # actual submit
 

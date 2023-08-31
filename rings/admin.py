@@ -102,9 +102,7 @@ class Admin(commands.Cog):
         if isinstance(user, discord.User):
             user = user.id
 
-        grudges = await self.bot.db.query(
-            "SELECT * FROM necrobot.Grudges WHERE user_id = $1", user
-        )
+        grudges = await self.bot.db.query("SELECT * FROM necrobot.Grudges WHERE user_id = $1", user)
 
         def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
             if self.bot.get_user(user):
@@ -127,7 +125,7 @@ class Admin(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 10, grudges, ctx.author).start(ctx)
+        await Paginator(10, grudges, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @grudge.command(name="info")
     @commands.is_owner()
@@ -154,9 +152,7 @@ class Admin(commands.Cog):
 
     @grudge.command(name="settle")
     @commands.is_owner()
-    async def grudge_settle(
-        self, ctx: commands.Context[NecroBot], grudge: Grudge, settlement: str = True
-    ):
+    async def grudge_settle(self, ctx: commands.Context[NecroBot], grudge: Grudge, settlement: str = True):
         """Mark a grudge as settled
 
         {usage}"""
@@ -165,9 +161,7 @@ class Admin(commands.Cog):
             str(settlement),
             grudge["id"],
         )
-        await ctx.send(
-            ":white_check_mark: | Grudge `{grudge['id']}` has been considered as settled"
-        )
+        await ctx.send(":white_check_mark: | Grudge `{grudge['id']}` has been considered as settled")
 
     @commands.command()
     @has_perms(7)
@@ -357,9 +351,7 @@ class Admin(commands.Cog):
 
         msg = await self.bot.wait_for("message", check=check, timeout=6000, propagate=False)
 
-        await to_edit.edit(
-            content=f":speech_left: | **User: {msg.author}** said :**{msg.content[1950:]}**"
-        )
+        await to_edit.edit(content=f":speech_left: | **User: {msg.author}** said :**{msg.content[1950:]}**")
 
     @commands.command()
     @has_perms(6)
@@ -399,9 +391,7 @@ class Admin(commands.Cog):
             id=obj_id,
         )
         if role:
-            await msg.edit(
-                content=f"Role: **{role.name}** on **{role.guild.name}** ({role.guild.id})"
-            )
+            await msg.edit(content=f"Role: **{role.name}** on **{role.guild.name}** ({role.guild.id})")
             return
 
         await msg.edit(content="Nothing found with that ID")
@@ -447,9 +437,7 @@ class Admin(commands.Cog):
             exec(compile(parsed, filename="<ast>", mode="exec"), env)
             result = await eval(f"{fn_name}()", env)
         except Exception as e:
-            error_traceback = " ".join(
-                traceback.format_exception(type(e), e, e.__traceback__, chain=True)
-            )
+            error_traceback = " ".join(traceback.format_exception(type(e), e, e.__traceback__, chain=True))
             embed = discord.Embed(description=f"```py\n{error_traceback}\n```")
             return await ctx.send(embed=embed)
 
@@ -491,7 +479,7 @@ class Admin(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 5, results, ctx.author).start(ctx)
+        await Paginator(5, results, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @commands.command(name="as")
     @commands.is_owner()
@@ -531,9 +519,7 @@ class Admin(commands.Cog):
 
         """
         if channel == ctx.channel:
-            raise BotError(
-                "Gate destination cannot be the same as channel the command is called from"
-            )
+            raise BotError("Gate destination cannot be the same as channel the command is called from")
 
         await channel.send(
             ":gate: | A warp gate has opened on your server, you are now in communication with a Necrobot admin. Voice any concerns without fear."
@@ -575,9 +561,7 @@ class Admin(commands.Cog):
 
         for module_info in pkgutil.iter_modules(tests.__path__):
             module = importlib.import_module(f"tests.{module_info.name}")
-            filtered_tests = [
-                getattr(module, func) for func in dir(module) if func.startswith(test_filter)
-            ]
+            filtered_tests = [getattr(module, func) for func in dir(module) if func.startswith(test_filter)]
             if filtered_tests:
                 modules[module_info.name] = filtered_tests
                 status[module_info.name] = []
@@ -606,9 +590,7 @@ class Admin(commands.Cog):
 
         def embed_maker(view: Paginator, entry):
             if view.page_number == 1:
-                embed = discord.Embed(
-                    title="Test Results", description=description, color=self.bot.bot_color
-                )
+                embed = discord.Embed(title="Test Results", description=description, color=self.bot.bot_color)
                 embed.set_footer(**self.bot.bot_footer)
                 return embed
 
@@ -621,7 +603,7 @@ class Admin(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             return embed
 
-        await Paginator(embed_maker, 1, [None, *errors.items()], ctx.author).start(ctx)
+        await Paginator(1, [None, *errors.items()], ctx.author, embed_maker=embed_maker).start(ctx)
 
     #######################################################################
     ## Events

@@ -158,9 +158,7 @@ class Meta(commands.Cog):
         if self.bot.blacklist_check(message.author.id):
             return
 
-        starboard = self.bot.get_channel(
-            self.bot.guild_data[message.guild.id]["starboard-channel"]
-        )
+        starboard = self.bot.get_channel(self.bot.guild_data[message.guild.id]["starboard-channel"])
 
         embed = discord.Embed(colour=self.bot.bot_color, description=message.content)
         embed.set_author(
@@ -190,9 +188,7 @@ class Meta(commands.Cog):
 
         if message.id not in self.bot.starred:
             self.bot.starred.append(message.id)
-            await self.bot.db.add_star(
-                message, msg, self.bot.guild_data[message.guild.id]["starboard-limit"]
-            )
+            await self.bot.db.add_star(message, msg, self.bot.guild_data[message.guild.id]["starboard-limit"])
 
     async def hourly(self):
         await self.bot.wait_until_loaded()
@@ -256,9 +252,7 @@ class Meta(commands.Cog):
     async def rotate_status(self):
         status = next(self.bot.statuses)
         await self.bot.change_presence(
-            activity=discord.Game(
-                status.format(guild=len(self.bot.guilds), members=len(self.bot.users))
-            )
+            activity=discord.Game(status.format(guild=len(self.bot.guilds), members=len(self.bot.users)))
         )
 
     def is_scam(self, message: discord.Message) -> bool:
@@ -279,9 +273,7 @@ class Meta(commands.Cog):
         except discord.Forbidden:
             pass
 
-        role = discord.utils.get(
-            scam_msg.guild.roles, id=self.bot.guild_data[scam_msg.guild.id]["mute"]
-        )
+        role = discord.utils.get(scam_msg.guild.roles, id=self.bot.guild_data[scam_msg.guild.id]["mute"])
         if role in scam_msg.author.roles or role is None:
             return
 
@@ -485,9 +477,7 @@ class Meta(commands.Cog):
             except discord.Forbidden:
                 pass
             except Exception as e:
-                await self.bot.error_channel.send(
-                    f"Broadcast error with guild {broadcast[1]}\n{e}"
-                )
+                await self.bot.error_channel.send(f"Broadcast error with guild {broadcast[1]}\n{e}")
 
 
 async def setup(bot: NecroBot):

@@ -59,9 +59,7 @@ class CommandSelect(discord.ui.Select):
             if not any(isinstance(command, cmd.Group) for command in command.commands):
                 paginator.remove_item(paginator.command_select)
 
-            return await interaction.response.send_message(
-                embed=embed, view=paginator, ephemeral=True
-            )
+            return await interaction.response.send_message(embed=embed, view=paginator, ephemeral=True)
 
         embed = await self.view.help.embed_command(command)
         await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -194,18 +192,12 @@ class NecrobotHelp(cmd.HelpCommand):
         description = command.help
         signature = f"__Usage__\n{self.get_command_signature(command)}"
 
-        perms_check = discord.utils.find(
-            lambda x: x.__qualname__.startswith("has_perms"), command.checks
-        )
+        perms_check = discord.utils.find(lambda x: x.__qualname__.startswith("has_perms"), command.checks)
         if perms_check is not None:
             name = self.context.bot.perms_name[perms_check.level]
-            signature = (
-                f"**Permission level required: {name} ({perms_check.level}+)**\n\n{signature}"
-            )
+            signature = f"**Permission level required: {name} ({perms_check.level}+)**\n\n{signature}"
 
-        owner_check = discord.utils.find(
-            lambda x: x.__qualname__.startswith("is_owner"), command.checks
-        )
+        owner_check = discord.utils.find(lambda x: x.__qualname__.startswith("is_owner"), command.checks)
         if owner_check is not None:
             signature = f"**Owner only command**\n\n{signature}"
 
@@ -230,9 +222,7 @@ class NecrobotHelp(cmd.HelpCommand):
 
         return embed
 
-    async def send_bot_help(
-        self, mapping: Mapping[Optional[cmd.Cog], List[cmd.Command[Any, ..., Any]]]
-    ):
+    async def send_bot_help(self, mapping: Mapping[Optional[cmd.Cog], List[cmd.Command[Any, ..., Any]]]):
         async def embed_maker(view: CogPaginator, entry: Optional[cmd.Cog]):
             if view.index == 0:
                 embed = discord.Embed(
@@ -262,9 +252,7 @@ class NecrobotHelp(cmd.HelpCommand):
         async def embed_maker(view: CogPaginator, entry: cmd.Cog):
             return await self.embed_cog(entry, entry.get_commands())
 
-        await CogPaginator(self, embed_maker, 1, [cog], self.context.author).start(
-            self.get_destination()
-        )
+        await CogPaginator(self, embed_maker, 1, [cog], self.context.author).start(self.get_destination())
 
     async def send_command_help(self, command: cmd.Command):
         await self.get_destination().send(embed=await self.embed_command(command))
@@ -280,9 +268,7 @@ class NecrobotHelp(cmd.HelpCommand):
             embed.title += f" ({view.page_string})"
             return embed
 
-        paginator = GroupPaginator(
-            self, embed_maker, 1, [group, *group.commands], self.context.author
-        )
+        paginator = GroupPaginator(self, embed_maker, 1, [group, *group.commands], self.context.author)
         if not any(isinstance(command, cmd.Group) for command in group.commands):
             paginator.remove_item(paginator.command_select)
 

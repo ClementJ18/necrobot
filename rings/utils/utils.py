@@ -141,9 +141,7 @@ def time_string_parser(message: str):
 
         return text, sleep, time
 
-    raise BotError(
-        "Something went wrong, you need to use the format: **<optional_message> in|on <time>**"
-    )
+    raise BotError("Something went wrong, you need to use the format: **<optional_message> in|on <time>**")
 
 
 async def get_pre(bot: NecroBot, message: discord.Message):
@@ -152,9 +150,7 @@ async def get_pre(bot: NecroBot, message: discord.Message):
     if not isinstance(message.channel, discord.DMChannel):
         guild_pre = bot.guild_data[message.guild.id]["prefix"]
         if guild_pre != "":
-            guild_pre = map(
-                "".join, itertools.product(*((c.upper(), c.lower()) for c in guild_pre))
-            )
+            guild_pre = map("".join, itertools.product(*((c.upper(), c.lower()) for c in guild_pre)))
             return commands.when_mentioned_or(*guild_pre)(bot, message)
 
     return commands.when_mentioned_or(*bot.prefixes)(bot, message)

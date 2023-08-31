@@ -29,9 +29,7 @@ class Literature(commands.Cog):
 
         __Example__
         `{pre}ud pimp` - searches for pimp on Urban dictionary"""
-        async with self.bot.session.get(
-            f"http://api.urbandictionary.com/v0/define?term={word.lower()}"
-        ) as r:
+        async with self.bot.session.get(f"http://api.urbandictionary.com/v0/define?term={word.lower()}") as r:
             definitions = (await r.json())["list"]
 
         if not definitions:
@@ -55,7 +53,7 @@ class Literature(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 1, definitions, ctx.author).start(ctx)
+        await Paginator(1, definitions, ctx.author, embed_maker=embed_maker).start(ctx)
 
     async def get_def(self, word: str) -> dict:
         url = f"https://www.dictionaryapi.com/api/v3/references/collegiate/json/{word}?key={dictionnary_key}"
@@ -99,7 +97,7 @@ class Literature(commands.Cog):
 
             return embed
 
-        await Paginator(embed_maker, 1, definitions, ctx.author).start(ctx)
+        await Paginator(1, definitions, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @commands.command()
     async def shuffle(self, ctx: commands.Context[NecroBot], *, sentence: str):

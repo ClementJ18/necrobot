@@ -43,9 +43,7 @@ class Social(commands.Cog):
         riddle = random.choice(riddle_list)
 
         view = RiddleView(answer=riddle[1])
-        view.message = await ctx.send(
-            f"Riddle me this **{ctx.author.display_name}**: \n{riddle[0]}"
-        )
+        view.message = await ctx.send(f"Riddle me this **{ctx.author.display_name}**: \n{riddle[0]}")
         await view.wait()
 
     @commands.command()
@@ -85,9 +83,7 @@ class Social(commands.Cog):
 
         {usage}"""
         choice = random.choice(lotr_list)
-        await ctx.send(
-            f"<:onering:351442796420399119> | **Fact #{lotr_list.index(choice) + 1}**: {choice}"
-        )
+        await ctx.send(f"<:onering:351442796420399119> | **Fact #{lotr_list.index(choice) + 1}**: {choice}")
 
     @commands.command()
     async def pokefusion(self, ctx: commands.Context[NecroBot], pokemon1=None, pokemon2=None):
@@ -143,9 +139,7 @@ class Social(commands.Cog):
         `{pre}got Tyrion` - posts a random quote from Tyrion
         """
         if character:
-            quotes = [
-                quote for quote in got_quotes if character.lower() in quote["character"].lower()
-            ]
+            quotes = [quote for quote in got_quotes if character.lower() in quote["character"].lower()]
             if quotes:
                 quote = random.choice(quotes)
             else:

@@ -27,9 +27,7 @@ class Events(commands.Cog):
 
     async def dm_reaction_handler(self, payload: discord.RawReactionActionEvent):
         if payload.emoji.name == "\N{WASTEBASKET}":
-            message = self.bot.get_channel(payload.channel_id).get_partial_message(
-                payload.message_id
-            )
+            message = self.bot.get_channel(payload.channel_id).get_partial_message(payload.message_id)
 
             try:
                 await message.delete()
@@ -58,9 +56,7 @@ class Events(commands.Cog):
 
         if message["count"] == self.bot.guild_data[payload.guild_id]["starboard-limit"]:
             channel = self.bot.get_channel(payload.channel_id)
-            starboard = self.bot.get_channel(
-                self.bot.guild_data[payload.guild_id]["starboard-channel"]
-            )
+            starboard = self.bot.get_channel(self.bot.guild_data[payload.guild_id]["starboard-channel"])
             if channel.is_nsfw() and not starboard.is_nsfw():
                 return await channel.send(
                     ":negative_squared_cross_mark: | Could not send message to starboard because channel is marked as NSFW and starboard is marked as SFW. Either make this channel SFW or make the starboard NSFW",
@@ -201,9 +197,7 @@ class Events(commands.Cog):
         await self.bot.db.delete_yt_rss_channel(guild_id, channel_id=channel.id)
         await self.bot.db.delete_tw_rss_channel(guild_id, channel_id=channel.id)
 
-        await self.bot.db.query(
-            "DELETE FROM necrobot.Broadcasts WHERE channel_id = $1", channel.id
-        )
+        await self.bot.db.query("DELETE FROM necrobot.Broadcasts WHERE channel_id = $1", channel.id)
 
     @commands.Cog.listener()
     async def on_guild_role_delete(self, role: discord.Role):
@@ -230,9 +224,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
         if before.owner.id != after.owner.id:
-            after_perms = (
-                4 if after.get_member(before.owner.id).guild_permissions.administrator else 0
-            )
+            after_perms = 4 if after.get_member(before.owner.id).guild_permissions.administrator else 0
             await self.bot.db.update_permission(before.owner.id, before.id, update=after_perms)
             await self.bot.db.update_permission(after.owner.id, after.id, update=5)
 
@@ -327,9 +319,7 @@ class Events(commands.Cog):
             embed.set_footer(**self.bot.bot_footer)
             embed.add_field(
                 name="Before",
-                value=before.content
-                if len(before.content) < 1024
-                else before.content[1020:] + "...",
+                value=before.content if len(before.content) < 1024 else before.content[1020:] + "...",
                 inline=False,
             )
             embed.add_field(
@@ -459,9 +449,7 @@ class Events(commands.Cog):
                     pass
 
         if self.bot.guild_data[member.guild.id]["auto-role"]:
-            role = discord.utils.get(
-                member.guild.roles, id=self.bot.guild_data[member.guild.id]["auto-role"]
-            )
+            role = discord.utils.get(member.guild.roles, id=self.bot.guild_data[member.guild.id]["auto-role"])
             await member.add_roles(role)
 
             if self.bot.guild_data[member.guild.id]["auto-role-timer"] > 0:

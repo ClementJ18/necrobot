@@ -987,9 +987,7 @@ class Location(object):
             elevation = 180.0 - elevation
             direction = SUN_SETTING
 
-        time_ = self.astral.time_at_elevation_utc(
-            elevation, direction, date, self.latitude, self.longitude
-        )
+        time_ = self.astral.time_at_elevation_utc(elevation, direction, date, self.latitude, self.longitude)
 
         if local:
             return time_.astimezone(self.tz)
@@ -1356,10 +1354,10 @@ class GoogleGeocoder(object):
     def __init__(self, cache=False):
         self.cache = cache
         self.geocache = {}
-        self._location_query_base = (
-            "http://maps.googleapis.com/maps/api/geocode/json?address=%s&sensor=false"
+        self._location_query_base = "http://maps.googleapis.com/maps/api/geocode/json?address=%s&sensor=false"
+        self._timezone_query_base = (
+            "https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=%d&sensor=false"
         )
-        self._timezone_query_base = "https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=%d&sensor=false"
         self._elevation_query_base = (
             "http://maps.googleapis.com/maps/api/elevation/json?locations=%f,%f&sensor=false"
         )
@@ -1558,8 +1556,7 @@ class Astral(object):
             return self._calc_time(depression, SUN_RISING, date, latitude, longitude)
         except:
             raise AstralError(
-                ("Sun never reaches %d degrees below the horizon, " "at this location.")
-                % (depression - 90)
+                ("Sun never reaches %d degrees below the horizon, " "at this location.") % (depression - 90)
             )
 
     def sunrise_utc(self, date, latitude, longitude):
@@ -1676,8 +1673,7 @@ class Astral(object):
             return self._calc_time(depression, SUN_SETTING, date, latitude, longitude)
         except:
             raise AstralError(
-                ("Sun never reaches %d degrees below the horizon, " "at this location.")
-                % (depression - 90)
+                ("Sun never reaches %d degrees below the horizon, " "at this location.") % (depression - 90)
             )
 
     def daylight_utc(self, date, latitude, longitude):
@@ -1926,9 +1922,7 @@ class Astral(object):
         azDenom = cos(radians(latitude)) * sin(radians(zenith))
 
         if abs(azDenom) > 0.001:
-            azRad = (
-                (sin(radians(latitude)) * cos(radians(zenith))) - sin(radians(solarDec))
-            ) / azDenom
+            azRad = ((sin(radians(latitude)) * cos(radians(zenith))) - sin(radians(solarDec))) / azDenom
 
             if abs(azRad) > 1.0:
                 if azRad < 0:
@@ -2020,9 +2014,7 @@ class Astral(object):
         azDenom = cos(radians(latitude)) * sin(radians(zenith))
 
         if abs(azDenom) > 0.001:
-            azRad = (
-                (sin(radians(latitude)) * cos(radians(zenith))) - sin(radians(solarDec))
-            ) / azDenom
+            azRad = ((sin(radians(latitude)) * cos(radians(zenith))) - sin(radians(solarDec))) / azDenom
 
             if abs(azRad) > 1.0:
                 if azRad < 0:
@@ -2050,9 +2042,7 @@ class Astral(object):
         else:
             te = tan(radians(exoatmElevation))
             if exoatmElevation > 5.0:
-                refractionCorrection = (
-                    58.1 / te - 0.07 / (te * te * te) + 0.000086 / (te * te * te * te * te)
-                )
+                refractionCorrection = 58.1 / te - 0.07 / (te * te * te) + 0.000086 / (te * te * te * te * te)
             elif exoatmElevation > -0.575:
                 step1 = -12.79 + exoatmElevation * 0.711
                 step2 = 103.4 + exoatmElevation * (step1)
@@ -2203,9 +2193,7 @@ class Astral(object):
         return (juliancentury * 36525.0) + 2451545.0
 
     def _mean_obliquity_of_ecliptic(self, juliancentury):
-        seconds = 21.448 - juliancentury * (
-            46.815 + juliancentury * (0.00059 - juliancentury * (0.001813))
-        )
+        seconds = 21.448 - juliancentury * (46.815 + juliancentury * (0.00059 - juliancentury * (0.001813)))
         return 23.0 + (26.0 + (seconds / 60.0)) / 60.0
 
     def _obliquity_correction(self, juliancentury):

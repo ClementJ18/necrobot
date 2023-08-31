@@ -113,9 +113,7 @@ class ActionButton(discord.ui.Button):
         super().__init__(**kwargs)
 
     async def callback(self, interaction: Interaction):
-        await self.view.take_action(
-            interaction, self.action, character=self.character, **self.arguments
-        )
+        await self.view.take_action(interaction, self.action, character=self.character, **self.arguments)
 
 
 class CharacterUI(discord.ui.Select):

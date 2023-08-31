@@ -33,9 +33,7 @@ def strip_emoji(content):
 class BaseView(discord.ui.View):
     author: discord.Member | discord.User
 
-    async def on_error(
-        self, interaction: Interaction[NecroBot], error: Exception, item: Item[Any]
-    ):
+    async def on_error(self, interaction: Interaction[NecroBot], error: Exception, item: Item[Any]):
         error_traceback = " ".join(
             traceback.format_exception(type(error), error, error.__traceback__, chain=True)
         )
@@ -115,8 +113,7 @@ class PollView(BaseView):
         self.closer = None
 
         select_options = [
-            discord.SelectOption(label=strip_emoji(option[1]), value=option[0])
-            for option in options
+            discord.SelectOption(label=strip_emoji(option[1]), value=option[0]) for option in options
         ]
         self.add_item(
             PollSelect(
@@ -149,13 +146,9 @@ class PollView(BaseView):
             self.poll_id,
         )
 
-    @discord.ui.button(
-        label="Close poll", style=discord.ButtonStyle.red, row=1, custom_id="poll_end"
-    )
+    @discord.ui.button(label="Close poll", style=discord.ButtonStyle.red, row=1, custom_id="poll_end")
     async def close_poll(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
-        perms = await interaction.client.db.get_permission(
-            interaction.user.id, interaction.guild.id
-        )
+        perms = await interaction.client.db.get_permission(interaction.user.id, interaction.guild.id)
         if perms < 3:
             return await interaction.response.send_message(
                 ":negative_squared_cross_mark: | You don't have permissions to close a poll",
@@ -194,13 +187,9 @@ class PollEditorModal(discord.ui.Modal):
             if option.value:
                 stripped = strip_emoji(option.value)
                 if not stripped:
-                    errors.append(
-                        f"- Option {index} only contains emojis, please also specify text"
-                    )
+                    errors.append(f"- Option {index} only contains emojis, please also specify text")
                 elif len(stripped) > 100:
-                    errors.append(
-                        f"- Option {index} is longer than 100 characters after emoji removal"
-                    )
+                    errors.append(f"- Option {index} is longer than 100 characters after emoji removal")
                 else:
 
                     self.view.options.append(option.value)
@@ -209,9 +198,7 @@ class PollEditorModal(discord.ui.Modal):
 
         if errors:
             stringed_errors = "\n".join(errors)
-            await interaction.followup.send(
-                f"Could not add some options:\n{stringed_errors}", ephemeral=True
-            )
+            await interaction.followup.send(f"Could not add some options:\n{stringed_errors}", ephemeral=True)
 
 
 class PollEditorView(BaseView):
@@ -222,9 +209,7 @@ class PollEditorView(BaseView):
             "description": EmbedStringConverter(optional=True, style=discord.TextStyle.paragraph),
             "max_votes": EmbedRangeConverter(default="1", min=1, max=25),
         }
-        self.attributes: Dict[str, str] = {
-            key: value.default for key, value in self.converters.items()
-        }
+        self.attributes: Dict[str, str] = {key: value.default for key, value in self.converters.items()}
         self.options = []
         self.channel = channel
         self.bot = bot
@@ -248,9 +233,7 @@ class PollEditorView(BaseView):
         await interaction.response.send_modal(PollEditorModal(self))
 
     @discord.ui.button(label="Delete last option", style=discord.ButtonStyle.red)
-    async def delete_option(
-        self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button
-    ):
+    async def delete_option(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         if not self.options:
             return await interaction.response.send_message(
                 ":negative_squared_cross_mark: | Cannot delete option"
@@ -320,9 +303,7 @@ class PollEditorView(BaseView):
         )
         await msg.edit(
             content="A new poll has opened!",
-            embed=poll_view.generate_embed(
-                [{"message": option, "total": 0} for option in self.options]
-            ),
+            embed=poll_view.generate_embed([{"message": option, "total": 0} for option in self.options]),
             view=poll_view,
         )
 
@@ -445,19 +426,24 @@ class Confirm(BaseView):
 class Paginator(BaseView):
     def __init__(
         self,
-        embed_maker: Callable[[Paginator, Union[Any, List[Any]]], discord.Embed],
         page_size: int,
         entries: List[Any],
         author: discord.Member | discord.User,
         *,
         timeout: int = 180,
+        embed_maker: Callable[[Paginator, Union[Any, List[Any]]], discord.Embed] = None,
+        content_maker: Callable[[Paginator, Union[Any, List[Any]]], str] = None,
     ):
         super().__init__(timeout=timeout)
 
         if not entries:
             raise BotError("No entries in this list")
 
+        if embed_maker is None and content_maker is None:
+            raise ValueError("Must specify at least one embed maker or content maker")
+
         self.embed_maker = embed_maker
+        self.content_maker = content_maker
         self.entries = entries
         self.index = 0
         self.max_index = max(0, ((len(entries) - 1) // page_size))
@@ -483,13 +469,14 @@ class Paginator(BaseView):
     async def start(self, channel: discord.abc.Messageable):
         entries = self.get_entry_subset()
         embed = await self.generate_embed(entries)
+        content = await self.generate_content(entries)
         self.view_maker(entries)
 
         if self.max_index == 0:
             for button in [self.first_page, self.previous_page, self.next_page, self.last_page]:
                 self.remove_item(button)
 
-        self.message = await channel.send(embed=embed, view=self)
+        self.message = await channel.send(content=content, embed=embed, view=self)
 
     async def on_timeout(self):
         self.stop()
@@ -517,23 +504,35 @@ class Paginator(BaseView):
         entries = self.get_entry_subset()
         self.view_maker(entries)
         await interaction.response.edit_message(
-            embed=await self.generate_embed(entries), view=self
+            content=await self.generate_content(entries),
+            embed=await self.generate_embed(entries),
+            view=self,
         )
 
     async def generate_embed(self, entries):
+        if self.embed_maker is None:
+            return
+
         if asyncio.iscoroutinefunction(self.embed_maker):
             return await self.embed_maker(self, entries)
 
         return self.embed_maker(self, entries)
+
+    async def generate_content(self, entries):
+        if self.content_maker is None:
+            return
+
+        if asyncio.iscoroutinefunction(self.content_maker):
+            return await self.content_maker(self, entries)
+
+        return self.content_maker(self, entries)
 
     @discord.ui.button(label="-10", style=discord.ButtonStyle.grey, row=0)
     async def first_page(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.change_page(interaction, -10)
 
     @discord.ui.button(label="-1", style=discord.ButtonStyle.blurple, row=0)
-    async def previous_page(
-        self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button
-    ):
+    async def previous_page(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         await self.change_page(interaction, -1)
 
     @discord.ui.button(label="+1", style=discord.ButtonStyle.blurple, row=0)
@@ -651,9 +650,7 @@ class EditModal(discord.ui.Modal):
             self.add_item(
                 discord.ui.TextInput(
                     label=convert_key_to_label(key),
-                    placeholder=key
-                    if not converters[key].optional
-                    else "Type NULL to reset the field",
+                    placeholder=key if not converters[key].optional else "Type NULL to reset the field",
                     required=False,
                     default=attributes[key],
                     max_length=2000,
@@ -666,9 +663,7 @@ class EditModal(discord.ui.Modal):
 
         errors = []
         for key in self.keys:
-            text_input: discord.TextInput = discord.utils.get(
-                self.children, label=convert_key_to_label(key)
-            )
+            text_input: discord.TextInput = discord.utils.get(self.children, label=convert_key_to_label(key))
 
             converter = self.converters[key]
 
@@ -687,9 +682,7 @@ class EditModal(discord.ui.Modal):
                     interaction.message.id, embed=await self.view.generate_embed()
                 )
             except Exception as e:
-                await interaction.followup.send(
-                    f"Something went wrong while sending an embed: {e}"
-                )
+                await interaction.followup.send(f"Something went wrong while sending an embed: {e}")
                 await interaction.followup.edit_message(interaction.message.id)
         else:
             errors_str = "\n".join(errors)
@@ -708,9 +701,7 @@ def chunker(seq: List[D], size: int) -> List[D]:
 
 
 class EditModalSelect(discord.ui.Select):
-    def __init__(
-        self, converters: Dict[str, EmbedDefaultConverter], values: Dict[str, str], title: str
-    ):
+    def __init__(self, converters: Dict[str, EmbedDefaultConverter], values: Dict[str, str], title: str):
         self.converters = converters
         self.attributes = values
         self.chunks = chunker(list(values.keys()), 5)
