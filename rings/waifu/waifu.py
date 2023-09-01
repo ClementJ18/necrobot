@@ -541,7 +541,7 @@ class Flowers(commands.Cog):
         defaults = {
             "description": EmbedStringConverter(style=discord.TextStyle.paragraph),
             "image": EmbedStringConverter(optional=True),
-            "title": EmbedStringConverter(optional=True),
+            "title": EmbedStringConverter(default="No Title"),
             "tier": EmbedRangeConverter(min=1, max=5),
             "universe": EmbedStringConverter(),
             "type": EmbedChoiceConverter(choices=["character", "weapon", "artefact"]),
@@ -570,14 +570,14 @@ class Flowers(commands.Cog):
             False,
             final_values["universe"],
             final_values["type"],
-            final_values["active_skill"],
-            final_values["passive_skill"],
             final_values["primary_health"].to_db(),
             final_values["secondary_health"].to_db(),
             final_values["physical_defense"].to_db(),
             final_values["physical_attack"].to_db(),
             final_values["magical_defense"].to_db(),
             final_values["magical_attack"].to_db(),
+            final_values["active_skill"],
+            final_values["passive_skill"],
             fetchval=True,
         )
 
@@ -886,6 +886,14 @@ class Flowers(commands.Cog):
             return
 
         final_values = view.convert_values()
+
+        chars = [
+            await GachaCharacterConverter(
+                respect_obtainable=True, allowed_types=("character", "artefact", "weapon")
+            ).convert(ctx, char)
+            for char in final_values["characters"]
+        ]
+
         banner_id = await self.bot.db.query(
             "INSERT INTO necrobot.Banners(guild_id, name, description, image_url, max_rolls) VALUES($1, $2, $3, $4, $5) RETURNING id",
             ctx.guild.id,
@@ -896,12 +904,6 @@ class Flowers(commands.Cog):
             fetchval=True,
         )
 
-        chars = [
-            await GachaCharacterConverter(
-                respect_obtainable=True, allowed_types=("character", "artefact", "weapon")
-            ).convert(ctx, char)
-            for char in final_values["characters"]
-        ]
         await self.bot.db.query(
             "INSERT INTO necrobot.BannerCharacters VALUES($1, $2, $3)",
             [(banner_id, char["id"], 1) for char in chars],

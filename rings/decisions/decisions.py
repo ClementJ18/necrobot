@@ -137,21 +137,23 @@ class Decisions(commands.Cog):
         chunks.append(current_chunk)
 
         def content_maker(view: Paginator, entry: List[str]):
-            if not entry:
-                string = "none"
-                d = "nothing"
-            else:
-                string = ", ".join(entry)
-                d = dices
+            dice_string = None
+            if entry:
+                dice_string = ", ".join(entry)
 
             if view.max_index > 0 and view.index < view.max_index:
-                string = string + "..."
+                dice_string = dice_string + "..."
 
             if view.index > 0:
-                string = "..." + string
+                dice_string = "..." + dice_string
 
             page_string = f" **({view.page_string})** "
-            return f":game_die: | **{ctx.author.display_name}** rolled **{d}** for a total of **{total}**. The dice were{page_string if view.max_index > 0 else ''}: {string}"
+            string = f":game_die: | **{ctx.author.display_name}** rolled **{dices}** for a total of **{total}**."
+
+            if dice_string is None:
+                return string
+    
+            return f"{string} The dice were{page_string if view.max_index > 0 else ''}: {dice_string}"
 
         await Paginator(1, chunks, ctx.author, content_maker=content_maker).start(ctx)
 

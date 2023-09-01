@@ -31,6 +31,10 @@ def strip_emoji(content):
 
 
 class BaseView(discord.ui.View):
+    """This is a view with no functionality that implements interaction_check and 
+    on_error. All other view should inherit this one. Other views should also implement
+    attaching the author attribute.
+    """
     author: discord.Member | discord.User
 
     async def on_error(self, interaction: Interaction[NecroBot], error: Exception, item: Item[Any]):
@@ -175,8 +179,12 @@ class PollEditorModal(discord.ui.Modal):
         self.option_3 = discord.ui.TextInput(label="Option 3", required=False, max_length=150)
 
         self.add_item(self.option_1)
-        self.add_item(self.option_2)
-        self.add_item(self.option_3)
+
+        if self.view.options < 24:
+            self.add_item(self.option_2)
+    
+        if self.view.options < 23:
+            self.add_item(self.option_3)
 
         self.view = view
 
@@ -191,7 +199,6 @@ class PollEditorModal(discord.ui.Modal):
                 elif len(stripped) > 100:
                     errors.append(f"- Option {index} is longer than 100 characters after emoji removal")
                 else:
-
                     self.view.options.append(option.value)
 
         await interaction.response.edit_message(embed=await self.view.generate_embed())
@@ -236,7 +243,7 @@ class PollEditorView(BaseView):
     async def delete_option(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         if not self.options:
             return await interaction.response.send_message(
-                ":negative_squared_cross_mark: | Cannot delete option"
+                ":negative_squared_cross_mark: | Cannot delete no options"
             )
 
         self.options.pop(-1)
@@ -424,11 +431,32 @@ class Confirm(BaseView):
 
 
 class Paginator(BaseView):
+    """A paginator is a view that allows the user to iterate through a potentially very long
+    list of items. These items can be displayed through either embed or simply message content.
+    
+    Params
+    --------
+    page_size: int
+        The number of items to display per page. If this is 1 then instead of sending sublists
+        entries passed to generators will be elements.
+    entries: List[Any]
+        The entries to display
+    author: discord.User
+        The author of the command, this is used to restrict the interactions to only this user
+    timeout: Optional[int]
+        The timeout for the view, defaults to 180
+    embed_maker: Callable[[Paginator, Union[Any, List[Any]]], discord.Embed]
+        The passed function to generate pages of the paginator, this should return an embed. Either
+        this or content_maker should be defined.
+    content_maker: Callable[[Paginator, Union[Any, List[Any]]], str]
+        The passed function to generate pages of the paginator, this should return a string. either
+        this or embed_maker should be defined.
+    """
     def __init__(
         self,
         page_size: int,
         entries: List[Any],
-        author: discord.Member | discord.User,
+        author: discord.User,
         *,
         timeout: int = 180,
         embed_maker: Callable[[Paginator, Union[Any, List[Any]]], discord.Embed] = None,
@@ -452,6 +480,7 @@ class Paginator(BaseView):
         self.author = author
 
     def view_maker(self, entries: Union[Any, List[Any]]):
+        """This function can be overriden to change how the view looks like on every generation."""
         pass
 
     @property
