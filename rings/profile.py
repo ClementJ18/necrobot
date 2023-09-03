@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import random
 from io import BytesIO
-from typing import TYPE_CHECKING, Dict, List, Union
+from typing import TYPE_CHECKING, Annotated, Dict, List, Union
 
 import discord
 from discord.ext import commands
@@ -47,7 +47,7 @@ class Profile(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
+        user: Annotated[discord.Member, MemberConverter] = commands.Author,
     ):
         """Prints the given user's NecroBot balance, if no user is supplied then it will print your own NecroBot balance.
 
@@ -130,7 +130,7 @@ class Profile(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        member: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
+        member: Annotated[discord.Member, MemberConverter] = commands.Author,
     ):
         """Adds your daily 200 :euro: to your NecroBot balance. This can be used at anytime once every GMT day. Can \
         also be gifted to a user for some extra cash.
@@ -168,8 +168,8 @@ class Profile(commands.Cog):
     async def pay(
         self,
         ctx: commands.Context[NecroBot],
-        payee: discord.Member = commands.parameter(converter=MemberConverter),
-        amount: MoneyConverter = commands.parameter(),
+        payee: Annotated[discord.Member, MemberConverter],
+        amount: MoneyConverter,
     ):
         """Transfers the given amount of money to the given user's NecroBot bank account.
 
@@ -208,7 +208,7 @@ class Profile(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
+        user: Annotated[discord.Member, MemberConverter] = commands.Author,
     ):
         """Returns a rich embed of the given user's info. If no user is provided it will return your own info.
 
@@ -250,7 +250,7 @@ class Profile(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
+        user: Annotated[discord.Member, MemberConverter] = commands.Author,
     ):
         """Shows your profile information in a picture
 

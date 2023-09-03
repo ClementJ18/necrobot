@@ -202,7 +202,7 @@ class CharacterUI(discord.ui.Select):
 
 class CombatView(BaseView):
     def __init__(self, battle: Battle, embed_maker, author: discord.Member):
-        super().__init__(300)
+        super().__init__(timeout=300)
 
         self.battle = battle
         self.set_ui(CharacterUI(battle.players, battle, embed_maker))

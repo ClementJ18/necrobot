@@ -7,7 +7,7 @@ import re
 import time
 from collections import defaultdict
 from time import mktime
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Annotated, Dict, List
 
 import discord
 import feedparser
@@ -168,7 +168,7 @@ class RSS(commands.Cog):
         ctx: commands.Context[NecroBot],
         youtube: str = None,
         *,
-        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=None),
+        channel: Annotated[discord.TextChannel, WritableChannelConverter] = None,
     ):
         """Add/edit a youtube stream. As long as you provide a channel, the stream will be set to that \
         channelYou can simply pass a channel URL for the ID to be retrieved.
@@ -318,7 +318,7 @@ class RSS(commands.Cog):
         ctx: commands.Context[NecroBot],
         twitch: str = None,
         *,
-        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=None),
+        channel: Annotated[discord.TextChannel, WritableChannelConverter] = None,
     ):
         """Add/edit twitch streams. Simply provide a channel name or url to get started
 

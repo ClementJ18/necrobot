@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal
 
 import aiohttp
 import discord
@@ -96,7 +96,7 @@ class Utilities(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
+        user: Annotated[discord.Member, MemberConverter] = commands.Author,
     ):
         """Returns a link to the given user's profile pic
 
@@ -398,7 +398,7 @@ class Utilities(commands.Cog):
     async def q_edit(
         self,
         ctx: commands.Context[NecroBot],
-        member: discord.Member = commands.parameter(converter=MemberConverter),
+        member: Annotated[discord.Member, MemberConverter],
         position: int = None,
     ):
         """Remove or add a user in a queue. If the user is in the queue this will remove then. \
@@ -516,8 +516,8 @@ class Utilities(commands.Cog):
     async def leaderboard_award(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter),
-        points: int = commands.parameter(),
+        user: Annotated[discord.Member, MemberConverter],
+        points: int,
     ):
         """Add remove some points.
         {usage}

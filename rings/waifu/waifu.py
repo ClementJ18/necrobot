@@ -6,7 +6,7 @@ import itertools
 import json
 import math
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Union
 
 import asyncpg
 import discord
@@ -298,8 +298,8 @@ class Flowers(commands.Cog):
     async def flowers(
         self,
         ctx: commands.Context[NecroBot],
-        member: discord.Member = commands.parameter(converter=MemberConverter),
-        amount: int = commands.parameter(),
+        member: Annotated[discord.Member, MemberConverter],
+        amount: int,
         *,
         reason: str = None,
     ):
@@ -351,7 +351,8 @@ class Flowers(commands.Cog):
     async def flowers_balance(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
+        *,
+        user: Annotated[discord.Member, MemberConverter] = commands.Author,
     ):
         """Check your or a user's balance of flowers
 
@@ -405,8 +406,8 @@ class Flowers(commands.Cog):
     async def give(
         self,
         ctx: commands.Context[NecroBot],
-        member: discord.Member = commands.parameter(converter=MemberConverter),
-        amount: FlowerConverter = commands.parameter(),
+        member: Annotated[discord.Member, MemberConverter],
+        amount: FlowerConverter,
     ):
         """Transfer flowers from one user to another.
 
@@ -477,7 +478,8 @@ class Flowers(commands.Cog):
     async def characters_get(
         self,
         ctx: commands.Context[NecroBot],
-        character: EntityDict = commands.parameter(converter=GachaCharacterConverter),
+        *,
+        character: Annotated[EntityDict, GachaCharacterConverter],
     ):
         """Get info on a specific character.
 
@@ -663,7 +665,7 @@ class Flowers(commands.Cog):
     async def characters_delete(
         self,
         ctx: commands.Context[NecroBot],
-        char: EntityDict = commands.parameter(converter=GachaBannerConverter),
+        char: Annotated[EntityDict, GachaCharacterConverter],
     ):
         """Delete a character and remove them from all player's accounts
 
@@ -698,7 +700,7 @@ class Flowers(commands.Cog):
     async def characters_toggle(
         self,
         ctx: commands.Context[NecroBot],
-        char: EntityDict = commands.parameter(converter=GachaBannerConverter),
+        char: Annotated[EntityDict, GachaCharacterConverter],
     ):
         """Toggle whether or not a character can be obtained as part of a banner
 
@@ -721,10 +723,9 @@ class Flowers(commands.Cog):
     async def characters_give(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter),
-        char: EntityDict = commands.parameter(
-            converter=GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
-        ),
+        user: Annotated[discord.Member, MemberConverter],
+        *,
+        char: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))]
     ):
         """Add a level of character to a player's account
 
@@ -755,10 +756,8 @@ class Flowers(commands.Cog):
     async def characters_take(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter),
-        char: EntityDict = commands.parameter(
-            converter=GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
-        ),
+        user: Annotated[discord.Member, MemberConverter],
+        char: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))],
         amount: int = 1,
     ):
         """Remove a level of character to a player's account
@@ -938,9 +937,7 @@ class Flowers(commands.Cog):
         ctx: commands.Context[NecroBot],
         banner: GachaBannerConverter(False),
         *,
-        char: EntityDict = commands.parameter(
-            converter=GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
-        ),
+        char: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))]
     ):
         """Add characters to a banner
 
@@ -970,9 +967,7 @@ class Flowers(commands.Cog):
         ctx: commands.Context[NecroBot],
         banner: GachaBannerConverter(False),
         *,
-        char: EntityDict = commands.parameter(
-            converter=GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
-        ),
+        char: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))]
     ):
         """Remove characters from a banner
 
@@ -1024,7 +1019,8 @@ class Flowers(commands.Cog):
     async def gacha_balance(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
+        *,
+        user: Annotated[discord.Member, MemberConverter] = commands.Author,
     ):
         """Check your or a user's balance of flowers
 
@@ -1229,13 +1225,9 @@ class Flowers(commands.Cog):
     async def equipment_equip(
         self,
         ctx: commands.Context[NecroBot],
-        character: EntityDict = commands.parameter(
-            converter=GachaCharacterConverter(allowed_types=("character",), is_owned=True)
-        ),
+        character: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character",), is_owned=True)],
         *,
-        equipments: List[EntityDict] = commands.parameter(
-            converter=GachaCharacterConverter(allowed_types=("weapon", "artefact"), is_owned=True)
-        ),
+        equipments: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("artefact", "weapon"), is_owned=True)]
     ):
         """Equip a character you own with weapons or artefacts.
 
@@ -1322,9 +1314,7 @@ class Flowers(commands.Cog):
     async def equipment_remove(
         self,
         ctx: commands.Context[NecroBot],
-        character: EntityDict = commands.parameter(
-            converter=GachaCharacterConverter(allowed_types=("character",), is_owned=True)
-        ),
+        character: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character",), is_owned=True)]
     ):
         """Remove the equipment set of a character so that it can be given to another character.
 
@@ -1526,9 +1516,7 @@ class Flowers(commands.Cog):
     async def gacha_battle(
         self,
         ctx: commands.Context[NecroBot],
-        chars: List[EntityDict] = commands.parameter(
-            converter=commands.Greedy[GachaCharacterConverter(allowed_types=("character",), is_owned=True)]
-        ),
+        *chars: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character",), is_owned=True)],
     ):
         """Start a battle between three of your characters and a random enemy on a random battlefield. \
         In order for characters to be able to compete they must be equipped with weapons and artefacts using  \

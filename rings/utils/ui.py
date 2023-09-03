@@ -173,6 +173,7 @@ class PollView(BaseView):
 class PollEditorModal(discord.ui.Modal):
     def __init__(self, view: PollEditorView):
         super().__init__(title="Add up to three options")
+        self.view = view
 
         self.option_1 = discord.ui.TextInput(label="Option 1", required=True, max_length=150)
         self.option_2 = discord.ui.TextInput(label="Option 2", required=False, max_length=150)
@@ -180,13 +181,11 @@ class PollEditorModal(discord.ui.Modal):
 
         self.add_item(self.option_1)
 
-        if self.view.options < 24:
+        if len(self.view.options) < 24:
             self.add_item(self.option_2)
     
-        if self.view.options < 23:
+        if len(self.view.options) < 23:
             self.add_item(self.option_3)
-
-        self.view = view
 
     async def on_submit(self, interaction: discord.Interaction[NecroBot]):
         errors = []

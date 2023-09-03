@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Union
+from typing import TYPE_CHECKING, Annotated, Any, Callable, Dict, List, Union
 
 import discord
 from discord.ext import commands
@@ -143,7 +143,7 @@ class Server(commands.Cog):
     async def permissions(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter, default=None),
+        user: Annotated[discord.Member, MemberConverter] = None,
         level: RangeConverter(0, 7) = None,
     ):
         """Sets the NecroBot permission level of the given user, you can only set permission levels lower than your own. \
@@ -238,7 +238,7 @@ class Server(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         level: RangeConverter(1, 4) = None,
-        role: discord.Role = commands.parameter(converter=RoleConverter, default=None),
+        role: Annotated[discord.Role, RoleConverter] = None,
     ):
         """See current bindings, create a binding or remove a binding. Bindings between a role and a level mean that \
         the bot automatically assigns that permission level to the users when they are given the role (if it is higher \
@@ -360,7 +360,7 @@ class Server(commands.Cog):
     async def promote(
         self,
         ctx: commands.Context[NecroBot],
-        member: discord.Member = commands.parameter(converter=MemberConverter),
+        member: Annotated[discord.Member, MemberConverter],
     ):
         """Promote a member by one on the Necrobot hierarchy scale. Gaining access to additional commands.
 
@@ -377,7 +377,7 @@ class Server(commands.Cog):
     async def demote(
         self,
         ctx: commands.Context[NecroBot],
-        member: discord.Member = commands.parameter(converter=MemberConverter),
+        member: Annotated[discord.Member, MemberConverter],
     ):
         """Demote a member by one on the Necrobot hierarchy scale. Losing access to certain commands.
 
@@ -691,7 +691,7 @@ class Server(commands.Cog):
     async def welcome_channel(
         self,
         ctx: commands.Context[NecroBot],
-        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=0),
+        channel: Annotated[discord.TextChannel, WritableChannelConverter] = 0,
     ):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention/name/id. The welcome \
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use \
@@ -711,7 +711,7 @@ class Server(commands.Cog):
     async def farewell_channel(
         self,
         ctx: commands.Context[NecroBot],
-        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=0),
+        channel: Annotated[discord.TextChannel, WritableChannelConverter] = 0,
     ):
         """Sets the welcome channel to [channel], the [channel] argument should be a channel mention. The welcome \
         message for users will be sent there. Can be called with either farewell or welcome, regardless both will use \
@@ -757,7 +757,7 @@ class Server(commands.Cog):
     async def auto_role(
         self,
         ctx: commands.Context[NecroBot],
-        role: discord.Role = commands.parameter(converter=RoleConverter, default=0),
+        role: Annotated[discord.Role, RoleConverter] = 0,
         time: TimeConverter = 0,
     ):
         """Sets the auto-role for this server to the given role. Auto-role will assign the role to the member when they join. \
@@ -854,7 +854,7 @@ class Server(commands.Cog):
     async def broadcast_add(
         self,
         ctx: commands.Context[NecroBot],
-        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter),
+        channel: Annotated[discord.TextChannel, WritableChannelConverter],
     ):
         """Start the process for adding a new broadcast.
 
@@ -988,7 +988,7 @@ class Server(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        role: discord.Role = commands.parameter(converter=RoleConverter, default=None),
+        role: Annotated[discord.Role, RoleConverter] = None,
     ):
         """Gives the user the role if it is part of this Server's list of self assignable roles. If the user already \
         has the role it will remove it. **Roles names are case sensitive** If no role name is given then it will list \
@@ -1035,7 +1035,7 @@ class Server(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        role: discord.Role = commands.parameter(converter=RoleConverter),
+        role: Annotated[discord.Role, RoleConverter],
     ):
         """Adds [role] to the list of the server's self assignable roles.
 
@@ -1058,7 +1058,7 @@ class Server(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        role: discord.Role = commands.parameter(converter=RoleConverter),
+        role: Annotated[discord.Role, RoleConverter],
     ):
         """Removes [role] from the list of the server's self assignable roles.
 
@@ -1078,7 +1078,7 @@ class Server(commands.Cog):
     async def starboard(
         self,
         ctx: commands.Context[NecroBot],
-        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter, default=None),
+        channel: Annotated[discord.TextChannel, WritableChannelConverter] = None,
     ):
         """Sets a channel for the starboard messages, required in order for starboard to be enabled. Call the command \
         without a channel to disable starboard.
@@ -1151,7 +1151,7 @@ class Server(commands.Cog):
     async def poll(
         self,
         ctx: commands.Context[NecroBot],
-        channel: discord.TextChannel = commands.parameter(converter=WritableChannelConverter),
+        channel: Annotated[discord.TextChannel, WritableChannelConverter],
     ):
         """Start the creation process for a poll in a given channel.
 

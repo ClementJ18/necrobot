@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Dict, List, Literal, Optional, Union
 
 import discord
 from discord.ext import commands
@@ -120,7 +120,7 @@ class Moderation(commands.Cog):
     async def rename(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter),
+        user: Annotated[discord.Member, MemberConverter],
         *,
         nickname: str = None,
     ):
@@ -165,7 +165,7 @@ class Moderation(commands.Cog):
     async def mute(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter),
+        user: Annotated[discord.Member, MemberConverter],
         time: TimeConverter = None,
     ):
         """Blocks the user from writing in channels by giving it the server's mute role. Make sure an admin has set a \
@@ -216,7 +216,7 @@ class Moderation(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         *,
-        role: discord.Role = commands.parameter(converter=RoleConverter, default=0),
+        role: Annotated[discord.Role, RoleConverter] = 0,
     ):
         """Sets the mute role for this server to [role], this is used for the `mute` command, it is the role assigned by \
         the command to the user. Make sure to spell the role correctly, the role name is case sensitive. It is up to the server \
@@ -287,7 +287,7 @@ class Moderation(commands.Cog):
     async def unmute(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter),
+        user: Annotated[discord.Member, MemberConverter],
     ):
         """Unmutes a user by removing the mute role, allowing them once again to write in text channels.
 
@@ -320,9 +320,9 @@ class Moderation(commands.Cog):
     async def warn(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter),
+        user: Annotated[discord.Member, MemberConverter],
         *,
-        message: str = commands.parameter(),
+        message: str,
     ):
         """Adds the given message as a warning to the user's NecroBot profile
 
@@ -389,7 +389,8 @@ class Moderation(commands.Cog):
     async def warn_list(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter, default=commands.Author),
+        *,
+        user: Annotated[discord.Member, MemberConverter] = commands.Author,
     ):
         """List a user's warnings
 
@@ -488,7 +489,7 @@ class Moderation(commands.Cog):
         ctx: commands.Context[NecroBot],
         number: int = RangeConverter(0, 400),
         check: Literal["link", "mention", "bot"] = "",
-        extra: discord.Member = commands.parameter(converter=MemberConverter, default=""),
+        extra: Annotated[discord.Member, MemberConverter] = "",
     ):
         """Removes number of messages from the channel it is called in. That's all it does at the moment \
         but later checks will also be added to allow for more flexible/specific purging

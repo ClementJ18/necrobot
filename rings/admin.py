@@ -7,7 +7,7 @@ import importlib
 import pkgutil
 import sys
 import traceback
-from typing import TYPE_CHECKING, Dict, List, Literal, Union
+from typing import TYPE_CHECKING, Annotated, Dict, List, Literal, Union
 
 import discord
 import psutil
@@ -22,7 +22,7 @@ from rings.utils.converters import (
     GuildConverter,
     MemberConverter,
     RangeConverter,
-    UserConverter,
+    WritableChannelConverter,
 )
 from rings.utils.ui import Confirm, Paginator
 from rings.utils.utils import BotError
@@ -68,9 +68,9 @@ class Admin(commands.Cog):
     async def grudge(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.User = commands.parameter(converter=UserConverter),
+        user: Annotated[discord.Member, MemberConverter],
         *,
-        grudge: str = commands.parameter(),
+        grudge: str,
     ):
         """Add a grudge
 
@@ -94,7 +94,7 @@ class Admin(commands.Cog):
 
     @grudge.command(name="list")
     @commands.is_owner()
-    async def grudge_list(self, ctx: commands.Context[NecroBot], user: Union[UserConverter, int]):
+    async def grudge_list(self, ctx: commands.Context[NecroBot], user: Union[Annotated[discord.Member, MemberConverter], int]):
         """See all the grudges for a user
 
         {usage}
@@ -168,7 +168,7 @@ class Admin(commands.Cog):
     async def leave(
         self,
         ctx: commands.Context[NecroBot],
-        guild: discord.Guild = commands.parameter(converter=GuildConverter),
+        guild: Annotated[discord.Guild, GuildConverter],
     ):
         """Leaves the specified server.
 
@@ -181,9 +181,9 @@ class Admin(commands.Cog):
     async def add(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.User = commands.parameter(converter=UserConverter),
+        user: Annotated[discord.Member, MemberConverter],
         *,
-        equation: str = commands.parameter(),
+        equation: str,
     ):
         """Does the given pythonic equations on the given user's NecroBot balance.
         `*` - for multiplication
@@ -206,14 +206,12 @@ class Admin(commands.Cog):
 
         view = Confirm(
             ctx.author,
-            confirm_msg=":atm: | **{}'s** balance is now **{:,}** :euro:".format(
-                user.display_name, operation
-            ),
+            confirm_msg=f":atm: | **{user.display_name}'s** balance is now **{operation:,}** :euro:",
             cancel_msg=":white_check_mark: | Cancelled.",
         )
 
         view.message = await ctx.send(
-            f":white_check_mark: | Operation successful. Change {user} balance to **{operation}**?",
+            f":white_check_mark: | Operation successful. Change {user} balance from **{money:,}** to **{operation:,}**?",
             view=view,
         )
         await view.wait()
@@ -232,9 +230,9 @@ class Admin(commands.Cog):
     async def admin_perms(
         self,
         ctx: commands.Context[NecroBot],
-        guild: discord.Guild = commands.parameter(converter=GuildConverter),
-        user: discord.User = commands.parameter(converter=UserConverter),
-        level: int = commands.parameter(),
+        guild: Annotated[discord.Guild, GuildConverter],
+        user: Annotated[discord.Member, MemberConverter],
+        level: int,
     ):
         """For when regular perms isn't enough.
 
@@ -285,8 +283,8 @@ class Admin(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         subcommand: Literal["add", "delete"],
-        user: discord.User = commands.parameter(converter=UserConverter),
-        badge: BadgeConverter = commands.parameter(),
+        user: Annotated[discord.Member, MemberConverter],
+        badge: BadgeConverter,
         spot: RangeConverter(1, 8) = None,
     ):
         """Used to grant special badges to users. Uses add/delete subcommand
@@ -332,9 +330,9 @@ class Admin(commands.Cog):
     async def pm(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.User = commands.parameter(converter=UserConverter),
+        user: Annotated[discord.Member, MemberConverter],
         *,
-        message: str = commands.parameter(),
+        message: str,
     ):
         """Sends the given message to the user of the given id. It will then wait for an answer and \
         print it to the channel it was called it.
@@ -486,9 +484,9 @@ class Admin(commands.Cog):
     async def _as(
         self,
         ctx: commands.Context[NecroBot],
-        user: discord.Member = commands.parameter(converter=MemberConverter),
+        user: Annotated[discord.Member, discord.Member],
         *,
-        message: str = commands.parameter(),
+        message: str,
     ):
         """Call a command as another user, used for debugging purposes
 
@@ -511,7 +509,7 @@ class Admin(commands.Cog):
     async def gate(
         self,
         ctx: commands.Context[NecroBot],
-        channel: Union[discord.TextChannel, discord.Thread, UserConverter],
+        channel: Union[Annotated[discord.TextChannel, WritableChannelConverter], discord.Thread, Annotated[discord.Member, MemberConverter]],
     ):
         """Connects two channels with a magic gate so that users on both servers can communicate. Magic:tm:
 
