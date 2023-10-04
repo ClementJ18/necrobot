@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 class Admin(commands.Cog):
     def __init__(self, bot: NecroBot):
         self.bot = bot
-        self.gates = {}
+        self.gates: Dict[int, discord.TextChannel] = {}
         self.process = psutil.Process()
 
     #######################################################################
@@ -79,7 +79,7 @@ class Admin(commands.Cog):
 
         embed = discord.Embed(title="Grudge Record", colour=self.bot.bot_color, description=grudge)
         embed.add_field(name="User", value=f"{user} ({user.id})")
-        embed.add_field(name="Date", value=datetime.date.today().strftime("%A %-d of %B, %Y"))
+        embed.add_field(name="Date", value=datetime.date.today().strftime("%A %w of %B, %Y"))
         embed.set_footer(**self.bot.bot_footer)
 
         await channel.send(embed=embed)
@@ -99,7 +99,7 @@ class Admin(commands.Cog):
 
         {usage}
         """
-        if isinstance(user, discord.User):
+        if not isinstance(user, int):
             user = user.id
 
         grudges = await self.bot.db.query("SELECT * FROM necrobot.Grudges WHERE user_id = $1", user)
@@ -144,7 +144,7 @@ class Admin(commands.Cog):
             description=grudge[3],
         )
         embed.add_field(name="User", value=f"{name} ({grudge[1]})")
-        embed.add_field(name="Date", value=grudge[4].strftime("%A %-d of %B, %Y"))
+        embed.add_field(name="Date", value=grudge[4].strftime("%A %d of %B, %Y"))
         embed.add_field(name="Avenged", value=str(grudge[5]))
         embed.set_footer(**self.bot.bot_footer)
 
@@ -161,7 +161,7 @@ class Admin(commands.Cog):
             str(settlement),
             grudge["id"],
         )
-        await ctx.send(":white_check_mark: | Grudge `{grudge['id']}` has been considered as settled")
+        await ctx.send(f":white_check_mark: | Grudge `{grudge['id']}` has been considered as settled")
 
     @commands.command()
     @has_perms(7)
@@ -269,7 +269,7 @@ class Admin(commands.Cog):
 
         {usage}
         """
-        command = self.bot.get_command(command)
+        command: commands.Command = self.bot.get_command(command)
         if command.enabled:
             raise BotError(f"Command **{command.name}** already enabled")
 
@@ -277,7 +277,7 @@ class Admin(commands.Cog):
         self.bot.settings["disabled"].remove(command.name)
         await ctx.send(f":white_check_mark: | Enabled **{command.name}**")
 
-    @admin.command(name="badges")
+    @admin.command(name="badges", aliases=["badge"])
     @has_perms(6)
     async def admin_badges(
         self,
@@ -313,11 +313,14 @@ class Admin(commands.Cog):
 
     @admin.command(name="blacklist")
     @has_perms(6)
-    async def admin_blacklist(self, ctx: commands.Context[NecroBot], object_id: int):
+    async def admin_blacklist(self, ctx: commands.Context[NecroBot], object_id: Union[Annotated[discord.Member, MemberConverter], int]):
         """Blacklist a user
 
         {usage}
         """
+        if not isinstance(object_id, int):
+            object_id = object_id.id
+
         if object_id in self.bot.settings["blacklist"]:
             self.bot.settings["blacklist"].remove(object_id)
             await ctx.send(":white_check_mark: | Pardoned")
@@ -366,14 +369,10 @@ class Admin(commands.Cog):
             await msg.edit(content=f"User: **{user}**")
             return
 
-        await msg.edit(content="User with that ID not found.")
-
         guild = self.bot.get_guild(obj_id)
         if guild:
             await msg.edit(content=f"Server: **{guild}**")
             return
-
-        await msg.edit(content="Server with that ID not found")
 
         channel = self.bot.get_channel(obj_id)
         if channel:
@@ -381,8 +380,6 @@ class Admin(commands.Cog):
                 content=f"Channel: **{channel.name}** on **{channel.guild.name}** ({channel.guild.id})"
             )
             return
-
-        await msg.edit(content="Channel with that ID not found")
 
         role = discord.utils.get(
             [item for sublist in [guild.roles for guild in self.bot.guilds] for item in sublist],
@@ -545,17 +542,19 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def test(self, ctx: commands.Context[NecroBot], *commands: str):
+        """{usage}"""
         modules = [v for k, v in sys.modules.items() if k.startswith("tests")]
         for v in modules:
             importlib.reload(v)
 
-        modules = {}
-        status = {}
-        errors = {}
+        modules: Dict[str, list] = {}
+        status: Dict[str, list] = {}
+        errors: Dict[str, str] = {}
 
-        test_filter = "test_"
         if commands:
-            test_filter = tuple(f"test_{command.replace(' ', '_')}" for command in commands)
+            test_filter = tuple(f"test_{self.bot.get_command(command).callback.__name__}" for command in commands)
+        else:
+            test_filter = "test_"
 
         for module_info in pkgutil.iter_modules(tests.__path__):
             module = importlib.import_module(f"tests.{module_info.name}")
@@ -616,10 +615,7 @@ class Admin(commands.Cog):
         else:
             return
 
-        message.content = message.content.replace("@everyone", "@\u200beveryone").replace(
-            "@here", "@\u200bhere"
-        )
-        embed = discord.Embed(title="Message", description=message.content)
+        embed = discord.Embed(title="Message", description=message.content, color=self.bot.bot_color)
         embed.set_author(
             name=message.author,
             icon_url=message.author.display_avatar.replace(format="png", size=128),

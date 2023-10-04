@@ -173,8 +173,9 @@ class Meta(commands.Cog):
 
         if message.attachments:
             file = message.attachments[0]
-            if file.url.lower().endswith(("png", "jpeg", "jpg", "gif", "webp")):
-                embed.set_image(url=file.url)
+            url = file.url.split("?")[0]
+            if url.lower().endswith(("png", "jpeg", "jpg", "gif", "webp")):
+                embed.set_image(url=url)
             else:
                 embed.add_field(
                     name="Attachment",

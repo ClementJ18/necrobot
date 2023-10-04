@@ -301,7 +301,7 @@ def build_format_dict(
                 "str": str(channel),
                 "name": str(channel.name),
                 "id": str(channel.id),
-                "topic": str(channel.topic),
+                "topic": str(getattr(channel, "topic", None)),
                 "mention": str(channel.mention),
             }
         )

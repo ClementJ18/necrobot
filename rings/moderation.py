@@ -574,26 +574,35 @@ class Moderation(commands.Cog):
             return await ctx.send(f"Cogs and Commands disabled on the server: {string}")
 
         disabled = self.bot.guild_data[ctx.guild.id]["disabled"]
-        command = self.bot.get_command(name)
-        cog = self.bot.get_cog(name)
+
+        if name == name.title():
+            cog = self.bot.get_cog(name)
+            command = None
+
+            if cog is None:
+                raise BotError(f"No cog called {name}")
+        else:
+            cog = None
+            command = self.bot.get_command(name)
+
+            if command is None:
+                raise BotError(f"No command is called {name}")
 
         if command:
             if command in disabled:
-                raise BotError("This command is already disabled.")
+                raise BotError(f"**{command}** is already disabled.")
 
             await self.bot.db.insert_disabled(ctx.guild.id, name)
             return await ctx.send(f":white_check_mark: | Command **{name}** is now disabled")
 
-        if cog:
-            disabled_commands = [
-                x.name
-                for x in cog.get_commands()
-                if x.name not in self.bot.guild_data[ctx.guild.id]["disabled"]
-            ]
-            await self.bot.db.insert_disabled(ctx.guild.id, *disabled_commands)
-            return await ctx.send(f":white_check_mark: | All commands in **{name}** are now disabled")
+        disabled_commands = [
+            x.name
+            for x in cog.get_commands()
+            if x.name not in self.bot.guild_data[ctx.guild.id]["disabled"]
+        ]
+        await self.bot.db.insert_disabled(ctx.guild.id, *disabled_commands)
+        await ctx.send(f":white_check_mark: | All commands in **{name}** are now disabled")
 
-        raise BotError("No such command/cog")
 
     @commands.command()
     @has_perms(4)
@@ -615,8 +624,19 @@ class Moderation(commands.Cog):
             return await ctx.send(f"Cogs and Commands disabled on the server: {string}")
 
         disabled = self.bot.guild_data[ctx.guild.id]["disabled"]
-        command = self.bot.get_command(name)
-        cog = self.bot.get_cog(name)
+        
+        if name == name.title():
+            cog = self.bot.get_cog(name)
+            command = None
+
+            if cog is None:
+                raise BotError(f"No cog called {name}")
+        else:
+            cog = None
+            command = self.bot.get_command(name)
+
+            if command is None:
+                raise BotError(f"No command is called {name}")
 
         if command:
             if command not in disabled:
@@ -625,14 +645,11 @@ class Moderation(commands.Cog):
             await self.bot.db.delete_disabled(ctx.guild.id, name)
             return await ctx.send(f":white_check_mark: | Command **{name}** is now enabled")
 
-        if cog:
-            enabled_commands = [
-                x.name for x in cog.get_commands() if x.name in self.bot.guild_data[ctx.guild.id]["disabled"]
-            ]
-            await self.bot.db.delete_disabled(ctx.guild.id, *enabled_commands)
-            return await ctx.send(f":white_check_mark: | All commands in **{name}** are now enabled")
-
-        raise BotError("No such command/cog")
+        enabled_commands = [
+            x.name for x in cog.get_commands() if x.name in self.bot.guild_data[ctx.guild.id]["disabled"]
+        ]
+        await self.bot.db.delete_disabled(ctx.guild.id, *enabled_commands)
+        await ctx.send(f":white_check_mark: | All commands in **{name}** are now enabled")
 
     #######################################################################
     ## Events

@@ -129,7 +129,7 @@ class BlackJack(BaseView):
         )
         embed.set_footer(**self.ctx.bot.bot_footer)
         embed.add_field(
-            name=f"Actions ({self.index + 1} / {self.max_index})",
+            name=f"Actions ({self.index + 1} / {self.max_index + 1})",
             value="\n".join(self.actions[self.index * 5 : (self.index + 1) * 5]),
             inline=False,
         )

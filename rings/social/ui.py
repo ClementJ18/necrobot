@@ -27,6 +27,7 @@ class RiddleView(BaseView):
         self.answer = answer.lower()
         super().__init__(timeout=timeout)
         self.add_item(TextInput(style=discord.TextStyle.short, required=True, label="Answer:"))
+        self.message: discord.Message = None
 
     async def on_timeout(self):
         self.stop()

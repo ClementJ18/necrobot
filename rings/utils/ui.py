@@ -77,6 +77,7 @@ class PollSelect(discord.ui.Select):
     view: PollView
 
     async def callback(self, interaction: discord.Interaction[NecroBot]):
+        await interaction.response.defer()
         await interaction.client.db.query(
             "DELETE FROM necrobot.PollVotes WHERE user_id = $1 AND poll_id = $2",
             interaction.user.id,
@@ -88,7 +89,8 @@ class PollSelect(discord.ui.Select):
             many=True,
         )
 
-        await interaction.response.edit_message(
+        await interaction.followup.edit_message(
+            self.view.poll_id,
             embed=self.view.generate_embed(await self.view.get_values(interaction.client))
         )
         await interaction.followup.send(":white_check_mark: | Vote(s) registered", ephemeral=True)

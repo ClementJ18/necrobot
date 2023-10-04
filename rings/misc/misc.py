@@ -54,7 +54,7 @@ class Misc(commands.Cog):
     ## Commands
     #######################################################################
 
-    @commands.command()
+    @commands.command(enabled=False)
     @commands.cooldown(3, 5, BucketType.channel)
     async def cat(self, ctx: commands.Context[NecroBot]):
         """Posts a random cat picture from random.cat
@@ -240,14 +240,13 @@ class Misc(commands.Cog):
         )
 
         view.message = await ctx.send(
-            "Do you want to delete all the ranked logs and reset the counters for the factions?",
+            "Do you want to reset the counters for the factions?",
             view=view,
         )
         await view.wait()
 
         if view.value:
             await self.bot.db.query("UPDATE necrobot.InternalRanked SET defeats = 0, victories = 0")
-            await self.bot.db.query("DELETE FROM necrobot.InternalRankedLogs")
 
     @matchups.command(name="logs")
     @guild_only(496617962334060545)

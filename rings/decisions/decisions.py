@@ -38,7 +38,7 @@ class Decisions(commands.Cog):
 
             final_choices.append(", ".join(random.sample(choice_list, count)))
 
-        await ctx.send(f"I choose **{' '.join(final_choices)}**")
+        await ctx.send(f"I choose **{' | '.join(final_choices)}**")
 
     @commands.group(aliases=["choice"], invoke_without_command=True)
     async def choose(self, ctx: commands.Context[NecroBot], *, choices: str):
@@ -91,11 +91,12 @@ class Decisions(commands.Cog):
         if bet > 0:
             if choice == outcome:
                 msg += "\nWell done!"
+                bet = bet // 2
             else:
                 msg += "\nBetter luck next time."
                 bet = -bet
 
-            await self.bot.db.update_money(ctx.author.id, add=bet // 2)
+            await self.bot.db.update_money(ctx.author.id, add=bet)
 
         await ctx.send(msg)
 
@@ -164,6 +165,6 @@ class Decisions(commands.Cog):
         {usage}"""
         msg = f":8ball: | {random.choice(ball8_list)}"
         if message is not None:
-            msg = f"{message} \n" + msg
+            msg = f"**{message}** \n" + msg
 
         await ctx.send(msg)

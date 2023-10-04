@@ -100,7 +100,7 @@ class HungerGames(BaseView):
         idle_events = events[event_name].copy() + deathless.copy()
 
         embed = discord.Embed(
-            title=f"Hunger Games Simulator ({self.index + 1})",
+            title=f"Hunger Games Simulator ({self.index + 1}/{self.max_index + 1})",
             colour=self.bot.bot_color,
             description=f"{' - '.join(self.tributes)}\nPress :arrow_forward: to proceed",
         )
@@ -148,7 +148,7 @@ class HungerGames(BaseView):
 
     def process_deads(self):
         embed = discord.Embed(
-            title=f"Dead Tributes ({self.index})",
+            title=f"Dead Tributes ({self.index + 1}/{self.max_index + 1})",
             description="- " + "\n- ".join(self.dead) if self.dead else "None",
             colour=self.bot.bot_color,
         )
@@ -161,7 +161,7 @@ class HungerGames(BaseView):
     def process_victory(self):
         self.ongoing = False
         embed = discord.Embed(
-            title=f"Hunger Game Winner ({self.index})",
+            title=f"Hunger Game Winner ({self.index + 1}/{self.max_index + 1})",
             description=f":tada: {self.tributes[0]} is the Winner! :tada:",
             colour=self.bot.bot_color,
         )

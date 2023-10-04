@@ -76,7 +76,7 @@ class HelpPaginator(Paginator):
         *,
         timeout: int = 180,
     ):
-        super().__init__(embed_maker, page_size, entries, author, timeout=timeout)
+        super().__init__(page_size, entries, author, timeout=timeout, embed_maker=embed_maker)
 
         self.command_select = CommandSelect(
             disabled=True,
@@ -148,13 +148,13 @@ class NecrobotHelp(cmd.HelpCommand):
         valid = await predicate()
         if valid and command.enabled:
             if command.qualified_name in self.context.bot.new_commands:
-                return f"***{command.qualified_name}***"
+                return f"***`{command.qualified_name}`***"
 
             if isinstance(command, cmd.Group):
                 return f"__`{command.qualified_name}`__"
             return f"`{command.qualified_name}`"
 
-        return f"~~{command.qualified_name}~~"
+        return f"~~`{command.qualified_name}`~~"
 
     async def get_brief_signature(self, command: cmd.Command):
         help = command.help
@@ -190,6 +190,9 @@ class NecrobotHelp(cmd.HelpCommand):
 
     async def embed_command(self, command: cmd.Command) -> discord.Embed:
         description = command.help
+        if description is None:
+            description = "{usage}"
+
         signature = f"__Usage__\n{self.get_command_signature(command)}"
 
         perms_check = discord.utils.find(lambda x: x.__qualname__.startswith("has_perms"), command.checks)
@@ -226,7 +229,7 @@ class NecrobotHelp(cmd.HelpCommand):
         async def embed_maker(view: CogPaginator, entry: Optional[cmd.Cog]):
             if view.index == 0:
                 embed = discord.Embed(
-                    title=f":information_source: NecroBot Help Menu {view.page_string} :information_source:",
+                    title=f":information_source: NecroBot Help Menu ({view.page_string}) :information_source:",
                     description=self.context.bot.description,
                     color=self.context.bot.bot_color,
                 )

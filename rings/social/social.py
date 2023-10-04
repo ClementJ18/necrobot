@@ -33,7 +33,7 @@ class Social(commands.Cog):
         {usage}"""
         await ctx.send(f":speaking_head: | {random.choice(dad_joke)}")
 
-    @commands.command()
+    @commands.command(enabled=False)
     async def riddle(self, ctx: commands.Context[NecroBot]):
         """Ask a riddle to the user from a long list and waits 30 seconds for the answer. If the \
         user fails to answer they go feed Gollum's fishies. To answer the riddle simply type out \

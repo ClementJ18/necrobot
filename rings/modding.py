@@ -28,7 +28,7 @@ class Modding(commands.Cog):
     #######################################################################
 
     @commands.command()
-    async def game(self, ctx: commands.Context[NecroBot], *, game: str):
+    async def game(self, ctx: commands.Context[NecroBot], *, name: str):
         """This command takes in a game name from ModDB and returns a rich embed of it. Due to the high variety of \
         game formats, embed appearances will vary but it should always return one as long as it is given the name of \
         an existing game
@@ -38,6 +38,10 @@ class Modding(commands.Cog):
         __Example__
         `{pre}game battle for middle earth` - creates a rich embed of the BFME ModDB page"""
 
+        async with ctx.typing():
+            await self._game(ctx, name)
+
+    async def _game(self, ctx: commands.Context[NecroBot], *, name: str):
         def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
             page = view.page_number
             embed = discord.Embed(
@@ -94,13 +98,13 @@ class Modding(commands.Cog):
             return embed
 
         async with self.bot.session.get(
-            f"https://www.moddb.com/games?filter=t&kw={game.replace(' ', '+')}&released=&genre=&theme=&indie=&players=&timeframe="
+            f"https://www.moddb.com/games?filter=t&kw={name.replace(' ', '+')}&released=&genre=&theme=&indie=&players=&timeframe="
         ) as resp:
             soup = BeautifulSoup(await resp.text(), "html.parser")
 
         try:
             search_return = process.extract(
-                game, [x.string for x in soup.find("div", class_="table").findAll("h4")]
+                name, [x.string for x in soup.find("div", class_="table").findAll("h4")]
             )[0][0]
         except IndexError as e:
             raise BotError("No game with that name found") from e
@@ -124,6 +128,10 @@ class Modding(commands.Cog):
         __Example__
         `{pre}mod edain mod` - creates a rich embed of the Edain Mod ModDB page"""
 
+        async with ctx.typing():
+            await self._mod(ctx, name)
+
+    async def _mod(self, ctx: commands.Context[NecroBot], *, name: str):
         def embed_maker(view: Paginator, entries: List[Dict[str, str]]):
             page = view.page_number
             embed = discord.Embed(
@@ -180,7 +188,7 @@ class Modding(commands.Cog):
         async with self.bot.session.get(
             f"http://www.moddb.com/mods?filter=t&kw={name.replace(' ', '+')}&released=&genre=&theme=&players=&timeframe=&mod=&sort=visitstotal-desc"
         ) as resp:
-            soup = BeautifulSoup(await resp.text(), "lxml")
+            soup = BeautifulSoup(await resp.text(), "html.parser")
 
         try:
             search_return = process.extract(
