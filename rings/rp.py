@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 import discord
 from discord.ext import commands
 
+from rings.db import DatabaseError
 from rings.utils.ui import Paginator
 from rings.utils.utils import time_converter
 
@@ -116,6 +117,89 @@ class RP(commands.Cog):
             if channel.id not in to_ignore
         ]
         await self._activity(ctx, duration, channels)
+
+    @commands.group(invoke_without_command=True)
+    async def subscribe(self, ctx: commands.Context[NecroBot], channel: Union[discord.TextChannel, discord.Thread]):
+        """Subscribe to a channel. The bot will DM you if a new message is posted in the channel. This
+        has an internal cooldown to avoid spam.
+        
+        {usage}
+        
+        __Examples__
+        `{pre}subscribe #news` - subscribe to the news channel
+        """
+        if not channel.permissions_for(ctx.author).read_messages:
+            return await ctx.send(":negative_squared_cross_mark: | You do not have permission to read this channel.")
+        
+        if not channel.permissions_for(ctx.guild.me).read_messages:
+            return await ctx.send(":negative_squared_cross_mark: | I do not have permission to read this channel.")
+
+        try:
+            await self.bot.db.query("INSERT INTO necrobot.ChannelSubscriptions(user_id, channel_id) VALUES($1, $2)", ctx.author.id, channel.id)
+            await ctx.send(f":white_check_mark: | You are now subscribed to {channel.mention}. Make sure your DMs are open!")
+        except DatabaseError:
+            await ctx.send(":negative_squared_cross_mark: | Could not subscribe. You might already subscribed.")
+
+    @subscribe.command(name="list")
+    async def subscribe_list(self, ctx: commands.Context[NecroBot]):
+        """List all your subscriptions.
+        
+        {usage}
+        
+        __Examples__
+        `{pre}subscribe list` - list all your subscriptions"""
+        subscriptions = await self.bot.db.query("SELECT channel_id from necrobot.ChannelSubscriptions WHERE user_id = $1", ctx.author.id)
+
+        def embed_maker(view: Paginator, entries: List[int]):
+            channels = [f"- {self.bot.get_channel(channel['channel_id']).mention}" for channel in entries if self.bot.get_channel(channel["channel_id"]) is not None]
+            e = discord.Embed(title="Subscriptions", description="\n".join(channels), color=self.bot.bot_color)
+            e.set_footer(**self.bot.bot_footer)
+
+            return e
+        
+        await Paginator(15, subscriptions, ctx.author, embed_maker=embed_maker).start(ctx)
+
+    @commands.command()
+    async def unsubscribe(self, ctx: commands.Context[NecroBot], channel: Union[discord.TextChannel, discord.Thread]):
+        """Unsubscribe from a channel to stop the notifications.
+        
+        {usage}
+        
+        __Examples__
+        `{pre}unsubscribe #news` - unsubscribe from #news"""
+
+        is_deleted = await self.bot.db.query(
+            "DELETE FROM necrobot.ChannelSubscriptions WHERE user_id = $1 AND channel_id = $2 RETURNING channel_id",
+            ctx.author.id, channel.id, fetchval=True
+        )
+
+        if is_deleted:
+            await ctx.send(":white_check_mark: | Subscription cancelled.")
+        else:
+            await ctx.send(":negative_squared_cross_mark: | Could not find this subscription.")
+
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.guild is None:
+            return
+
+        subscribers = await self.bot.db.query(
+            "SELECT user_id FROM necrobot.ChannelSubscriptions WHERE channel_id=$1 AND last_update < NOW() - INTERVAL '5 minutes'",
+            message.channel.id
+        )
+
+        if not subscribers:
+            return
+
+        await self.bot.db.query("UPDATE necrobot.ChannelSubscriptions SET last_update = NOW() WHERE channel_id = $1 AND user_id = ANY($2)", message.channel.id, [subscriber["user_id"] for subscriber in subscribers])
+
+        for subscriber in subscribers:
+            try:
+                if user := self.bot.get_user(subscriber["user_id"]):
+                    await user.send(f"A message was sent to one of your subscribed channels! See here: {message.jump_url}")
+            except discord.Forbidden:
+                pass
 
 
 async def setup(bot: NecroBot):

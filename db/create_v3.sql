@@ -357,3 +357,10 @@ CREATE TABLE necrobot.PollVotes(
     poll_id bigint REFERENCES necrobot.PollsV2(message_id) ON DELETE CASCADE,
     PRIMARY KEY (option_id, user_id)
 );
+
+CREATE TABLE necrobot.ChannelSubscriptions(
+    user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
+    channel_id bigint,
+    last_update TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, channel_id)
+)
