@@ -39,7 +39,7 @@ class RP(commands.Cog):
             ch_time = discord.utils.snowflake_time(ch.last_message_id)
             return ch_time > (now - datetime.timedelta(seconds=time))
 
-        now = discord.utils.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         time = 300
         if duration is not None:
             time = time_converter(duration)

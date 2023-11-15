@@ -520,15 +520,16 @@ class Database(commands.Cog):
 
         return await self.query("SELECT * FROM necrobot.Reminders WHERE user_id = $1", user_id)
 
-    async def insert_reminder(self, user_id, channel_id, reminder, timer, start_date):
+    async def insert_reminder(self, user_id, channel_id, reminder, timer, start_date, end_date):
         return await self.query(
-            """INSERT INTO necrobot.Reminders(user_id, channel_id, reminder, timer, start_date) 
-            VALUES($1, $2, $3, $4, $5) RETURNING id""",
+            """INSERT INTO necrobot.Reminders(user_id, channel_id, reminder, timer, start_date, end_date) 
+            VALUES($1, $2, $3, $4, $5, $6) RETURNING id""",
             user_id,
             channel_id,
             reminder,
             timer,
             start_date,
+            end_date,
             fetchval=True,
         )
 

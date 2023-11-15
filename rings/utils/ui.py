@@ -161,7 +161,7 @@ class PollView(BaseView):
                 ephemeral=True,
             )
 
-        self.closer = (interaction.user, datetime.datetime.now())
+        self.closer = (interaction.user, datetime.datetime.now(datetime.timezone.utc))
         self.stop()
         self.clear_items()
         await interaction.response.edit_message(

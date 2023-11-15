@@ -138,8 +138,11 @@ CREATE TABLE necrobot.Reminders(
     channel_id bigint,
     reminder varchar(2000),
     timer varchar(200),
-    start_date TIMESTAMPTZ DEFAULT NOW()
+    start_date TIMESTAMPTZ DEFAULT NOW(),
+    end_date TIMESTAMPTZ DEFAULT NULL,
 );
+
+-- ALTER TABLE necrobot.Reminders ADD COLUMN end_date TIMESTAMPTZ DEFAULT NULL;
 
 CREATE TABLE necrobot.Polls(
     message_id bigint PRIMARY KEY,

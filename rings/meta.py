@@ -26,7 +26,7 @@ logger = logging.getLogger()
 class Meta(commands.Cog):
     def __init__(self, bot: NecroBot):
         self.bot = bot
-        self.bot.counter = datetime.datetime.now().hour
+        self.bot.counter = datetime.datetime.now(datetime.timezone.utc).hour
         self.hourly_loop = None
 
         self.tasks_hourly = [
@@ -329,7 +329,14 @@ class Meta(commands.Cog):
 
         await msg.edit(content="All servers checked")
 
-        reminders = await self.bot.db.get_reminders()
+        # This is the new better reminder system
+        await self.restart_next_reminder_task()
+
+        #This is the old reminder system that has to stay here for now for legacy reasons
+        reminders = await self.bot.db.query("SELECT * FROM necrobot.Reminders WHERE end_date IS NULL")
+        if not reminders:
+            await self.bot.bot_channel.send("We don't have any legacy reminders left!")
+
         for reminder in reminders:
             timer = time_converter(reminder["timer"])
             sleep = timer - (
@@ -384,6 +391,12 @@ class Meta(commands.Cog):
                 ),
                 message_id=poll["message_id"],
             )
+
+
+        await self.bot.db.query(
+            """DELETE FROM necrobot.ChannelSubscriptions WHERE channel_id != ANY($1)""",
+            [channel.id for channel in self.bot.get_all_channels()]
+        )
 
         self.bot.loaded.set()
         self.bot.maintenance = False
@@ -461,6 +474,62 @@ class Meta(commands.Cog):
 
         del self.bot.reminders[reminder_id]
         await self.bot.db.delete_reminder(reminder_id)
+
+    async def start_reminder_task(self, reminder_id):
+        self.bot.reminders[reminder_id] = self.bot.loop.create_task(self.start_reminder(reminder_id))
+
+    async def start_reminder(self, reminder_id):
+        next_reminder = await self.bot.db.query("SELECT * FROM necrobot.Reminders WHERE id = $1", reminder_id)
+        await self._start_reminder(next_reminder)
+
+        if reminder_id in self.bot.reminders:
+            del self.bot.reminders[reminder_id]
+
+    async def restart_next_reminder_task(self):
+        if self.bot.next_reminder_task is not None:
+            self.bot.next_reminder_task.cancel()
+
+        self.bot.next_reminder_task = self.bot.loop.create_task(self.start_next_reminder())
+
+    async def start_next_reminder(self):
+        while True:
+            next_reminders = await self.bot.db.query("""
+                SELECT * FROM necrobot.Reminders 
+                WHERE end_date IS NOT NULL
+                ORDER BY end_date ASC 
+                LIMIT 1;
+            """)
+
+            if not next_reminders:
+                logger.info("No reminders left, shutting down task for now")
+                return self.bot.next_reminder_task.cancel()
+
+            next_reminder = next_reminders[0]
+            self.bot.next_reminder_end_date = next_reminder["end_date"]
+            
+            await self._start_reminder(next_reminder)
+
+    async def _start_reminder(self, reminder):
+        sleep = (reminder["end_date"] - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
+        if sleep > 0:
+            try:
+                await asyncio.sleep(sleep)
+                await self.remind_user(reminder)
+            except asyncio.CancelledError:
+                pass
+        else:
+            await self.bot.db.delete_reminder(reminder["id"])
+
+    async def remind_user(self, reminder):
+        channel = self.bot.get_channel(reminder["channel_id"])
+        user = self.bot.get_user(reminder["user_id"])
+        if channel is not None and user is not None:
+            if reminder["reminder"] is None or reminder["reminder"] == "":
+                await channel.send(f":alarm_clock: | {user.mention}, you asked to be reminded!")
+            else:
+                await channel.send(f":alarm_clock: | {user.mention} reminder: **{reminder['reminder']}**")
+
+        await self.bot.db.delete_reminder(reminder["id"])
 
     async def broadcast(self):
         total_hours = (self.bot.settings["day"] * 24) + self.bot.counter

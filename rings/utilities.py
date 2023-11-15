@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import logging
 import random
 from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal
 
@@ -18,6 +19,8 @@ from rings.utils.utils import BotError, format_dt, time_converter, time_string_p
 
 if TYPE_CHECKING:
     from bot import NecroBot
+
+logger = logging.getLogger()
 
 
 class Utilities(commands.Cog):
@@ -217,20 +220,27 @@ class Utilities(commands.Cog):
         if sleep < 1:
             raise BotError("Can't have a reminder that's less than one second!")
 
+        now = datetime.datetime.now(datetime.timezone.utc)
+        end_date = now + datetime.timedelta(seconds=sleep)
         reminder_id = await self.bot.db.insert_reminder(
             ctx.author.id,
             ctx.channel.id,
             text,
             time,
-            datetime.datetime.now(datetime.timezone.utc),
+            now,
+            end_date
         )
-        task = self.bot.loop.create_task(
-            self.bot.meta.reminder_task(reminder_id, sleep, text, ctx.channel.id, ctx.author.id)
-        )
-        self.bot.reminders[reminder_id] = task
+        
+        if end_date < self.bot.next_reminder_end_date or self.bot.next_reminder_end_date < now:
+            if self.bot.next_reminder_end_date > now + datetime.timedelta(minutes=1) or self.bot.next_reminder_end_date < now:
+                await self.bot.meta.restart_next_reminder_task()
+                logging.info("Restarting reminder task for reminder %s", reminder_id)
+            else:
+                await self.bot.meta.start_reminder_task(reminder_id)
+                logging.info("Creating a separate reminder task for reminder %s", reminder_id)
 
         stamp = format_dt(
-            datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=sleep),
+            now + datetime.timedelta(seconds=sleep),
             style="f",
         )
         await ctx.send(f":white_check_mark: | I will remind you of that on **{stamp}** (ID: {reminder_id})")
