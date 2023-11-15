@@ -196,8 +196,9 @@ class RP(commands.Cog):
 
         for subscriber in subscribers:
             try:
-                if user := self.bot.get_user(subscriber["user_id"]):
-                    await user.send(f"A message was sent to one of your subscribed channels! See here: {message.jump_url}")
+                member = message.channel.guild.get_member(subscriber["user_id"])
+                if member is not None and message.channel.permissions_for(member).read_messages:
+                    await member.send(f"A message was sent to one of your subscribed channels! See here: {message.jump_url}")
             except discord.Forbidden:
                 pass
 

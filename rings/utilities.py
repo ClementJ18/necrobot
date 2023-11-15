@@ -233,7 +233,7 @@ class Utilities(commands.Cog):
             datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=sleep),
             style="f",
         )
-        await ctx.send(f":white_check_mark: | I will remind you of that on **{stamp}**")
+        await ctx.send(f":white_check_mark: | I will remind you of that on **{stamp}** (ID: {reminder_id})")
 
     @remindme.command(name="delete")
     async def remindme_delete(self, ctx: commands.Context[NecroBot], reminder_id: int):

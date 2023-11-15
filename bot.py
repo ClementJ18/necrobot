@@ -105,7 +105,7 @@ class NecroBot(commands.Bot):
 
         self.version = 3.10
         self.prefixes = ["n!", "N!"]
-        self.new_commands = ["gacha", "banners", "characters", "poll"]
+        self.new_commands = ["gacha", "banners", "characters", "poll", "subscribe", "unsubscribe"]
         self.statuses = itertools.cycle(
             [
                 "n!help for help",
