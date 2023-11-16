@@ -149,7 +149,7 @@ class NecroBot(commands.Bot):
         self.queued_posts: asyncio.Queue = None
         self.twitch_token: Dict[str, Union[str, int]] = {}
 
-        self.next_reminder_end_date: datetime.datetime = datetime.datetime.max
+        self.next_reminder_end_date: datetime.datetime = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
         self.next_reminder_task : asyncio.Task = None
 
         self.tutorial_e: discord.Embed = None

@@ -525,9 +525,9 @@ class Meta(commands.Cog):
         user = self.bot.get_user(reminder["user_id"])
         if channel is not None and user is not None:
             if reminder["reminder"] is None or reminder["reminder"] == "":
-                await channel.send(f":alarm_clock: | {user.mention}, you asked to be reminded!")
+                await channel.send(f":alarm_clock: | {user.mention}, you asked to be reminded (ID: {reminder['id']})!")
             else:
-                await channel.send(f":alarm_clock: | {user.mention} reminder: **{reminder['reminder']}**")
+                await channel.send(f":alarm_clock: | {user.mention} reminder (ID: {reminder['id']}): **{reminder['reminder']}**")
 
         await self.bot.db.delete_reminder(reminder["id"])
 

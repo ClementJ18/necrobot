@@ -232,7 +232,7 @@ class Utilities(commands.Cog):
         )
         
         if end_date < self.bot.next_reminder_end_date or self.bot.next_reminder_end_date < now:
-            if self.bot.next_reminder_end_date > now + datetime.timedelta(minutes=1) or self.bot.next_reminder_end_date < now:
+            if (self.bot.next_reminder_end_date > now + datetime.timedelta(minutes=1) or self.bot.next_reminder_end_date < now) and sleep > 60:
                 await self.bot.meta.restart_next_reminder_task()
                 logging.info("Restarting reminder task for reminder %s", reminder_id)
             else:
