@@ -725,7 +725,9 @@ class Flowers(commands.Cog):
         ctx: commands.Context[NecroBot],
         user: Annotated[discord.Member, MemberConverter],
         *,
-        char: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))]
+        char: Annotated[
+            EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
+        ],
     ):
         """Add a level of character to a player's account
 
@@ -757,7 +759,9 @@ class Flowers(commands.Cog):
         self,
         ctx: commands.Context[NecroBot],
         user: Annotated[discord.Member, MemberConverter],
-        char: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))],
+        char: Annotated[
+            EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
+        ],
         amount: int = 1,
     ):
         """Remove a level of character to a player's account
@@ -937,7 +941,9 @@ class Flowers(commands.Cog):
         ctx: commands.Context[NecroBot],
         banner: GachaBannerConverter(False),
         *,
-        char: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))]
+        char: Annotated[
+            EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
+        ],
     ):
         """Add characters to a banner
 
@@ -967,7 +973,9 @@ class Flowers(commands.Cog):
         ctx: commands.Context[NecroBot],
         banner: GachaBannerConverter(False),
         *,
-        char: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))]
+        char: Annotated[
+            EntityDict, GachaCharacterConverter(allowed_types=("character", "artefact", "weapon"))
+        ],
     ):
         """Remove characters from a banner
 
@@ -1225,9 +1233,13 @@ class Flowers(commands.Cog):
     async def equipment_equip(
         self,
         ctx: commands.Context[NecroBot],
-        character: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character",), is_owned=True)],
+        character: Annotated[
+            EntityDict, GachaCharacterConverter(allowed_types=("character",), is_owned=True)
+        ],
         *,
-        equipments: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("artefact", "weapon"), is_owned=True)]
+        equipments: Annotated[
+            EntityDict, GachaCharacterConverter(allowed_types=("artefact", "weapon"), is_owned=True)
+        ],
     ):
         """Equip a character you own with weapons or artefacts.
 
@@ -1314,7 +1326,9 @@ class Flowers(commands.Cog):
     async def equipment_remove(
         self,
         ctx: commands.Context[NecroBot],
-        character: Annotated[EntityDict, GachaCharacterConverter(allowed_types=("character",), is_owned=True)]
+        character: Annotated[
+            EntityDict, GachaCharacterConverter(allowed_types=("character",), is_owned=True)
+        ],
     ):
         """Remove the equipment set of a character so that it can be given to another character.
 

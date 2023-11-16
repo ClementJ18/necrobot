@@ -149,11 +149,13 @@ class Decisions(commands.Cog):
                 dice_string = "..." + dice_string
 
             page_string = f" **({view.page_string})** "
-            string = f":game_die: | **{ctx.author.display_name}** rolled **{dices}** for a total of **{total}**."
+            string = (
+                f":game_die: | **{ctx.author.display_name}** rolled **{dices}** for a total of **{total}**."
+            )
 
             if dice_string is None:
                 return string
-    
+
             return f"{string} The dice were{page_string if view.max_index > 0 else ''}: {dice_string}"
 
         await Paginator(1, chunks, ctx.author, content_maker=content_maker).start(ctx)

@@ -31,10 +31,11 @@ def strip_emoji(content):
 
 
 class BaseView(discord.ui.View):
-    """This is a view with no functionality that implements interaction_check and 
+    """This is a view with no functionality that implements interaction_check and
     on_error. All other view should inherit this one. Other views should also implement
     attaching the author attribute.
     """
+
     author: discord.Member | discord.User
 
     async def on_error(self, interaction: Interaction[NecroBot], error: Exception, item: Item[Any]):
@@ -90,8 +91,7 @@ class PollSelect(discord.ui.Select):
         )
 
         await interaction.followup.edit_message(
-            self.view.poll_id,
-            embed=self.view.generate_embed(await self.view.get_values(interaction.client))
+            self.view.poll_id, embed=self.view.generate_embed(await self.view.get_values(interaction.client))
         )
         await interaction.followup.send(":white_check_mark: | Vote(s) registered", ephemeral=True)
 
@@ -185,7 +185,7 @@ class PollEditorModal(discord.ui.Modal):
 
         if len(self.view.options) < 24:
             self.add_item(self.option_2)
-    
+
         if len(self.view.options) < 23:
             self.add_item(self.option_3)
 
@@ -434,7 +434,7 @@ class Confirm(BaseView):
 class Paginator(BaseView):
     """A paginator is a view that allows the user to iterate through a potentially very long
     list of items. These items can be displayed through either embed or simply message content.
-    
+
     Params
     --------
     page_size: int
@@ -453,6 +453,7 @@ class Paginator(BaseView):
         The passed function to generate pages of the paginator, this should return a string. either
         this or embed_maker should be defined.
     """
+
     def __init__(
         self,
         page_size: int,

@@ -18,14 +18,18 @@ if TYPE_CHECKING:
 async def test_enable(ctx: commands.Context[NecroBot]):
     pass
 
+
 async def test_disable(ctx: commands.Context[NecroBot]):
     pass
+
 
 async def test_speak(ctx: commands.Context[NecroBot]):
     pass
 
+
 async def test_purge(ctx: commands.Context[NecroBot]):
     pass
+
 
 async def test_warn(ctx: commands.Context[NecroBot]):
     pass

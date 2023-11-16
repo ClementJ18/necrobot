@@ -216,7 +216,7 @@ class Meta(commands.Cog):
             logger.info("It is day hour %s of day %s", self.bot.counter, self.bot.settings["day"])
             for task in self.tasks_hourly:
                 try:
-                    logger.debug("Hourly task: %s", task)
+                    logger.debug("Hourly task: %s", task.__name__)
                     await task()
                 except Exception as e:
                     self.bot.dispatch("error", e)
@@ -332,7 +332,7 @@ class Meta(commands.Cog):
         # This is the new better reminder system
         await self.restart_next_reminder_task()
 
-        #This is the old reminder system that has to stay here for now for legacy reasons
+        # This is the old reminder system that has to stay here for now for legacy reasons
         reminders = await self.bot.db.query("SELECT * FROM necrobot.Reminders WHERE end_date IS NULL")
         if not reminders:
             await self.bot.bot_channel.send("We don't have any legacy reminders left!")
@@ -392,10 +392,9 @@ class Meta(commands.Cog):
                 message_id=poll["message_id"],
             )
 
-
         await self.bot.db.query(
             """DELETE FROM necrobot.ChannelSubscriptions WHERE channel_id != ANY($1)""",
-            [channel.id for channel in self.bot.get_all_channels()]
+            [channel.id for channel in self.bot.get_all_channels()],
         )
 
         self.bot.loaded.set()
@@ -493,12 +492,14 @@ class Meta(commands.Cog):
 
     async def start_next_reminder(self):
         while True:
-            next_reminders = await self.bot.db.query("""
+            next_reminders = await self.bot.db.query(
+                """
                 SELECT * FROM necrobot.Reminders 
                 WHERE end_date IS NOT NULL
                 ORDER BY end_date ASC 
                 LIMIT 1;
-            """)
+            """
+            )
 
             if not next_reminders:
                 logger.info("No reminders left, shutting down task for now")
@@ -506,7 +507,7 @@ class Meta(commands.Cog):
 
             next_reminder = next_reminders[0]
             self.bot.next_reminder_end_date = next_reminder["end_date"]
-            
+
             await self._start_reminder(next_reminder)
 
     async def _start_reminder(self, reminder):
@@ -525,9 +526,13 @@ class Meta(commands.Cog):
         user = self.bot.get_user(reminder["user_id"])
         if channel is not None and user is not None:
             if reminder["reminder"] is None or reminder["reminder"] == "":
-                await channel.send(f":alarm_clock: | {user.mention}, you asked to be reminded (ID: {reminder['id']})!")
+                await channel.send(
+                    f":alarm_clock: | {user.mention}, you asked to be reminded (ID: {reminder['id']})!"
+                )
             else:
-                await channel.send(f":alarm_clock: | {user.mention} reminder (ID: {reminder['id']}): **{reminder['reminder']}**")
+                await channel.send(
+                    f":alarm_clock: | {user.mention} reminder (ID: {reminder['id']}): **{reminder['reminder']}**"
+                )
 
         await self.bot.db.delete_reminder(reminder["id"])
 

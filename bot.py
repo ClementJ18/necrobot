@@ -103,7 +103,7 @@ class NecroBot(commands.Bot):
         self.uptime_start = time.time()
         self.counter = datetime.datetime.now(datetime.timezone.utc).hour
 
-        self.version = 3.10
+        self.version = 3.11
         self.prefixes = ["n!", "N!"]
         self.new_commands = ["gacha", "banners", "characters", "poll", "subscribe", "unsubscribe"]
         self.statuses = itertools.cycle(
@@ -149,8 +149,10 @@ class NecroBot(commands.Bot):
         self.queued_posts: asyncio.Queue = None
         self.twitch_token: Dict[str, Union[str, int]] = {}
 
-        self.next_reminder_end_date: datetime.datetime = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
-        self.next_reminder_task : asyncio.Task = None
+        self.next_reminder_end_date: datetime.datetime = datetime.datetime.max.replace(
+            tzinfo=datetime.timezone.utc
+        )
+        self.next_reminder_task: asyncio.Task = None
 
         self.tutorial_e: discord.Embed = None
         self.gdpr_embed: discord.Embed = None

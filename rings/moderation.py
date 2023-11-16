@@ -596,13 +596,10 @@ class Moderation(commands.Cog):
             return await ctx.send(f":white_check_mark: | Command **{name}** is now disabled")
 
         disabled_commands = [
-            x.name
-            for x in cog.get_commands()
-            if x.name not in self.bot.guild_data[ctx.guild.id]["disabled"]
+            x.name for x in cog.get_commands() if x.name not in self.bot.guild_data[ctx.guild.id]["disabled"]
         ]
         await self.bot.db.insert_disabled(ctx.guild.id, *disabled_commands)
         await ctx.send(f":white_check_mark: | All commands in **{name}** are now disabled")
-
 
     @commands.command()
     @has_perms(4)
@@ -624,7 +621,7 @@ class Moderation(commands.Cog):
             return await ctx.send(f"Cogs and Commands disabled on the server: {string}")
 
         disabled = self.bot.guild_data[ctx.guild.id]["disabled"]
-        
+
         if name == name.title():
             cog = self.bot.get_cog(name)
             command = None
