@@ -10,7 +10,6 @@ import traceback
 from typing import TYPE_CHECKING, Annotated, Dict, List, Literal, Union
 
 import discord
-import psutil
 from discord.ext import commands
 from simpleeval import simple_eval
 
@@ -35,7 +34,6 @@ class Admin(commands.Cog):
     def __init__(self, bot: NecroBot):
         self.bot = bot
         self.gates: Dict[int, discord.TextChannel] = {}
-        self.process = psutil.Process()
 
     #######################################################################
     ## Functions
@@ -94,7 +92,9 @@ class Admin(commands.Cog):
 
     @grudge.command(name="list")
     @commands.is_owner()
-    async def grudge_list(self, ctx: commands.Context[NecroBot], user: Union[Annotated[discord.Member, MemberConverter], int]):
+    async def grudge_list(
+        self, ctx: commands.Context[NecroBot], user: Union[Annotated[discord.Member, MemberConverter], int]
+    ):
         """See all the grudges for a user
 
         {usage}
@@ -175,6 +175,26 @@ class Admin(commands.Cog):
         {usage}"""
         await guild.leave()
         await ctx.send(f":white_check_mark: | I've left {guild.name}")
+
+    @commands.command()
+    @has_perms(6)
+    async def guilds(self, ctx: commands.Context[NecroBot]):
+        """A list of guilds the bot is in with user counts and join dates.
+
+        {usage}
+        """
+        guilds = [
+            f"* **{x.name}**: {len(x.members)} ({x.me.joined_at.strftime('%d/%m/%Y, %H:%M')})"
+            for x in sorted(self.bot.guilds, key=lambda guild: guild.me.joined_at)
+        ]
+
+        def embed_maker(view: Paginator, entries: List[str]):
+            embed = discord.Embed(title="Guilds", description="\n".join(guilds), color=self.bot.bot_color)
+            embed.set_footer(**self.bot.bot_footer)
+
+            return embed
+
+        await Paginator(50, guilds, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @commands.command()
     @has_perms(6)
@@ -313,7 +333,11 @@ class Admin(commands.Cog):
 
     @admin.command(name="blacklist")
     @has_perms(6)
-    async def admin_blacklist(self, ctx: commands.Context[NecroBot], object_id: Union[Annotated[discord.Member, MemberConverter], int]):
+    async def admin_blacklist(
+        self,
+        ctx: commands.Context[NecroBot],
+        object_id: Union[Annotated[discord.Member, MemberConverter], int],
+    ):
         """Blacklist a user
 
         {usage}
@@ -506,7 +530,11 @@ class Admin(commands.Cog):
     async def gate(
         self,
         ctx: commands.Context[NecroBot],
-        channel: Union[Annotated[discord.TextChannel, WritableChannelConverter], discord.Thread, Annotated[discord.Member, MemberConverter]],
+        channel: Union[
+            Annotated[discord.TextChannel, WritableChannelConverter],
+            discord.Thread,
+            Annotated[discord.Member, MemberConverter],
+        ],
     ):
         """Connects two channels with a magic gate so that users on both servers can communicate. Magic:tm:
 
@@ -552,7 +580,9 @@ class Admin(commands.Cog):
         errors: Dict[str, str] = {}
 
         if commands:
-            test_filter = tuple(f"test_{self.bot.get_command(command).callback.__name__}" for command in commands)
+            test_filter = tuple(
+                f"test_{self.bot.get_command(command).callback.__name__}" for command in commands
+            )
         else:
             test_filter = "test_"
 
