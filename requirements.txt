@@ -10,7 +10,7 @@ fuzzywuzzy==0.18.0
 moddb==0.10.0
 psycopg2_binary==2.9.9
 robobrowser==0.5.3
-Werkzeug == 0.16.1 #Werkzeug cannot be updated due to the robobrowser dependency
+Werkzeug == 2.3.8 #Werkzeug cannot be updated due to the robobrowser dependency
 simpleeval==0.9.13
 yarl==1.9.2
 pytz==2023.3
