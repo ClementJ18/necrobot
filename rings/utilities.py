@@ -259,8 +259,13 @@ class Utilities(commands.Cog):
         if not exists:
             raise BotError("No reminder with that ID could be found.")
 
-        self.bot.reminders[reminder_id].cancel()
-        del self.bot.reminders[reminder_id]
+        if reminder_id in self.bot.reminders:
+            self.bot.reminders[reminder_id].cancel()
+            del self.bot.reminders[reminder_id]
+
+        if reminder_id == self.bot.next_reminder_id:
+            await self.bot.meta.restart_next_reminder_task()
+
         await ctx.send(":white_check_mark: | Reminder cancelled")
 
     @remindme.command(name="list")
@@ -273,28 +278,30 @@ class Utilities(commands.Cog):
         __Exampes__
         `{pre}remindme list` - lists all of your reminders
         """
-        user = ctx.author
 
         def embed_maker(view: Paginator, entries: List[Dict[str, Any]]):
             embed = discord.Embed(
                 title=f"Reminders ({view.page_string})",
-                description=f"Here is the list of **{user.display_name}**'s currently active reminders.",
+                description=f"Here is the list of **{ctx.author.display_name}**'s currently active reminders.",
                 colour=self.bot.bot_color,
             )
 
             embed.set_footer(**self.bot.bot_footer)
 
             for reminder in entries:
-                stamp = format_dt(
-                    reminder["start_date"] + datetime.timedelta(seconds=time_converter(reminder["timer"])),
-                    style="f",
-                )
+                end_date = reminder["end_date"]
+                if end_date is None:
+                    end_date = reminder["start_date"] + datetime.timedelta(
+                        seconds=time_converter(reminder["timer"])
+                    )
+
+                stamp = format_dt(end_date, style="f")
                 text = reminder["reminder"][:500] if reminder["reminder"][:500] else "`No Text`"
                 embed.add_field(name=f'{reminder["id"]}: {stamp}', value=text, inline=False)
 
             return embed
 
-        reminders = await self.bot.db.get_reminders(user.id)
+        reminders = await self.bot.db.get_reminders(ctx.author.id)
         await Paginator(10, reminders, ctx.author, embed_maker=embed_maker).start(ctx)
 
     @commands.group(invoke_without_command=True, aliases=["queue"])

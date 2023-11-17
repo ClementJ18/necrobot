@@ -91,7 +91,8 @@ class PollSelect(discord.ui.Select):
         )
 
         await interaction.followup.edit_message(
-            self.view.poll_id, embed=self.view.generate_embed(await self.view.get_values(interaction.client))
+            self.view.poll_id,
+            embed=self.view.generate_embed(await self.view.get_values(interaction.client)),
         )
         await interaction.followup.send(":white_check_mark: | Vote(s) registered", ephemeral=True)
 

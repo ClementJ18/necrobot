@@ -197,10 +197,7 @@ class Meta(commands.Cog):
             logger.info("Starting hourly loop")
             now = datetime.datetime.now(datetime.timezone.utc)
             sleep = 3600 - (now.second + (now.minute * 60))
-            try:
-                await asyncio.sleep(sleep)  # task runs every hour
-            except asyncio.CancelledError:
-                return
+            await asyncio.sleep(sleep)  # task runs every hour
 
             if self.bot.counter >= 24:
                 logger.info("Doing daily tasks")
@@ -458,10 +455,7 @@ class Meta(commands.Cog):
         )
 
     async def reminder_task(self, reminder_id, sleep, message, channel_id, user_id):
-        try:
-            await asyncio.sleep(sleep)
-        except asyncio.CancelledError:
-            return
+        await asyncio.sleep(sleep)
 
         channel = self.bot.get_channel(channel_id)
         user = self.bot.get_user(user_id)
@@ -506,20 +500,23 @@ class Meta(commands.Cog):
                 return self.bot.next_reminder_task.cancel()
 
             next_reminder = next_reminders[0]
+            logging.info("Now processing reminder %s", next_reminder["id"])
             self.bot.next_reminder_end_date = next_reminder["end_date"]
+            self.bot.next_reminder_id = next_reminder["id"]
+
+            if next_reminder["id"] in self.bot.reminders:
+                self.bot.reminders[next_reminder["id"]].cancel()
+                del self.bot.reminders[next_reminder["id"]]
 
             await self._start_reminder(next_reminder)
 
     async def _start_reminder(self, reminder):
         sleep = (reminder["end_date"] - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
         if sleep > 0:
-            try:
-                await asyncio.sleep(sleep)
-                await self.remind_user(reminder)
-            except asyncio.CancelledError:
-                pass
-        else:
-            await self.bot.db.delete_reminder(reminder["id"])
+            await asyncio.sleep(sleep)
+            await self.remind_user(reminder)
+
+        await self.bot.db.delete_reminder(reminder["id"])
 
     async def remind_user(self, reminder):
         channel = self.bot.get_channel(reminder["channel_id"])
@@ -533,8 +530,6 @@ class Meta(commands.Cog):
                 await channel.send(
                     f":alarm_clock: | {user.mention} reminder (ID: {reminder['id']}): **{reminder['reminder']}**"
                 )
-
-        await self.bot.db.delete_reminder(reminder["id"])
 
     async def broadcast(self):
         total_hours = (self.bot.settings["day"] * 24) + self.bot.counter

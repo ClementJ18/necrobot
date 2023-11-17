@@ -153,6 +153,7 @@ class NecroBot(commands.Bot):
             tzinfo=datetime.timezone.utc
         )
         self.next_reminder_task: asyncio.Task = None
+        self.next_reminder_id: int = -1
 
         self.tutorial_e: discord.Embed = None
         self.gdpr_embed: discord.Embed = None

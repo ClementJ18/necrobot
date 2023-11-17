@@ -93,7 +93,9 @@ class Admin(commands.Cog):
     @grudge.command(name="list")
     @commands.is_owner()
     async def grudge_list(
-        self, ctx: commands.Context[NecroBot], user: Union[Annotated[discord.Member, MemberConverter], int]
+        self,
+        ctx: commands.Context[NecroBot],
+        user: Union[Annotated[discord.Member, MemberConverter], int],
     ):
         """See all the grudges for a user
 

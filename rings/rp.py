@@ -209,6 +209,9 @@ class RP(commands.Cog):
         if message.guild is None:
             return
 
+        if message.channel.id == self.bot.error_channel.id:
+            return
+
         subscribers = await self.bot.db.query(
             "SELECT user_id FROM necrobot.ChannelSubscriptions WHERE channel_id = $1 AND last_update < NOW() - INTERVAL '5 minutes' AND user_id != $2",
             message.channel.id,

@@ -366,4 +366,4 @@ CREATE TABLE necrobot.ChannelSubscriptions(
     channel_id bigint,
     last_update TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (user_id, channel_id)
-)
+);
