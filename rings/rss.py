@@ -201,13 +201,14 @@ class RSS(commands.Cog):
         try:
             async with self.bot.session.get(
                 youtube,
-                cookies={"CONSENT": f"YES+cb.20210328-17-p0.en-GB+FX+{random.randint(100, 999)}"},
+                cookies={"SOCS": "CAISNQgDEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjMwODI5LjA3X3AxGgJlbiACGgYIgLC_pwY"},
             ) as resp:
                 if resp.status != 200:
                     raise BotError("This channel does not exist, double check the youtuber id.")
 
                 try:
-                    youtuber_id = re.findall(r'"external(?:Channel)?Id":"([^,.]*)"', await resp.text())[0]
+                    text = await resp.text()
+                    youtuber_id = re.findall(r'"external(?:Channel)?Id":"([^,.]*)"', text)[0]
                 except IndexError as e:
                     raise BotError("Could not find the user ID") from e
         except Exception as e:

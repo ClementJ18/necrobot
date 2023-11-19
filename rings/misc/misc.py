@@ -401,7 +401,6 @@ class Misc(commands.Cog):
             .ffill()
             .fillna(0)
         )
-        df = df.resample("D").interpolate("cubic").clip(upper=100)
 
         df.plot(alpha=0.7)
         plt.ylim(ymin=0)

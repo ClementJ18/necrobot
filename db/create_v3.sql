@@ -104,10 +104,10 @@ CREATE TABLE necrobot.Aliases(
 
 CREATE TABLE necrobot.Logs(
     log_id serial PRIMARY KEY,
-    user_id bigint REFERENCES necrobot.Users(user_id) ON DELETE CASCADE,
+    user_id bigint,
     username varchar(100),
     command varchar(100),
-    guild_id bigint REFERENCES necrobot.Guilds(guild_id) ON DELETE CASCADE,
+    guild_id bigint,
     guildname varchar(100),
     message varchar(2000),
     time_used TIMESTAMPTZ DEFAULT NOW(),
