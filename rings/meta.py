@@ -389,11 +389,6 @@ class Meta(commands.Cog):
                 message_id=poll["message_id"],
             )
 
-        await self.bot.db.query(
-            """DELETE FROM necrobot.ChannelSubscriptions WHERE channel_id != ANY($1)""",
-            [channel.id for channel in self.bot.get_all_channels()],
-        )
-
         self.bot.loaded.set()
         self.bot.maintenance = False
         logger.info("Bot online")
