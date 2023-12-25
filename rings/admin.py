@@ -5,6 +5,7 @@ import asyncio
 import datetime
 import importlib
 import pkgutil
+import subprocess
 import sys
 import traceback
 from typing import TYPE_CHECKING, Annotated, Dict, List, Literal, Union
@@ -568,6 +569,19 @@ class Admin(commands.Cog):
 
         del self.gates[ctx.channel.id]
         del self.gates[channel.id]
+
+    @commands.command()
+    @commands.is_owner()
+    async def pull(self, ctx):
+        """Pull the latest bot changes from git.
+        
+        {usage}
+        """
+        process = subprocess.run(["git", "pull"], check=True, stdout=subprocess.PIPE, text=True)
+
+        status = ":white_check_mark:" if process.returncode == 0 else ":negative_squared_cross_mark:"    
+        await ctx.send(f"{status} | Process output\n```{process.stdout}```") 
+        
 
     @commands.command()
     @commands.is_owner()
