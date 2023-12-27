@@ -653,7 +653,7 @@ class Moderation(commands.Cog):
     #######################################################################
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member):
+    async def on_member_remove(self, member: discord.Member):
         role = discord.utils.get(member.roles, id=self.bot.guild_data[member.guild.id]["mute"])
         if role is None:
             return
@@ -671,13 +671,13 @@ class Moderation(commands.Cog):
             await member.guild.get_channel(automod).send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_member_ban(self, guild, user):
+    async def on_member_ban(self, guild: discord.Guild, user: discord.Member):
         # don't need to track if they were banned
         if user.id in self.bot.guild_data[guild.id]["mutes"]:
             self.bot.guild_data[guild.id]["mutes"].remove(user.id)
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         role = discord.utils.get(member.guild.roles, id=self.bot.guild_data[member.guild.id]["mute"])
         if role is None:
             return

@@ -103,7 +103,7 @@ class NecroBot(commands.Bot):
         self.uptime_start = time.time()
         self.counter = datetime.datetime.now(datetime.timezone.utc).hour
 
-        self.version = 3.11
+        self.version = 3.12
         self.prefixes = ["n!", "N!"]
         self.new_commands = ["gacha", "banners", "characters", "poll", "subscribe", "unsubscribe"]
         self.statuses = itertools.cycle(
@@ -378,9 +378,15 @@ extensions = [
     "bridge",
     "waifu",
     "rp",
+    "menus",
 ]
 
 bot = NecroBot(exts=extensions)
+
+
+@bot.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
+    logger.error(error)
 
 
 @bot.check

@@ -163,7 +163,8 @@ class RP(commands.Cog):
         __Examples__
         `{pre}subscribe list` - list all your subscriptions"""
         subscriptions = await self.bot.db.query(
-            "SELECT channel_id from necrobot.ChannelSubscriptions WHERE user_id = $1", ctx.author.id
+            "SELECT channel_id from necrobot.ChannelSubscriptions WHERE user_id = $1",
+            ctx.author.id,
         )
 
         def embed_maker(view: Paginator, entries: List[int]):

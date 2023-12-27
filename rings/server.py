@@ -1119,13 +1119,16 @@ class Server(commands.Cog):
     @has_perms(3)
     async def starboard_force(self, ctx: commands.Context[NecroBot], message_id: int):
         """Allows to manually star a message that either has failed to be sent to starboard or doesn't \
-        have the amount of stars required.
+        have the amount of stars required. This functionality was moved to a context menu and the command \
+        will soon be removed.
 
         {usage}
 
         __EXamples__
         `{pre}starboard force 427227137511129098` - gets the message by id and stars it.
         """
+        await ctx.send("This functionality was moved to a context menu and the command will soon be removed.")
+
         if not self.bot.guild_data[ctx.guild.id]["starboard-channel"]:
             raise BotError("Please set a starboard first")
 

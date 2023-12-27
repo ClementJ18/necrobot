@@ -1238,7 +1238,8 @@ class Flowers(commands.Cog):
         ],
         *,
         equipments: Annotated[
-            EntityDict, GachaCharacterConverter(allowed_types=("artefact", "weapon"), is_owned=True)
+            EntityDict,
+            GachaCharacterConverter(allowed_types=("artefact", "weapon"), is_owned=True),
         ],
     ):
         """Equip a character you own with weapons or artefacts.

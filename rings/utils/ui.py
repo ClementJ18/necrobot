@@ -78,7 +78,7 @@ class PollSelect(discord.ui.Select):
     view: PollView
 
     async def callback(self, interaction: discord.Interaction[NecroBot]):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         await interaction.client.db.query(
             "DELETE FROM necrobot.PollVotes WHERE user_id = $1 AND poll_id = $2",
             interaction.user.id,

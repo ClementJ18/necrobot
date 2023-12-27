@@ -8,7 +8,7 @@ import pkgutil
 import subprocess
 import sys
 import traceback
-from typing import TYPE_CHECKING, Annotated, Dict, List, Literal, Union
+from typing import TYPE_CHECKING, Annotated, Dict, List, Literal, Optional, Union
 
 import discord
 from discord.ext import commands
@@ -574,14 +574,13 @@ class Admin(commands.Cog):
     @commands.is_owner()
     async def pull(self, ctx):
         """Pull the latest bot changes from git.
-        
+
         {usage}
         """
         process = subprocess.run(["git", "pull"], check=True, stdout=subprocess.PIPE, text=True)
 
-        status = ":white_check_mark:" if process.returncode == 0 else ":negative_squared_cross_mark:"    
-        await ctx.send(f"{status} | Process output\n```{process.stdout}```") 
-        
+        status = ":white_check_mark:" if process.returncode == 0 else ":negative_squared_cross_mark:"
+        await ctx.send(f"{status} | Process output\n```{process.stdout}```")
 
     @commands.command()
     @commands.is_owner()
@@ -647,6 +646,58 @@ class Admin(commands.Cog):
             return embed
 
         await Paginator(1, [None, *errors.items()], ctx.author, embed_maker=embed_maker).start(ctx)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.is_owner()
+    async def sync(
+        self,
+        ctx: commands.Context[NecroBot],
+        guilds: commands.Greedy[discord.Object],
+        spec: Optional[Literal["~", "*", "^"]] = None,
+    ) -> None:
+        """Command to sync slash commands and context menus. See more \
+        here: https://about.abstractumbra.dev/discord.py/2023/01/29/sync-command-example.html
+        
+        {{usage}}
+
+        __Examples__
+        `{pre}sync` - This takes all global commands within the CommandTree and sends them to Discord. (see CommandTree for more info.)
+        `{pre}sync ~` - This will sync all guild commands for the current context's guild.
+        `{pre}sync *` - This command copies all global commands to the current guild (within the CommandTree) and syncs.
+        `{pre}sync ^` - This command will remove all guild commands from the CommandTree and syncs, which effectively removes all commands from the guild.
+        `{pre}sync 123 456 789` - This command will sync the 3 guild ids we passed: 123, 456 and 789. Only their guilds and guild-bound commands.
+
+        """
+
+        if not guilds:
+            if spec == "~":
+                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            elif spec == "*":
+                ctx.bot.tree.copy_global_to(guild=ctx.guild)
+                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            elif spec == "^":
+                ctx.bot.tree.clear_commands(guild=ctx.guild)
+                await ctx.bot.tree.sync(guild=ctx.guild)
+                synced = []
+            else:
+                synced = await ctx.bot.tree.sync()
+
+            await ctx.send(
+                f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
+            )
+            return
+
+        ret = 0
+        for guild in guilds:
+            try:
+                await ctx.bot.tree.sync(guild=guild)
+            except discord.HTTPException:
+                pass
+            else:
+                ret += 1
+
+        await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
     #######################################################################
     ## Events

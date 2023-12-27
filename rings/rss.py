@@ -201,7 +201,9 @@ class RSS(commands.Cog):
         try:
             async with self.bot.session.get(
                 youtube,
-                cookies={"SOCS": "CAISNQgDEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjMwODI5LjA3X3AxGgJlbiACGgYIgLC_pwY"},
+                cookies={
+                    "SOCS": "CAISNQgDEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjMwODI5LjA3X3AxGgJlbiACGgYIgLC_pwY"
+                },
             ) as resp:
                 if resp.status != 200:
                     raise BotError("This channel does not exist, double check the youtuber id.")
