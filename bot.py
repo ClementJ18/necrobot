@@ -332,7 +332,15 @@ class NecroBot(commands.Bot):
         if self.blacklist_check(message.author.id):
             return
 
-        if message.type != discord.MessageType.default or message.author.bot:
+        if (
+            message.type
+            not in [
+                discord.MessageType.default,
+                discord.MessageType.reply,
+                discord.MessageType.thread_starter_message,
+            ]
+            or message.author.bot
+        ):
             return
 
         await self.meta.new_member(message.author, message.guild)
@@ -348,7 +356,7 @@ class NecroBot(commands.Bot):
             tutorial = await self.db.get_tutorial(message.author.id)
             if not tutorial:
                 msg = await message.channel.send(
-                    ":information_source: | Did you know you can delete my messages in DMs by reacting to them with :wastebasket:?"
+                    ":information_source: | Did you know you can delete my messages in DMs by right clicking a message and selecting App > Delete bot message?"
                 )
                 await msg.pin()
                 await self.db.update_tutorial(message.author.id)

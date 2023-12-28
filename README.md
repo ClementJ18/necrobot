@@ -28,3 +28,9 @@ All commands can be seen on the discord provided below. This bot uses the rewrit
 Note: This readme has a tendency to be out of date. Join the server to see the latest version of capabilities of the bot.
 
 Join to see in action: https://discord.gg/sce7jmB <br>
+
+## Dev stuff
+```
+python3 -m black bot.py rings/ tests/ -l 110
+```
+

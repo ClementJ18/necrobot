@@ -1,7 +1,10 @@
 from __future__ import annotations
+import io
 
 import typing
 import discord
+
+from PIL import Image
 
 if typing.TYPE_CHECKING:
     from bot import NecroBot
@@ -32,5 +35,56 @@ async def starboard_force(interaction: discord.Interaction[NecroBot], message: d
     await interaction.followup.send(":white_check_mark: | Message force starred", ephemeral=True)
 
 
+@discord.app_commands.context_menu(name="Delete bot message")
+async def delete_bot_dm(interaction: discord.Interaction[NecroBot], message: discord.Message):
+    # remove this after discord.app_commands.dm_only has been implemented
+    if interaction.guild is not None:
+        return await interaction.response.send_message(
+            ":negative_squared_cross_mark: | This action can only be used in DMs", ephemeral=True
+        )
+
+    if not message.author.bot:
+        return await interaction.response.send_message(
+            ":negative_squared_cross_mark: | This action can only be used on a bot message", ephemeral=True
+        )
+
+    await message.delete()
+    await interaction.response.send_message(":white_check_mark: | Message deleted", ephemeral=True)
+
+
+@discord.app_commands.context_menu(name="Convert .bmp attachment")
+async def convert_bmp(interaction: discord.Interaction[NecroBot], message: discord.Message):
+    if not message.attachments:
+        return await interaction.response.send_message(
+            ":negative_squared_cross_mark: | This message has no attachements", ephemeral=True
+        )
+
+    to_convert = [img for img in message.attachments if img.filename.endswith(".bmp")]
+
+    if not to_convert:
+        return await interaction.response.send_message(
+            ":negative_squared_cross_mark: | This message has no `.bmp` attachements", ephemeral=True
+        )
+
+    await interaction.response.defer()
+    converted = []
+    for index, img in enumerate(to_convert):
+        f = io.BytesIO()
+        await img.save(f)
+
+        with Image.open(f) as im:
+            output_buffer = io.BytesIO()
+            im.save(output_buffer, "png")
+            output_buffer.seek(0)
+            converted.append(discord.File(filename=f"converted{index}.png", fp=output_buffer))
+
+    await interaction.followup.send(
+        f":white_check_mark: | {interaction.user.mention}, I converted the images like you asked",
+        files=converted,
+    )
+
+
 async def setup(bot: NecroBot):
     bot.tree.add_command(starboard_force)
+    bot.tree.add_command(delete_bot_dm)
+    bot.tree.add_command(convert_bmp)

@@ -69,7 +69,10 @@ class Meta(commands.Cog):
             output_buffer.seek(0)
             ifile = discord.File(filename="converted.png", fp=output_buffer)
 
-        await message.channel.send(file=ifile)
+        await message.channel.send(
+            content="This feature has been moved to a context menu and will soon be removed. Right click a message and select App > Convert .bmp attachement",
+            file=ifile,
+        )
 
     async def new_guild(self, guild_id):
         if guild_id not in self.bot.guild_data:
@@ -456,9 +459,13 @@ class Meta(commands.Cog):
         user = self.bot.get_user(user_id)
         if channel is not None and user is not None:
             if message is None or message == "":
-                await channel.send(f":alarm_clock: | {user.mention}, you asked to be reminded!")
+                await channel.send(
+                    f":alarm_clock: | {user.mention}, you asked to be reminded (ID: {reminder_id})!"
+                )
             else:
-                await channel.send(f":alarm_clock: | {user.mention} reminder: **{message}**")
+                await channel.send(
+                    f":alarm_clock: | {user.mention} reminder (ID: {reminder_id}): **{message}**"
+                )
 
         del self.bot.reminders[reminder_id]
         await self.bot.db.delete_reminder(reminder_id)
