@@ -4,7 +4,7 @@ import datetime
 import itertools
 import re
 import traceback
-from typing import TYPE_CHECKING, Any, List, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, TypedDict
 
 import discord
 from discord.ext import commands
@@ -81,6 +81,7 @@ class BotSettings(TypedDict):
     disabled: List[str]
     shop: List[str]
     messages: RankingDict
+    matchup_views: Dict[int, int]
     day: int
 
 
@@ -243,6 +244,7 @@ def default_settings():
         "disabled": [],
         "shop": [],
         "messages": {},
+        "matchup_views": {},
         "day": 0,
     }
 

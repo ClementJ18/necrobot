@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import functools
 import itertools
 import random
@@ -29,6 +28,77 @@ from .ui import HungerGames
 if TYPE_CHECKING:
     from bot import NecroBot
 
+class MatchupView(discord.ui.View):
+    faction_options = {
+        "Gondor": {"message": 'The crownless again shall be king.', "emoji": "Gondor:966448210686132294"}, 
+        "Rohan": {"message": 'Where now are the horse and the rider?', "emoji": "Rohan:840220156772745256"}, 
+        "Isengard": {"message": 'TO WAR!', "emoji": "Isengard:840220156340469771"}, 
+        "Mordor": {"message": 'One Ring to rule them all.', "emoji": "Mordor:840220156784934912"}, 
+        "Ered Luin": {"message": 'And he never forgot, and he never forgave.', "emoji": "EredLuin:840220156655304714"}, 
+        "Angmar": {"message":  'A chill wind blows...', "emoji": "Angmar:840220154708099124"}, 
+        "Erebor": {"message": 'It was the city of Dale!', "emoji": "Erebor:966446268157157466"}, 
+        "Iron Hills": {"message": 'Would you consider... JUST SODDING OFF!', "emoji": "IronHills:840220159507169300"}, 
+        "Lothlorien": {"message": 'Caras Galadhon… the heart of Elvendom on earth.', "emoji": "Lothlorien:840220156726476810"}, 
+        "Imladris": {"message": 'Welcome to the last Homely House.', "emoji": "Imladris:840220156738273300"}, 
+        "Misty Mountains": {"message": 'I feel a song rising.', "emoji": "Gobbos:840224017398497311"}
+    }
+
+    def __init__(self, bot: NecroBot):
+        super().__init__(timeout=None)
+
+        self.bot = bot
+
+    @discord.ui.select(
+        options=[discord.SelectOption(label=name, value=name, emoji=discord.PartialEmoji.from_str(faction["emoji"])) for name, faction in faction_options.items()],
+        placeholder="Select the faction that won",
+        custom_id="matchup_winner",
+        row=0,
+    )
+    async def winner_select(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+
+
+    @discord.ui.select(
+        options=[discord.SelectOption(label=name, value=name, emoji=discord.PartialEmoji.from_str(faction["emoji"])) for name, faction in faction_options.items()],
+        placeholder="Select the faction that lost",
+        custom_id="matchup_loser",
+        row=1,
+    )
+    async def loser_select(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+
+    @discord.ui.button(label="Confirm", custom_id="matchup_confirm", row=2, style=discord.ButtonStyle.green)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.winner_select.values and self.loser_select.values:
+            return await interaction.response.send_message(":negative_squared_cross_mark: | Please select a winning and losing faction", ephemeral=True)
+        
+        if self.winner_select.values[0] == self.loser_select.values[0]:
+            return await interaction.response.send_message(":negative_squared_cross_mark: | Please select different winning and losing factions", ephemeral=True)
+        
+        await self.bot.db.query(
+            "UPDATE necrobot.InternalRanked SET victories = victories + 1 WHERE faction = $1 AND enemy = $2",
+            self.winner_select.values[0],
+            self.loser_select.values[0],
+        )
+
+        await self.bot.db.query(
+            "UPDATE necrobot.InternalRanked SET defeats = defeats + 1 WHERE faction = $1 AND enemy = $2",
+            self.loser_select.values[0],
+            self.winner_select.values[0]
+        )
+
+        await self.bot.db.query(
+            "INSERT INTO necrobot.InternalRankedLogs(user_id, faction, enemy, faction_won) VALUES ($1, $2, $3, $4)",
+            interaction.user.id,
+            self.winner_select.values[0],
+            self.loser_select.values[0],
+            True,
+        )
+
+        await interaction.response.edit_message()
+        await interaction.followup.send(f":white_check_mark: | Registered a victory over **{self.loser_select.values[0]}** for **{self.winner_select.values[0]}**", ephemeral=True)
+
+
 
 class Misc(commands.Cog):
     """A cog for all bunch commands that don't have a specific category they can stick to."""
@@ -42,8 +112,8 @@ class Misc(commands.Cog):
     #######################################################################
 
     async def setup_table(self):
-        for faction in self.bot.settings["messages"]["factions"]:
-            for enemy in self.bot.settings["messages"]["factions"]:
+        for faction in MatchupView.faction_options:
+            for enemy in MatchupView.faction_options:
                 await self.bot.db.query(
                     "INSERT INTO necrobot.InternalRanked VALUES ($1, $2, 0, 0) ON CONFLICT DO NOTHING",
                     faction,
@@ -153,12 +223,10 @@ class Misc(commands.Cog):
             games = 0
 
             for entry in entries:
-                index = self.bot.settings["messages"]["factions"].index(entry[1])
-                emoji_id = self.bot.settings["messages"]["emotes"][index]
-                emoji = self.bot.get_emoji(emoji_id)
+                emoji = discord.PartialEmoji.from_str(MatchupView.faction_options[entry[1]]["emoji"])
 
                 if entry["enemy"] == entry["faction"]:
-                    intro = f'{emoji} {self.bot.settings["messages"]["msg"][index]} {emoji}\n\n'
+                    intro = f'{emoji} {MatchupView.faction_options[entry[1]]["message"]} {emoji}\n\n'
                     continue
 
                 total = entry[3] + entry[2]
@@ -334,6 +402,16 @@ class Misc(commands.Cog):
 
         await Paginator(15, logs, ctx.author, embed_maker=embed_maker).start(ctx)
 
+    @matchups.command(name="message")
+    @commands.is_owner()
+    async def matchups_message(self, ctx: commands.Context[NecroBot]):
+        """Send and set the message for registering matchups. Only one such message can exist per server.
+        
+        {usage}
+        """
+        msg = await ctx.send("Use this message to register victories and losses for factions in 1v1 games you have played. Select a winner, a loser and then click confirm.", view=MatchupView(self.bot))
+        self.bot.settings["matchup_views"][ctx.guild.id] = msg.id
+
     @matchups.command(name="delete")
     @guild_only(496617962334060545)
     @commands.check_any(
@@ -369,14 +447,12 @@ class Misc(commands.Cog):
 
     def compile_stats(self, logs, faction):
         title = logs[0]["faction"] if logs[0]["faction"].lower() == faction else logs[0]["enemy"]
-        index = self.bot.settings["messages"]["factions"].index(title)
-        emoji_id = self.bot.settings["messages"]["emotes"][index]
-        emoji = self.bot.get_emoji(emoji_id)
-        intro = f'{emoji} {self.bot.settings["messages"]["msg"][index]} {emoji}\n\n'
+        emoji = discord.PartialEmoji.from_str(MatchupView.faction_options[title]["emoji"])
+        intro = f'{emoji} {MatchupView.faction_options[title]["message"]} {emoji}\n\n'
 
         faction_data = {
             key: [(0, 0, logs[0]["log_date"], key)]
-            for key in self.bot.settings["messages"]["factions"]
+            for key in MatchupView.faction_options
             if key.lower() != faction
         }
         for log in logs:
@@ -448,66 +524,3 @@ class Misc(commands.Cog):
 
         await ctx.send(f"**__W/L {title}__**\n{intro}", file=ifile)
 
-    #######################################################################
-    ## Events
-    #######################################################################
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        if payload.channel_id != 840220523865702400:
-            return
-
-        if not payload.emoji.is_custom_emoji():
-            return
-
-        if not payload.emoji.id in self.bot.settings["messages"]["emotes"]:
-            return
-
-        g = self.bot.get_guild(payload.guild_id)
-        if g.get_role(497009979857960963) in g.get_member(payload.user_id).roles:
-            return
-
-        faction_index = self.bot.settings["messages"]["victories"].index(payload.message_id)
-        faction_name = self.bot.settings["messages"]["factions"][faction_index]
-
-        enemy_index = self.bot.settings["messages"]["emotes"].index(payload.emoji.id)
-        enemy_name = self.bot.settings["messages"]["factions"][enemy_index]
-
-        def check(pay: discord.RawReactionActionEvent):
-            return (
-                pay.user_id == payload.user_id
-                and pay.message_id == payload.message_id
-                and str(pay.emoji) == "\N{WHITE HEAVY CHECK MARK}"
-            )
-
-        message = self.bot.get_channel(payload.channel_id).get_partial_message(payload.message_id)
-        try:
-            checkmark: discord.RawReactionActionEvent = await self.bot.wait_for(
-                "raw_reaction_add", check=check, timeout=15
-            )
-        except asyncio.TimeoutError:
-            return await message.remove_reaction(payload.emoji, discord.Object(id=payload.user_id))
-
-        await asyncio.sleep(2)
-        await self.bot.db.query(
-            "UPDATE necrobot.InternalRanked SET victories = victories + 1 WHERE faction = $1 AND enemy = $2",
-            faction_name,
-            enemy_name,
-        )
-
-        await self.bot.db.query(
-            "UPDATE necrobot.InternalRanked SET defeats = defeats + 1 WHERE faction = $1 AND enemy = $2",
-            enemy_name,
-            faction_name,
-        )
-
-        await self.bot.db.query(
-            "INSERT INTO necrobot.InternalRankedLogs(user_id, faction, enemy, faction_won) VALUES ($1, $2, $3, $4)",
-            payload.user_id,
-            faction_name,
-            enemy_name,
-            True,
-        )
-
-        await message.remove_reaction(payload.emoji, discord.Object(id=payload.user_id))
-        await message.remove_reaction(checkmark.emoji, discord.Object(id=payload.user_id))

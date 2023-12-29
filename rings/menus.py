@@ -85,6 +85,12 @@ async def convert_bmp(interaction: discord.Interaction[NecroBot], message: disco
 
 
 async def setup(bot: NecroBot):
-    bot.tree.add_command(starboard_force)
-    bot.tree.add_command(delete_bot_dm)
-    bot.tree.add_command(convert_bmp)
+    menus = [
+        starboard_force,
+        delete_bot_dm,
+        convert_bmp,
+    ]
+
+    for menu in menus:
+        bot.tree.add_command(menu)
+

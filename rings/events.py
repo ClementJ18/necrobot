@@ -25,15 +25,6 @@ class Events(commands.Cog):
     ## Functions
     #######################################################################
 
-    async def dm_reaction_handler(self, payload: discord.RawReactionActionEvent):
-        if payload.emoji.name == "\N{WASTEBASKET}":
-            message = self.bot.get_channel(payload.channel_id).get_partial_message(payload.message_id)
-
-            try:
-                await message.delete()
-            except (discord.Forbidden, discord.HTTPException):
-                pass
-
     async def starred_reaction_handler(self, payload: discord.RawReactionActionEvent):
         await self.bot.db.update_stars(payload.message_id, payload.user_id, 1)
 
@@ -483,9 +474,6 @@ class Events(commands.Cog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if self.bot.blacklist_check(payload.user_id):
             return
-
-        if payload.guild_id is None:
-            return await self.dm_reaction_handler(payload)
 
         if payload.emoji.name == "\N{WHITE MEDIUM STAR}":
             return await self.starred_reaction_handler(payload)

@@ -12,6 +12,7 @@ import aiohttp
 import discord
 from discord.ext import commands
 from PIL import Image
+from rings.misc.misc import MatchupView
 
 from rings.utils.config import twitch_id, twitch_secret
 from rings.utils.converters import time_converter
@@ -229,7 +230,7 @@ class Meta(commands.Cog):
         ids.sort()
 
         for message_id in ids:
-            limit = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=3)
+            limit = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=7)
             timestamp = discord.utils.snowflake_time(message_id)
 
             if timestamp < limit:
@@ -390,6 +391,13 @@ class Meta(commands.Cog):
                     poll["message_id"],
                 ),
                 message_id=poll["message_id"],
+            )
+
+        for guild_id, message_id in self.bot.settings["matchup_views"].items():
+            logger.info("Recovering matchup view %s for guild %s", message_id, guild_id)
+            self.bot.add_view(
+                MatchupView(self.bot),
+                message_id=message_id
             )
 
         self.bot.loaded.set()
