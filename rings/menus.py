@@ -93,4 +93,3 @@ async def setup(bot: NecroBot):
 
     for menu in menus:
         bot.tree.add_command(menu)
-

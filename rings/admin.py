@@ -662,9 +662,9 @@ class Admin(commands.Cog):
         {{usage}}
 
         __Examples__
-        `{pre}sync` - This takes all global commands within the CommandTree and sends them to Discord. (see CommandTree for more info.)
+        `{pre}sync` - This takes all global commands within the CommandTree and sends them to Discord.
         `{pre}sync ~` - This will sync all guild commands for the current context's guild.
-        `{pre}sync *` - This command copies all global commands to the current guild (within the CommandTree) and syncs.
+        `{pre}sync *` - This command copies all global commands to the current guild and syncs.
         `{pre}sync ^` - This command will remove all guild commands from the CommandTree and syncs, which effectively removes all commands from the guild.
         `{pre}sync 123 456 789` - This command will sync the 3 guild ids we passed: 123, 456 and 789. Only their guilds and guild-bound commands.
 

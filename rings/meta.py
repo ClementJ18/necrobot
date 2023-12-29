@@ -12,8 +12,8 @@ import aiohttp
 import discord
 from discord.ext import commands
 from PIL import Image
-from rings.misc.misc import MatchupView
 
+from rings.misc.ui import MatchupView
 from rings.utils.config import twitch_id, twitch_secret
 from rings.utils.converters import time_converter
 from rings.utils.ui import PollView
@@ -395,10 +395,7 @@ class Meta(commands.Cog):
 
         for guild_id, message_id in self.bot.settings["matchup_views"].items():
             logger.info("Recovering matchup view %s for guild %s", message_id, guild_id)
-            self.bot.add_view(
-                MatchupView(self.bot),
-                message_id=message_id
-            )
+            self.bot.add_view(MatchupView(), message_id=message_id)
 
         self.bot.loaded.set()
         self.bot.maintenance = False

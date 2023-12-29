@@ -195,3 +195,98 @@ class HungerGames(BaseView):
 
         self.phase = "victory"
         return self.phase
+
+
+class MatchupView(discord.ui.View):
+    faction_options = {
+        "Gondor": {"message": "The crownless again shall be king.", "emoji": "Gondor:966448210686132294"},
+        "Rohan": {"message": "Where now are the horse and the rider?", "emoji": "Rohan:840220156772745256"},
+        "Isengard": {"message": "TO WAR!", "emoji": "Isengard:840220156340469771"},
+        "Mordor": {"message": "One Ring to rule them all.", "emoji": "Mordor:840220156784934912"},
+        "Ered Luin": {
+            "message": "And he never forgot, and he never forgave.",
+            "emoji": "EredLuin:840220156655304714",
+        },
+        "Angmar": {"message": "A chill wind blows...", "emoji": "Angmar:840220154708099124"},
+        "Erebor": {"message": "It was the city of Dale!", "emoji": "Erebor:966446268157157466"},
+        "Iron Hills": {
+            "message": "Would you consider... JUST SODDING OFF!",
+            "emoji": "IronHills:840220159507169300",
+        },
+        "Lothlorien": {
+            "message": "Caras Galadhon… the heart of Elvendom on earth.",
+            "emoji": "Lothlorien:840220156726476810",
+        },
+        "Imladris": {"message": "Welcome to the last Homely House.", "emoji": "Imladris:840220156738273300"},
+        "Misty Mountains": {"message": "I feel a song rising.", "emoji": "Gobbos:840224017398497311"},
+    }
+
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.select(
+        options=[
+            discord.SelectOption(
+                label=name, value=name, emoji=discord.PartialEmoji.from_str(faction["emoji"])
+            )
+            for name, faction in faction_options.items()
+        ],
+        placeholder="Select the faction that won",
+        custom_id="matchup_winner",
+        row=0,
+    )
+    async def winner_select(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+
+    @discord.ui.select(
+        options=[
+            discord.SelectOption(
+                label=name, value=name, emoji=discord.PartialEmoji.from_str(faction["emoji"])
+            )
+            for name, faction in faction_options.items()
+        ],
+        placeholder="Select the faction that lost",
+        custom_id="matchup_loser",
+        row=1,
+    )
+    async def loser_select(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+
+    @discord.ui.button(label="Confirm", custom_id="matchup_confirm", row=2, style=discord.ButtonStyle.green)
+    async def confirm(self, interaction: discord.Interaction[NecroBot], button: discord.ui.Button):
+        if not self.winner_select.values and self.loser_select.values:
+            return await interaction.response.send_message(
+                ":negative_squared_cross_mark: | Please select a winning and losing faction", ephemeral=True
+            )
+
+        if self.winner_select.values[0] == self.loser_select.values[0]:
+            return await interaction.response.send_message(
+                ":negative_squared_cross_mark: | Please select different winning and losing factions",
+                ephemeral=True,
+            )
+
+        await interaction.client.db.query(
+            "UPDATE necrobot.InternalRanked SET victories = victories + 1 WHERE faction = $1 AND enemy = $2",
+            self.winner_select.values[0],
+            self.loser_select.values[0],
+        )
+
+        await interaction.client.db.query(
+            "UPDATE necrobot.InternalRanked SET defeats = defeats + 1 WHERE faction = $1 AND enemy = $2",
+            self.loser_select.values[0],
+            self.winner_select.values[0],
+        )
+
+        await interaction.client.db.query(
+            "INSERT INTO necrobot.InternalRankedLogs(user_id, faction, enemy, faction_won) VALUES ($1, $2, $3, $4)",
+            interaction.user.id,
+            self.winner_select.values[0],
+            self.loser_select.values[0],
+            True,
+        )
+
+        await interaction.response.edit_message()
+        await interaction.followup.send(
+            f":white_check_mark: | Registered a victory over **{self.loser_select.values[0]}** for **{self.winner_select.values[0]}**",
+            ephemeral=True,
+        )

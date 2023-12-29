@@ -27,15 +27,16 @@ class PotentialStar(TypedDict):
     count: int
 
 
-class PendingPost(TypedDict):
-    message: discord.Message
-    content: str
-    replies: List[discord.Message]
-
-
 class Event(TypedDict):
     users: List[int]
     amount: int
+
+
+class QueuedPosts(TypedDict):
+    approver: int
+    url: str
+    message: discord.Message
+    content: str
 
 
 class Giveaway(TypedDict):
@@ -311,3 +312,10 @@ def build_format_dict(
         arg_dict["channel"] = channel_dict
 
     return arg_dict
+
+
+def testing_or(*guilds: int) -> List[int]:
+    e = [311630847969198082]
+    e.extend(guilds)
+
+    return e

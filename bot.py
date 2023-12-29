@@ -39,8 +39,8 @@ from rings.utils.utils import (
     Event,
     Giveaway,
     Guild,
-    PendingPost,
     Queue,
+    QueuedPosts,
     default_settings,
     get_pre,
 )
@@ -143,10 +143,9 @@ class NecroBot(commands.Bot):
         self.starred: List[int] = []
         self.potential_stars: Dict[int, PotentialStar] = {}
         self.reminders: Dict[int, asyncio.Task] = {}
-        self.pending_posts: Dict[int, PendingPost] = {}
         self.events: Dict[int, Event] = {}
         self.ongoing_giveaways: Dict[int, Giveaway] = {}
-        self.queued_posts: asyncio.Queue = None
+        self.queued_posts: asyncio.Queue[QueuedPosts] = None
         self.twitch_token: Dict[str, Union[str, int]] = {}
 
         self.next_reminder_end_date: datetime.datetime = datetime.datetime.max.replace(
