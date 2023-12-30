@@ -586,6 +586,9 @@ class Admin(commands.Cog):
     @commands.is_owner()
     async def test(self, ctx: commands.Context[NecroBot], *commands: str):
         """{usage}"""
+        if not self.bot.user.id != self.bot.TEST_BOT_ID:
+            return await ctx.send(":negative_squared_cross_mark: | Cannot run tests from production bot")
+
         modules = [v for k, v in sys.modules.items() if k.startswith("tests")]
         for v in modules:
             importlib.reload(v)

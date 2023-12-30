@@ -58,4 +58,11 @@ to select a message to delete in DMs.
 Instead of using a command to force a message to starboard use a context menu to make it easier
 for the user to select which message they want to force.
 
+## giveaway
+* Native Discord Alternative: None
+
+Giveaway is an ephemeral command with no proper implementation that has never been used. It
+also relies on a reaction flow which should be avoided.
+
+
 
