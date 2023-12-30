@@ -197,7 +197,7 @@ class HungerGames(BaseView):
         return self.phase
 
 
-class MatchupView(discord.ui.View):
+class MatchupView(BaseView):
     faction_options = {
         "Gondor": {"message": "The crownless again shall be king.", "emoji": "Gondor:966448210686132294"},
         "Rohan": {"message": "Where now are the horse and the rider?", "emoji": "Rohan:840220156772745256"},

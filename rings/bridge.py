@@ -11,6 +11,7 @@ from discord.ext import commands
 from robobrowser.forms.form import Form
 
 from rings.utils.config import MU_Password, MU_Username
+from rings.utils.ui import BaseView
 from rings.utils.utils import QueuedPosts, testing_or
 
 if TYPE_CHECKING:
@@ -104,7 +105,7 @@ bug_mapping = {
 TEST_CHANNEL = 722040731946057789
 
 
-class BridgeView(discord.ui.View):
+class BridgeView(BaseView):
     def __init__(self, message: discord.Message):
         super().__init__()
 
