@@ -18,7 +18,7 @@ from rings.utils.checks import has_perms
 from rings.utils.config import twitch_id
 from rings.utils.converters import WritableChannelConverter
 from rings.utils.ui import Paginator
-from rings.utils.utils import BotError
+from rings.utils.utils import POSITIVE_CHECK, BotError
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -222,11 +222,11 @@ class RSS(commands.Cog):
         if channel is not None:
             await self.bot.db.upsert_yt_rss(ctx.guild.id, channel.id, youtuber_id, name)
             await ctx.send(
-                f":white_check_mark: | New videos from **{name}** will now be posted in {channel.mention}."
+                f"{POSITIVE_CHECK} | New videos from **{name}** will now be posted in {channel.mention}."
             )
         else:
             await self.bot.db.delete_yt_rss_channel(ctx.guild.id, youtuber_name=name)
-            await ctx.send(f":white_check_mark: | Upload notifications for **{name}** disabled.")
+            await ctx.send(f"{POSITIVE_CHECK} | Upload notifications for **{name}** disabled.")
 
     @youtube.command(name="delete")
     @has_perms(3)
@@ -247,7 +247,7 @@ class RSS(commands.Cog):
         if not deleted:
             raise BotError("No channel with that name")
 
-        await ctx.send(f":white_check_mark: | Deleted channel **{'**, **'.join([x[0] for x in deleted])}**")
+        await ctx.send(f"{POSITIVE_CHECK} | Deleted channel **{'**, **'.join([x[0] for x in deleted])}**")
 
     @youtube.command(name="filters")
     @has_perms(3)
@@ -270,10 +270,10 @@ class RSS(commands.Cog):
             raise BotError("No channel with that name")
 
         if filters == "":
-            await ctx.send(f":white_check_mark: | Filters have been disabled for {youtuber_name}")
+            await ctx.send(f"{POSITIVE_CHECK} | Filters have been disabled for {youtuber_name}")
         else:
             await ctx.send(
-                f":white_check_mark: | Only videos with the words **{filters}** will be posted for **{youtuber_name}**"
+                f"{POSITIVE_CHECK} | Only videos with the words **{filters}** will be posted for **{youtuber_name}**"
             )
 
     async def twitch_request(self, route, payload):
@@ -355,11 +355,11 @@ class RSS(commands.Cog):
 
             await self.bot.db.upsert_tw_rss(ctx.guild.id, channel.id, user["id"], user["login"])
             await ctx.send(
-                f":white_check_mark: | Live streams from **{user['display_name']}** will now be posted in {channel.mention}."
+                f"{POSITIVE_CHECK} | Live streams from **{user['display_name']}** will now be posted in {channel.mention}."
             )
         else:
             await self.bot.db.delete_tw_rss_channel(ctx.guild.id, twitch_name=twitch)
-            await ctx.send(f":white_check_mark: | Live stream notifications for **{twitch}** disabled.")
+            await ctx.send(f"{POSITIVE_CHECK} | Live stream notifications for **{twitch}** disabled.")
 
     @twitch.command(name="delete")
     @has_perms(3)
@@ -380,7 +380,7 @@ class RSS(commands.Cog):
         if not deleted:
             raise BotError("No channel with that name")
 
-        await ctx.send(f":white_check_mark: | Deleted channel **{'**, **'.join([x[0] for x in deleted])}**")
+        await ctx.send(f"{POSITIVE_CHECK} | Deleted channel **{'**, **'.join([x[0] for x in deleted])}**")
 
     @twitch.command(name="filters")
     @has_perms(3)
@@ -401,10 +401,10 @@ class RSS(commands.Cog):
             raise BotError("No channel with that name")
 
         if filters == "":
-            await ctx.send(f":white_check_mark: | Filters have been disabled for {twitch_name}")
+            await ctx.send(f"{POSITIVE_CHECK} | Filters have been disabled for {twitch_name}")
         else:
             await ctx.send(
-                f":white_check_mark: | Only streams with the words **{filters}** will be posted for **{twitch_name}**"
+                f"{POSITIVE_CHECK} | Only streams with the words **{filters}** will be posted for **{twitch_name}**"
             )
 
 

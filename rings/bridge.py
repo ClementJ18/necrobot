@@ -12,7 +12,7 @@ from robobrowser.forms.form import Form
 
 from rings.utils.config import MU_Password, MU_Username
 from rings.utils.ui import BaseView
-from rings.utils.utils import QueuedPosts, testing_or
+from rings.utils.utils import NEGATIVE_CHECK, POSITIVE_CHECK, QueuedPosts, testing_or
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -129,7 +129,7 @@ class BridgeView(BaseView):
     async def confirm(self, interaction: discord.Interaction[NecroBot], button: discord.ui.Button):
         if not self.thread_select.values:
             return await interaction.response.send_message(
-                ":negative_squared_cross_mark: | Please select a thread first", ephemeral=True
+                f"{NEGATIVE_CHECK} | Please select a thread first", ephemeral=True
             )
 
         await self.message.add_reaction("\N{GEAR}")
@@ -143,7 +143,7 @@ class BridgeView(BaseView):
         }
 
         await interaction.client.queued_posts.put(post)
-        await interaction.response.edit_message(":white_check_mark: | Post queued", ephemeral=True, view=None)
+        await interaction.response.edit_message(f"{POSITIVE_CHECK} | Post queued", ephemeral=True, view=None)
 
 
 @discord.app_commands.context_menu(name="Send message as bug report")
@@ -151,7 +151,7 @@ class BridgeView(BaseView):
 async def send_bug_report(interaction: discord.Interaction[NecroBot], message: discord.Message):
     if interaction.user.id != 241942232867799040:  # that's me, only I can authorize posts
         return await interaction.response.send_message(
-            ":negative_squared_cross_mark: | This button is not for you", ephemeral=True
+            f"{NEGATIVE_CHECK} | This button is not for you", ephemeral=True
         )
 
     await interaction.response.send_message(
@@ -195,7 +195,7 @@ class Bridge(commands.Cog):
                 logger.error(error_traceback)
 
                 await post["message"].channel.send(
-                    f":negative_squared_cross_mark: | Error while sending: {e}"
+                    f"{NEGATIVE_CHECK} | Error while sending: {e}"
                 )
                 await post["message"].remove_reaction("\N{GEAR}", post["message"].guild.me)
 

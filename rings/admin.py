@@ -25,7 +25,7 @@ from rings.utils.converters import (
     WritableChannelConverter,
 )
 from rings.utils.ui import Confirm, Paginator
-from rings.utils.utils import BotError
+from rings.utils.utils import NEGATIVE_CHECK, POSITIVE_CHECK, BotError
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -164,7 +164,7 @@ class Admin(commands.Cog):
             str(settlement),
             grudge["id"],
         )
-        await ctx.send(f":white_check_mark: | Grudge `{grudge['id']}` has been considered as settled")
+        await ctx.send(f"{POSITIVE_CHECK} | Grudge `{grudge['id']}` has been considered as settled")
 
     @commands.command()
     @has_perms(7)
@@ -177,7 +177,7 @@ class Admin(commands.Cog):
 
         {usage}"""
         await guild.leave()
-        await ctx.send(f":white_check_mark: | I've left {guild.name}")
+        await ctx.send(f"{POSITIVE_CHECK} | I've left {guild.name}")
 
     @commands.command()
     @has_perms(6)
@@ -230,11 +230,11 @@ class Admin(commands.Cog):
         view = Confirm(
             ctx.author,
             confirm_msg=f":atm: | **{user.display_name}'s** balance is now **{operation:,}** :euro:",
-            cancel_msg=":white_check_mark: | Cancelled.",
+            cancel_msg=f"{POSITIVE_CHECK} | Cancelled.",
         )
 
         view.message = await ctx.send(
-            f":white_check_mark: | Operation successful. Change {user} balance from **{money:,}** to **{operation:,}**?",
+            f"{POSITIVE_CHECK} | Operation successful. Change {user} balance from **{money:,}** to **{operation:,}**?",
             view=view,
         )
         await view.wait()
@@ -267,7 +267,7 @@ class Admin(commands.Cog):
             await self.bot.db.update_permission(user.id, guild.id, update=level)
 
         await ctx.send(
-            f":white_check_mark: | All good to go, **{user.display_name}** now has permission level **{level}** on server **{guild.name}**"
+            f"{POSITIVE_CHECK} | All good to go, **{user.display_name}** now has permission level **{level}** on server **{guild.name}**"
         )
 
     @admin.command(name="disable")
@@ -281,7 +281,7 @@ class Admin(commands.Cog):
         if command.enabled:
             command.enabled = False
             self.bot.settings["disabled"].append(command.name)
-            await ctx.send(f":white_check_mark: | Disabled **{command.name}**")
+            await ctx.send(f"{POSITIVE_CHECK} | Disabled **{command.name}**")
         else:
             raise BotError(f"Command **{command.name}** already disabled")
 
@@ -298,7 +298,7 @@ class Admin(commands.Cog):
 
         command.enabled = True
         self.bot.settings["disabled"].remove(command.name)
-        await ctx.send(f":white_check_mark: | Enabled **{command.name}**")
+        await ctx.send(f"{POSITIVE_CHECK} | Enabled **{command.name}**")
 
     @admin.command(name="badges", aliases=["badge"])
     @has_perms(6)
@@ -319,17 +319,17 @@ class Admin(commands.Cog):
             await self.bot.db.insert_badge(user.id, badge["name"])
             if spot is None:
                 await ctx.send(
-                    f":white_check_mark: | Granted the **{badge['name']}** badge to user **{user}**"
+                    f"{POSITIVE_CHECK} | Granted the **{badge['name']}** badge to user **{user}**"
                 )
             else:
                 await self.bot.db.update_spot_badge(user.id, spot, badge["name"])
                 await ctx.send(
-                    f":white_check_mark: | Granted the **{badge['name']}** badge to user **{user}** and placed it on spot **{spot}**"
+                    f"{POSITIVE_CHECK} | Granted the **{badge['name']}** badge to user **{user}** and placed it on spot **{spot}**"
                 )
         elif subcommand == "delete" and has_badge:
             await self.bot.db.delete_badge(user.id, badge["name"])
             await ctx.send(
-                f":white_check_mark: | Reclaimed the **{badge['name']}** badge from user **{user}**"
+                f"{POSITIVE_CHECK} | Reclaimed the **{badge['name']}** badge from user **{user}**"
             )
         else:
             raise BotError("Users has/doesn't have the badge")
@@ -350,10 +350,10 @@ class Admin(commands.Cog):
 
         if object_id in self.bot.settings["blacklist"]:
             self.bot.settings["blacklist"].remove(object_id)
-            await ctx.send(":white_check_mark: | Pardoned")
+            await ctx.send(f"{POSITIVE_CHECK} | Pardoned")
         else:
             self.bot.settings["blacklist"].append(object_id)
-            await ctx.send(":white_check_mark: | Blacklisted")
+            await ctx.send(f"{POSITIVE_CHECK} | Blacklisted")
 
     @commands.command()
     @has_perms(6)
@@ -372,7 +372,7 @@ class Admin(commands.Cog):
         __Example__
         `{pre}pm 34536534253Z6 Hello, user` - sends 'Hello, user' to the given user id and waits for a reply"""
         await user.send(message)
-        to_edit = await ctx.send(":white_check_mark: | **Message sent**")
+        to_edit = await ctx.send(f"{POSITIVE_CHECK} | **Message sent**")
 
         def check(m):
             return m.author == user and m.channel == user
@@ -466,7 +466,7 @@ class Admin(commands.Cog):
         if result is not None and result != "":
             await ctx.send(result)
         else:
-            await ctx.send(":white_check_mark:")
+            await ctx.send(POSITIVE_CHECK)
 
     @commands.command()
     @has_perms(6)
@@ -572,14 +572,14 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def pull(self, ctx):
+    async def pull(self, ctx: commands.Context[NecroBot]):
         """Pull the latest bot changes from git.
 
         {usage}
         """
         process = subprocess.run(["git", "pull"], check=True, stdout=subprocess.PIPE, text=True)
 
-        status = ":white_check_mark:" if process.returncode == 0 else ":negative_squared_cross_mark:"
+        status = POSITIVE_CHECK if process.returncode == 0 else NEGATIVE_CHECK
         await ctx.send(f"{status} | Process output\n```{process.stdout}```")
 
     @commands.command()
@@ -587,7 +587,7 @@ class Admin(commands.Cog):
     async def test(self, ctx: commands.Context[NecroBot], *commands: str):
         """{usage}"""
         if not self.bot.user.id != self.bot.TEST_BOT_ID:
-            return await ctx.send(":negative_squared_cross_mark: | Cannot run tests from production bot")
+            return await ctx.send(f"{NEGATIVE_CHECK} | Cannot run tests from production bot")
 
         modules = [v for k, v in sys.modules.items() if k.startswith("tests")]
         for v in modules:

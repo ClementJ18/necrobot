@@ -34,6 +34,8 @@ from rings.utils.config import DEBUG, token
 from rings.utils.help import NecrobotHelp
 from rings.utils.ui import Confirm
 from rings.utils.utils import (
+    NEGATIVE_CHECK,
+    POSITIVE_CHECK,
     BotError,
     BotSettings,
     Event,
@@ -265,7 +267,7 @@ class NecroBot(commands.Bot):
     async def invoke(self, ctx: commands.Context[NecroBot]):
         if self.maintenance and ctx.command is not None and ctx.author.id != self.OWNER_ID:
             return await ctx.channel.send(
-                ":negative_squared_cross_mark: | Maintenance mode engaged, the bot is not currently accepting commands",
+                f"{NEGATIVE_CHECK} | Maintenance mode engaged, the bot is not currently accepting commands",
                 delete_after=30,
             )
 
@@ -569,7 +571,7 @@ async def off_abort(ctx: commands.Context[NecroBot]):
     {usage}
     """
     bot.maintenance = False
-    await ctx.send(":white_check_mark: | Shut down cancelled")
+    await ctx.send(f"{POSITIVE_CHECK} | Shut down cancelled")
 
 
 if __name__ == "__main__":

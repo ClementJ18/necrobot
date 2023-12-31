@@ -22,7 +22,7 @@ from rings.utils.ui import (
     Paginator,
     PollEditorView,
 )
-from rings.utils.utils import BotError, DatabaseError, build_format_dict, check_channel
+from rings.utils.utils import POSITIVE_CHECK, BotError, DatabaseError, build_format_dict, check_channel
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -49,7 +49,7 @@ class GivemePaginator(Paginator):
         self.view_maker(entries)
         await interaction.response.edit_message(embed=await self.generate_embed(entries), view=self)
         if roles_to_add or roles_to_remove:
-            await interaction.followup.send(":white_check_mark: | Roles updated", ephemeral=True)
+            await interaction.followup.send(f"{POSITIVE_CHECK} | Roles updated", ephemeral=True)
 
     def view_maker(self, entries: List[discord.Role]):
         self.select_role.options = [
@@ -192,11 +192,11 @@ class Server(commands.Cog):
 
             if current_level < level:
                 await ctx.send(
-                    f":white_check_mark: | **{user.display_name}** has been promoted to **{self.bot.perms_name[level]}** ({level})"
+                    f"{POSITIVE_CHECK} | **{user.display_name}** has been promoted to **{self.bot.perms_name[level]}** ({level})"
                 )
             else:
                 await ctx.send(
-                    f":white_check_mark: | **{user.display_name}** has been demoted to **{self.bot.perms_name[level]}** ({level})"
+                    f"{POSITIVE_CHECK} | **{user.display_name}** has been demoted to **{self.bot.perms_name[level]}** ({level})"
                 )
 
         else:
@@ -288,11 +288,11 @@ class Server(commands.Cog):
             if role_id:
                 role = ctx.guild.get_role(role_id)
                 if not role.members:
-                    return await ctx.send(":white_check_mark: | Removed permission link!")
+                    return await ctx.send(f"{POSITIVE_CHECK} | Removed permission link!")
 
                 view = Confirm(ctx.author)
                 view.message = await ctx.send(
-                    ":white_check_mark: | Removed permission link! Re-calculate permissions of members with the role? (This can take a while based on the number of members with the role)",
+                    f"{POSITIVE_CHECK} | Removed permission link! Re-calculate permissions of members with the role? (This can take a while based on the number of members with the role)",
                     view=view,
                 )
                 await view.wait()
@@ -301,7 +301,7 @@ class Server(commands.Cog):
 
                 counter = await self.update_bindings(role)
                 return await view.message.edit(
-                    content=f":white_check_mark: | Permissions of **{counter}** member(s) updated"
+                    content=f"{POSITIVE_CHECK} | Permissions of **{counter}** member(s) updated"
                 )
 
             raise BotError("No role set for that permission level")
@@ -321,11 +321,11 @@ class Server(commands.Cog):
             ) from e
 
         if not role.members:
-            return await ctx.send(":white_check_mark: | Permission binding created!")
+            return await ctx.send(f"{POSITIVE_CHECK} | Permission binding created!")
 
         view = Confirm(ctx.author)
         view.message = await ctx.send(
-            ":white_check_mark: | Permission binding created! Re-calculate permissions of members with the role?",
+            f"{POSITIVE_CHECK} | Permission binding created! Re-calculate permissions of members with the role?",
             view=view,
         )
         await view.wait()
@@ -352,7 +352,7 @@ class Server(commands.Cog):
             updated = len(updated)
 
         await view.message.edit(
-            content=f":white_check_mark: | Permissions of **{updated}** member(s) updated"
+            content=f"{POSITIVE_CHECK} | Permissions of **{updated}** member(s) updated"
         )
 
     @commands.command()
@@ -443,12 +443,12 @@ class Server(commands.Cog):
         if to_add:
             string = ", ".join([f"**{x.name}**" for x in to_add])
             await self.bot.db.insert_automod_ignore(ctx.guild.id, *[x.id for x in to_add])
-            await ctx.send(f":white_check_mark: | {string} will now be ignored")
+            await ctx.send(f"{POSITIVE_CHECK} | {string} will now be ignored")
 
         if to_remove:
             string = ", ".join([f"**{x.name}**" for x in to_remove])
             await self.bot.db.delete_automod_ignore(ctx.guild.id, *[x.id for x in to_remove])
-            await ctx.send(f":white_check_mark: | {string} will no longer be ignored")
+            await ctx.send(f"{POSITIVE_CHECK} | {string} will no longer be ignored")
 
     @automod.command(name="channel")
     @has_perms(4)
@@ -469,11 +469,11 @@ class Server(commands.Cog):
             check_channel(channel)
             await self.bot.db.update_automod_channel(ctx.guild.id, channel.id)
             await ctx.send(
-                f":white_check_mark: | Okay, all automoderation messages will be posted in {channel.mention} from now on."
+                f"{POSITIVE_CHECK} | Okay, all automoderation messages will be posted in {channel.mention} from now on."
             )
         elif str(channel).lower() == "disable":
             await self.bot.db.update_automod_channel(ctx.guild.id)
-            await ctx.send(":white_check_mark: | Auto-moderation **disabled**")
+            await ctx.send(f"{POSITIVE_CHECK} | Auto-moderation **disabled**")
         else:
             channel = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
             await ctx.send(
@@ -539,12 +539,12 @@ class Server(commands.Cog):
         if to_add:
             string = ", ".join([f"**{x.name}**" for x in to_add])
             await self.bot.db.insert_command_ignore(ctx.guild.id, *[x.id for x in to_add])
-            await ctx.send(f":white_check_mark: | {string} will now be ignored")
+            await ctx.send(f"{POSITIVE_CHECK} | {string} will now be ignored")
 
         if to_remove:
             string = ", ".join([f"**{x.name}**" for x in to_remove])
             await self.bot.db.delete_command_ignore(ctx.guild.id, *[x.id for x in to_remove])
-            await ctx.send(f":white_check_mark: | {string} will no longer be ignored")
+            await ctx.send(f"{POSITIVE_CHECK} | {string} will no longer be ignored")
 
     @commands.command(aliases=["setting"])
     @has_perms(4)
@@ -627,13 +627,13 @@ class Server(commands.Cog):
         `{pre}welcome` - disable server welcome message
         """
         if message == "":
-            await ctx.send(":white_check_mark: | Welcome message reset and disabled")
+            await ctx.send(f"{POSITIVE_CHECK} | Welcome message reset and disabled")
         else:
             try:
                 test = message.format(
                     **build_format_dict(member=ctx.author, guild=ctx.guild, channel=ctx.channel)
                 )
-                await ctx.send(f":white_check_mark: | Your server's welcome message will be: \n{test}")
+                await ctx.send(f"{POSITIVE_CHECK} | Your server's welcome message will be: \n{test}")
             except KeyError as e:
                 raise BotError(
                     f"{e.args[0]} is not a valid argument. Check the help guide to see what you can use the command with."
@@ -661,13 +661,13 @@ class Server(commands.Cog):
         there @NecroBot, we'll miss you on NecroBot Support Server'
         """
         if message == "":
-            await ctx.send(":white_check_mark: | Farewell message reset and disabled")
+            await ctx.send(f"{POSITIVE_CHECK} | Farewell message reset and disabled")
         else:
             try:
                 test = message.format(
                     **build_format_dict(member=ctx.author, guild=ctx.guild, channel=ctx.channel)
                 )
-                await ctx.send(f":white_check_mark: | Your server's farewell message will be: \n{test}")
+                await ctx.send(f"{POSITIVE_CHECK} | Your server's farewell message will be: \n{test}")
             except KeyError as e:
                 raise BotError(
                     f"{e.args[0]} is not a valid argument. Check the help guide to see what you can use the command with."
@@ -678,12 +678,12 @@ class Server(commands.Cog):
     async def channel_set(self, ctx: commands.Context[NecroBot], channel):
         if not channel:
             await self.bot.db.update_greeting_channel(ctx.guild.id)
-            await ctx.send(":white_check_mark: | Welcome/Farewell messages **disabled**")
+            await ctx.send(f"{POSITIVE_CHECK} | Welcome/Farewell messages **disabled**")
         else:
             check_channel(channel)
             await self.bot.db.update_greeting_channel(ctx.guild.id, channel.id)
             await ctx.send(
-                f":white_check_mark: | Users will get their welcome/farewell message in {channel.mention} from now on."
+                f"{POSITIVE_CHECK} | Users will get their welcome/farewell message in {channel.mention} from now on."
             )
 
     @welcome.command(name="channel")
@@ -748,9 +748,9 @@ class Server(commands.Cog):
         await self.bot.db.update_prefix(ctx.guild.id, prefix)
 
         if prefix == "":
-            await ctx.send(":white_check_mark: | Custom prefix reset")
+            await ctx.send(f"{POSITIVE_CHECK} | Custom prefix reset")
         else:
-            await ctx.send(f":white_check_mark: | Server prefix is now **{prefix}**")
+            await ctx.send(f"{POSITIVE_CHECK} | Server prefix is now **{prefix}**")
 
     @commands.command(name="auto-role")
     @has_perms(4)
@@ -773,7 +773,7 @@ class Server(commands.Cog):
         `{pre}auto-role` - resets and disables the autorole system."""
 
         if not role:
-            await ctx.send(":white_check_mark: | Auto-Role disabled")
+            await ctx.send(f"{POSITIVE_CHECK} | Auto-Role disabled")
             await self.bot.db.update_auto_role(ctx.guild.id, 0, time)
         else:
             if not isinstance(time, int):
@@ -781,7 +781,7 @@ class Server(commands.Cog):
 
             time_string = f"for **{time}** seconds" if time else "permanently"
             await ctx.send(
-                f":white_check_mark: | Joining members will now automatically be assigned the role **{role.name}** {time_string}"
+                f"{POSITIVE_CHECK} | Joining members will now automatically be assigned the role **{role.name}** {time_string}"
             )
             await self.bot.db.update_auto_role(ctx.guild.id, role.id, time)
 
@@ -889,7 +889,7 @@ class Server(commands.Cog):
         )
 
         await ctx.send(
-            f":white_check_mark: | Your broadcast is ready (ID: **{broadcast_id}**) and will start as soon as possible!"
+            f"{POSITIVE_CHECK} | Your broadcast is ready (ID: **{broadcast_id}**) and will start as soon as possible!"
         )
 
     @broadcast.command(name="edit")
@@ -936,7 +936,7 @@ class Server(commands.Cog):
             values["message"],
         )
 
-        await ctx.send(f":white_check_mark: | Broadcast edited!")
+        await ctx.send(f"{POSITIVE_CHECK} | Broadcast edited!")
 
     @broadcast.command(name="delete")
     @has_perms(4)
@@ -953,7 +953,7 @@ class Server(commands.Cog):
         )
 
         if value:
-            await ctx.send(":white_check_mark: | Deleted broadcast")
+            await ctx.send(f"{POSITIVE_CHECK} | Deleted broadcast")
         else:
             raise BotError("No broadcast found with that ID")
 
@@ -977,9 +977,9 @@ class Server(commands.Cog):
             raise BotError("No broadcast found with that ID")
 
         if changed:
-            await ctx.send(":white_check_mark: | Broadcast enabled")
+            await ctx.send(f"{POSITIVE_CHECK} | Broadcast enabled")
         else:
-            await ctx.send(":white_check_mark: | Broadcast disabled")
+            await ctx.send(f"{POSITIVE_CHECK} | Broadcast disabled")
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -1021,10 +1021,10 @@ class Server(commands.Cog):
         if role.id in self.bot.guild_data[ctx.guild.id]["self-roles"]:
             if role not in ctx.author.roles:
                 await ctx.author.add_roles(role)
-                await ctx.send(f":white_check_mark: | Role **{role.name}** added.")
+                await ctx.send(f"{POSITIVE_CHECK} | Role **{role.name}** added.")
             else:
                 await ctx.author.remove_roles(role)
-                await ctx.send(f":white_check_mark: | Role **{role.name}** removed.")
+                await ctx.send(f"{POSITIVE_CHECK} | Role **{role.name}** removed.")
 
         else:
             raise BotError("Role not self assignable")
@@ -1050,7 +1050,7 @@ class Server(commands.Cog):
             raise BotError("Role already in list of self assignable roles")
 
         await self.bot.db.insert_self_roles(ctx.guild.id, role.id)
-        await ctx.send(f":white_check_mark: | Added role **{role.name}** to list of self assignable roles.")
+        await ctx.send(f"{POSITIVE_CHECK} | Added role **{role.name}** to list of self assignable roles.")
 
     @giveme.command(name="delete")
     @has_perms(4)
@@ -1070,7 +1070,7 @@ class Server(commands.Cog):
             raise BotError("Role not in self assignable list")
 
         await self.bot.db.delete_self_roles(ctx.guild.id, role.id)
-        await ctx.send(f":white_check_mark: | Role **{role.name}** removed from self assignable roles")
+        await ctx.send(f"{POSITIVE_CHECK} | Role **{role.name}** removed from self assignable roles")
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -1091,11 +1091,11 @@ class Server(commands.Cog):
         `{pre}starboard` - disables starboard"""
         if channel is None:
             await self.bot.db.update_starboard_channel(ctx.guild.id)
-            await ctx.send(":white_check_mark: | Starboard disabled.")
+            await ctx.send(f"{POSITIVE_CHECK} | Starboard disabled.")
         else:
             check_channel(channel)
             await self.bot.db.update_starboard_channel(ctx.guild.id, channel.id)
-            await ctx.send(f":white_check_mark: | Starred messages will now be sent to {channel.mention}")
+            await ctx.send(f"{POSITIVE_CHECK} | Starred messages will now be sent to {channel.mention}")
 
     @starboard.command(name="limit")
     @has_perms(4)
@@ -1112,7 +1112,7 @@ class Server(commands.Cog):
 
         await self.bot.db.update_starboard_limit(ctx.guild.id, limit)
         await ctx.send(
-            f":white_check_mark: | Starred messages will now be posted on the starboard once they hit **{limit}** stars"
+            f"{POSITIVE_CHECK} | Starred messages will now be posted on the starboard once they hit **{limit}** stars"
         )
 
     @starboard.command(name="force")

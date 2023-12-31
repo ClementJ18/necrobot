@@ -32,7 +32,7 @@ from rings.utils.ui import (
     MultiInputEmbedView,
     Paginator,
 )
-from rings.utils.utils import BotError, DatabaseError, check_channel
+from rings.utils.utils import NEGATIVE_CHECK, POSITIVE_CHECK, BotError, DatabaseError, check_channel
 
 from .base import DUD_TEMPLATES, POSITION_EMOJIS, EntityDict, EquipmentSet, Stat, StatBlock
 from .battle import Battle, Battlefield, Character, is_wakable
@@ -313,22 +313,17 @@ class Flowers(commands.Cog):
         `{pre}flowers -1000 @APerson` - take 1000 flowers to user APerson
 
         """
+        symbol = await self.get_symbol(ctx.guild.id)
         if amount < 0:
-            msg = ":white_check_mark: | Took **{amount}** {symbol} from **{member.display_name}**"
+            msg = f"{POSITIVE_CHECK} | Took **{abs(amount)}** {symbol} from **{member.display_name}**"
         else:
-            msg = ":white_check_mark: | Awarded **{amount}** {symbol} to **{member.display_name}**"
+            msg = f"{POSITIVE_CHECK} | Awarded **{abs(amount)}** {symbol} to **{member.display_name}**"
 
         if reason:
             msg += f" for *{reason}*"
 
         await self.add_flowers(ctx.guild.id, member.id, amount)
-        await ctx.send(
-            msg.format(
-                amount=abs(amount),
-                symbol=await self.get_symbol(ctx.guild.id),
-                member=member,
-            )
-        )
+        await ctx.send(msg)
 
     @flowers.command(name="symbol")
     @has_perms(4)
@@ -344,7 +339,7 @@ class Flowers(commands.Cog):
             raise BotError(f"Cannot be more than 50 characters. ({len(symbol)}/50")
 
         await self.update_symbol(ctx.guild.id, symbol)
-        await ctx.send(":white_check_mark: | Updated!")
+        await ctx.send(f"{POSITIVE_CHECK} | Updated!")
 
     @flowers.command(name="balance")
     @commands.guild_only()
@@ -419,7 +414,7 @@ class Flowers(commands.Cog):
 
         symbol = await self.get_symbol(ctx.guild.id)
         await ctx.send(
-            f":white_check_mark: | **{ctx.author.display_name}** has gifted **{amount}** {symbol} to **{member.display_name}**"
+            f"{POSITIVE_CHECK} | **{ctx.author.display_name}** has gifted **{amount}** {symbol} to **{member.display_name}**"
         )
 
     ###GACHA
@@ -691,7 +686,7 @@ class Flowers(commands.Cog):
         )
 
         await view.message.send(
-            content=f":white_check_mark: | Character **{query[0]}** deleted and removed.",
+            content=f"{POSITIVE_CHECK} | Character **{query[0]}** deleted and removed.",
             embed=None,
         )
 
@@ -715,7 +710,7 @@ class Flowers(commands.Cog):
             fetchval=True,
         )
         await ctx.send(
-            f":white_check_mark: | Character **{query[0]}** is now {'not ' if not query[1] else ''}obtainable."
+            f"{POSITIVE_CHECK} | Character **{query[0]}** is now {'not ' if not query[1] else ''}obtainable."
         )
 
     @characters.command(name="give")
@@ -749,7 +744,7 @@ class Flowers(commands.Cog):
         await asyncio.sleep(1)
         level = await self.add_characters_to_user(ctx.guild.id, user.id, char["id"])
         await view.message.edit(
-            content=f":white_check_mark: | Added **{char['id']}** to user's rolled characters (New: {level == 1})",
+            content=f"{POSITIVE_CHECK} | Added **{char['id']}** to user's rolled characters (New: {level == 1})",
             embed=None,
         )
 
@@ -784,12 +779,12 @@ class Flowers(commands.Cog):
         level, is_deleted = await self.remove_character_from_user(ctx.guild.id, user.id, char["id"], amount)
         if not level and not is_deleted:
             await view.message.edit(
-                content=":negative_squared_cross_mark: | User does not have that character",
+                content=f"{NEGATIVE_CHECK} | User does not have that character",
                 embed=None,
             )
         else:
             await view.message.edit(
-                content=f":white_check_mark: | Amount taken from user's rolled characters (Deleted: {bool(is_deleted)})",
+                content=f"{POSITIVE_CHECK} | Amount taken from user's rolled characters (Deleted: {bool(is_deleted)})",
                 embed=None,
             )
 
@@ -931,7 +926,7 @@ class Flowers(commands.Cog):
             fetchval=True,
         )
         await ctx.send(
-            f":white_check_mark: | Banner **{query[0]}** is now {'not ' if not query[1] else ''}ongoing."
+            f"{POSITIVE_CHECK} | Banner **{query[0]}** is now {'not ' if not query[1] else ''}ongoing."
         )
 
     @banners.command(name="add")
@@ -961,7 +956,7 @@ class Flowers(commands.Cog):
                 char["id"],
             )
             await ctx.send(
-                f":white_check_mark: | Character **{char['name']}** added to banner **{banner['name']}**."
+                f"{POSITIVE_CHECK} | Character **{char['name']}** added to banner **{banner['name']}**."
             )
         except Exception:
             raise BotError(f"Character **{char['name']}** already in banner **{banner['name']}**.")
@@ -994,7 +989,7 @@ class Flowers(commands.Cog):
 
         if is_deleted:
             await ctx.send(
-                f":white_check_mark: | Characters **{char['name']}** removed from banner **{banner['name']}**."
+                f"{POSITIVE_CHECK} | Characters **{char['name']}** removed from banner **{banner['name']}**."
             )
         else:
             raise BotError(f"Characters **{char['name']}** not present on banner **{banner['name']}**.")
@@ -1202,7 +1197,7 @@ class Flowers(commands.Cog):
             amount,
             ctx.guild.id,
         )
-        await ctx.send(f":white_check_mark: | Updated roll cost to **{amount}**")
+        await ctx.send(f"{POSITIVE_CHECK} | Updated roll cost to **{amount}**")
 
     @gacha_roll.command(name="guarantee")
     @has_perms(4)
@@ -1222,7 +1217,7 @@ class Flowers(commands.Cog):
             amount - 1,
             ctx.guild.id,
         )
-        await ctx.send(f":white_check_mark: | Updated guaranteed to **{amount}**")
+        await ctx.send(f"{POSITIVE_CHECK} | Updated guaranteed to **{amount}**")
 
     @commands.group()
     async def equipment(self, ctx: commands.Context[NecroBot]):
@@ -1282,7 +1277,7 @@ class Flowers(commands.Cog):
                     mapped["weapon"]["id"],
                 )
                 await ctx.send(
-                    f":white_check_mark: | Equipped **{character['name']}** with artefact **{mapped['artefact']['name']}** and weapon **{mapped['weapon']['name']}**"
+                    f"{POSITIVE_CHECK} | Equipped **{character['name']}** with artefact **{mapped['artefact']['name']}** and weapon **{mapped['weapon']['name']}**"
                 )
             else:
                 key = list(mapped.keys())[0]
@@ -1317,7 +1312,7 @@ class Flowers(commands.Cog):
                 )
 
                 await ctx.send(
-                    f":white_check_mark: | Equipped **{character['name']}** with {key} **{mapped[key]['name']}**"
+                    f"{POSITIVE_CHECK} | Equipped **{character['name']}** with {key} **{mapped[key]['name']}**"
                 )
 
         except DatabaseError as e:
@@ -1345,7 +1340,7 @@ class Flowers(commands.Cog):
         if not deleted:
             raise BotError(f"Character {character['name']} has no equipment set")
 
-        await ctx.send(f":white_check_mark: | Deleted equipment set for **{character['name']}**")
+        await ctx.send(f"{POSITIVE_CHECK} | Deleted equipment set for **{character['name']}**")
 
     def format_character_stats(self, character):
         stats = f"- Health: {self.c(character['primary_health'])} ({self.c(character['secondary_health'])})\n- PA: {self.c(character['physical_attack'])}\n- MA: {self.c(character['magical_attack'])}\n- PD: {self.c(character['physical_defense'])}\n- MD: {self.c(character['magical_defense'])}"
@@ -1598,10 +1593,10 @@ class Flowers(commands.Cog):
 
         if bad_skills:
             await ctx.send(
-                f":negative_squared_cross_mark: | Finished checking, the following skills did not exist: {', '.join(bad_skills)} "
+                f"{NEGATIVE_CHECK} | Finished checking, the following skills did not exist: {', '.join(bad_skills)} "
             )
         else:
-            await ctx.send(f":white_check_mark: | Finished checking, all skills ok.")
+            await ctx.send(f"{POSITIVE_CHECK} | Finished checking, all skills ok.")
 
     #######################################################################
     ## Events

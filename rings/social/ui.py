@@ -1,6 +1,7 @@
 import discord
 
 from rings.utils.ui import BaseView
+from rings.utils.utils import NEGATIVE_CHECK, POSITIVE_CHECK
 
 
 class TextInput(discord.ui.TextInput):
@@ -11,13 +12,13 @@ class TextInput(discord.ui.TextInput):
         if self.value.lower() == self.view.answer:
             self.view.value = True
             await interaction.response.edit_message(
-                content=":white_check_mark: | Correct! Guess you get to live.",
+                content=f"{POSITIVE_CHECK} | Correct! Guess you get to live.",
                 view=self.view,
             )
         else:
             self.view.value = True
             await interaction.response.edit_message(
-                content=":negative_squared_cross_mark: | Wrong answer! Now you go to feed the fishies!",
+                content=f"{NEGATIVE_CHECK} | Wrong answer! Now you go to feed the fishies!",
                 view=self.view,
             )
 
@@ -33,6 +34,6 @@ class RiddleView(BaseView):
         self.stop()
         self.clear_items()
         await self.message.edit(
-            content=":negative_squared_cross_mark: | Too slow! Now you go to feed the fishies!",
+            content=f"{NEGATIVE_CHECK} | Too slow! Now you go to feed the fishies!",
             view=self,
         )

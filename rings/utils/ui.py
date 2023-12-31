@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, TypeVar, Union
 import discord
 from discord.ext import commands
 
-from rings.utils.utils import BotError
+from rings.utils.utils import NEGATIVE_CHECK, POSITIVE_CHECK, BotError
 
 if TYPE_CHECKING:
     from discord.interactions import Interaction
@@ -55,7 +55,7 @@ class BaseView(discord.ui.View):
         except discord.HTTPException as e:
             logger.exception(f"Failed to send error interaction: {e}")
 
-        msg = f":negative_squared_cross_mark: | Error with interaction: {error}"
+        msg = f"{NEGATIVE_CHECK} | Error with interaction: {error}"
         try:
             await interaction.response.send_message(msg, ephemeral=True)
         except discord.InteractionResponded:
@@ -67,7 +67,7 @@ class BaseView(discord.ui.View):
 
         if not interaction.user == self.author:
             await interaction.response.send_message(
-                ":negative_squared_cross_mark: | This button isn't for you!", ephemeral=True
+                f"{NEGATIVE_CHECK} | This button isn't for you!", ephemeral=True
             )
             return False
 
@@ -94,7 +94,7 @@ class PollSelect(discord.ui.Select):
             self.view.poll_id,
             embed=self.view.generate_embed(await self.view.get_values(interaction.client)),
         )
-        await interaction.followup.send(":white_check_mark: | Vote(s) registered", ephemeral=True)
+        await interaction.followup.send(f"{POSITIVE_CHECK} | Vote(s) registered", ephemeral=True)
 
 
 class PollView(BaseView):
@@ -158,7 +158,7 @@ class PollView(BaseView):
         perms = await interaction.client.db.get_permission(interaction.user.id, interaction.guild.id)
         if perms < 3:
             return await interaction.response.send_message(
-                ":negative_squared_cross_mark: | You don't have permissions to close a poll",
+                f"{NEGATIVE_CHECK} | You don't have permissions to close a poll",
                 ephemeral=True,
             )
 
@@ -170,7 +170,7 @@ class PollView(BaseView):
             embed=self.generate_embed(await self.get_values(interaction.client)),
             view=self,
         )
-        await interaction.followup.send(":white_check_mark: | Poll closed", ephemeral=True)
+        await interaction.followup.send(f"{POSITIVE_CHECK} | Poll closed", ephemeral=True)
 
 
 class PollEditorModal(discord.ui.Modal):
@@ -236,7 +236,7 @@ class PollEditorView(BaseView):
     async def add_option(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         if len(self.options) >= 25:
             return await interaction.response.send_message(
-                ":negative_squared_cross_mark: | Cannot add more than 25 options"
+                f"{NEGATIVE_CHECK} | Cannot add more than 25 options"
             )
 
         await interaction.response.send_modal(PollEditorModal(self))
@@ -245,7 +245,7 @@ class PollEditorView(BaseView):
     async def delete_option(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         if not self.options:
             return await interaction.response.send_message(
-                ":negative_squared_cross_mark: | Cannot delete no options"
+                f"{NEGATIVE_CHECK} | Cannot delete no options"
             )
 
         self.options.pop(-1)
@@ -267,7 +267,7 @@ class PollEditorView(BaseView):
     async def save_poll(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         if not self.options:
             return await interaction.response.send_message(
-                ":negative_squared_cross_mark: | Cannot save a poll with no options",
+                f"{NEGATIVE_CHECK} | Cannot save a poll with no options",
                 ephemeral=True,
             )
 
@@ -331,7 +331,7 @@ class Select(discord.ui.Select):
         self.view.stop()
         self.view.clear_items()
         await interaction.response.edit_message(
-            content=f":white_check_mark: | Choice was **{self.values[0]}**",
+            content=f"{POSITIVE_CHECK} | Choice was **{self.values[0]}**",
             view=self.view,
         )
 
@@ -369,7 +369,7 @@ class SelectView(BaseView):
         self.stop()
         self.clear_items()
         await interaction.response.edit_message(
-            content=":negative_squared_cross_mark: | Cancelled", view=self
+            content=f"{NEGATIVE_CHECK} | Cancelled", view=self
         )
 
     async def on_timeout(self):
@@ -382,8 +382,8 @@ class Confirm(BaseView):
     def __init__(
         self,
         author: discord.Member,
-        confirm_msg: str = ":white_check_mark: | Confirmed",
-        cancel_msg: str = ":negative_squared_cross_mark: | Cancelled",
+        confirm_msg: str = f"{POSITIVE_CHECK} | Confirmed",
+        cancel_msg: str = f"{NEGATIVE_CHECK} | Cancelled",
         *,
         timeout: int = 180,
     ):
@@ -399,7 +399,7 @@ class Confirm(BaseView):
         self.stop()
         self.clear_items()
         await self.message.edit(
-            content=f":negative_squared_cross_mark: | Interaction has expired, please answer within **{self.timeout}** seconds.",
+            content=f"{NEGATIVE_CHECK} | Interaction has expired, please answer within **{self.timeout}** seconds.",
             view=self,
         )
 
@@ -725,7 +725,7 @@ class EditModal(discord.ui.Modal):
             await interaction.followup.edit_message(interaction.message.id)
 
 
-D = TypeVar("")
+D = TypeVar("D")
 
 
 def chunker(seq: List[D], size: int) -> List[D]:

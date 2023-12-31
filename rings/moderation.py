@@ -10,7 +10,7 @@ from discord.ext import commands
 from rings.utils.checks import has_perms, requires_mute_role
 from rings.utils.converters import MemberConverter, RangeConverter, RoleConverter, TimeConverter
 from rings.utils.ui import Paginator
-from rings.utils.utils import BotError, format_dt
+from rings.utils.utils import POSITIVE_CHECK, BotError, format_dt
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -136,9 +136,9 @@ class Moderation(commands.Cog):
             raise BotError("You do not have the required NecroBot permissions to rename this user.")
 
         if not nickname:
-            msg = f":white_check_mark: | User **{user.display_name}**'s nickname reset"
+            msg = f"{POSITIVE_CHECK} | User **{user.display_name}**'s nickname reset"
         else:
-            msg = f":white_check_mark: | User **{user.display_name}** renamed to **{nickname}**"
+            msg = f"{POSITIVE_CHECK} | User **{user.display_name}** renamed to **{nickname}**"
 
         old_name = user.display_name
 
@@ -185,7 +185,7 @@ class Moderation(commands.Cog):
         role = discord.utils.get(ctx.guild.roles, id=self.bot.guild_data[ctx.guild.id]["mute"])
         if role not in user.roles:
             await user.add_roles(role)
-            await ctx.send(f":white_check_mark: | User **{user.display_name}** has been muted")
+            await ctx.send(f"{POSITIVE_CHECK} | User **{user.display_name}** has been muted")
         else:
             raise BotError(f"User **{user.display_name}** is already muted")
 
@@ -232,10 +232,10 @@ class Moderation(commands.Cog):
         """
         if not role:
             await self.bot.db.update_mute_role(ctx.guild.id)
-            await ctx.send(":white_check_mark: | Reset mute role")
+            await ctx.send(f"{POSITIVE_CHECK} | Reset mute role")
         else:
             await self.bot.db.update_mute_role(ctx.guild.id, role.id)
-            await ctx.send(f":white_check_mark: | Okay, the mute role for your server will be {role.mention}")
+            await ctx.send(f"{POSITIVE_CHECK} | Okay, the mute role for your server will be {role.mention}")
 
     @mute_role.command(name="create")
     @has_perms(4)
@@ -256,7 +256,7 @@ class Moderation(commands.Cog):
                 permissions=discord.Permissions(permissions=0),
             )
             await self.bot.db.update_mute_role(ctx.guild.id, role.id)
-            await ctx.send(f":white_check_mark: | Created mute role called {role.mention}")
+            await ctx.send(f"{POSITIVE_CHECK} | Created mute role called {role.mention}")
         else:
             if name is not None:
                 raise BotError(
@@ -277,7 +277,7 @@ class Moderation(commands.Cog):
                     pass
 
         await ctx.send(
-            f":white_check_mark: | Updated permissions for all channels where {role.mention} was not already present where I had permission."
+            f"{POSITIVE_CHECK} | Updated permissions for all channels where {role.mention} was not already present where I had permission."
         )
 
     @commands.command()
@@ -301,7 +301,7 @@ class Moderation(commands.Cog):
         role = discord.utils.get(ctx.guild.roles, id=self.bot.guild_data[ctx.guild.id]["mute"])
         if role in user.roles:
             await user.remove_roles(role)
-            await ctx.send(f":white_check_mark: | User **{user.display_name}** has been unmuted")
+            await ctx.send(f"{POSITIVE_CHECK} | User **{user.display_name}** has been unmuted")
         else:
             raise BotError(f"User **{user.display_name}** is not muted")
 
@@ -336,7 +336,7 @@ class Moderation(commands.Cog):
 
         warning_id = await self.bot.db.insert_warning(user.id, ctx.author.id, ctx.guild.id, message)
         await ctx.send(
-            f":white_check_mark: | Warning added to warning list of user **{user.display_name}** with ID `{warning_id}`"
+            f"{POSITIVE_CHECK} | Warning added to warning list of user **{user.display_name}** with ID `{warning_id}`"
         )
 
         if self.bot.guild_data[ctx.guild.id]["pm-warning"]:
@@ -372,7 +372,7 @@ class Moderation(commands.Cog):
 
         user = ctx.guild.get_member(deleted)
         await ctx.send(
-            f":white_check_mark: | Warning `{warning_id}` removed from warning list of user **{user.display_name if user else 'User Left'}**"
+            f"{POSITIVE_CHECK} | Warning `{warning_id}` removed from warning list of user **{user.display_name if user else 'User Left'}**"
         )
 
         automod = ctx.guild.get_channel(self.bot.guild_data[ctx.guild.id]["automod"])
@@ -477,9 +477,9 @@ class Moderation(commands.Cog):
         """
         await self.bot.db.update_warning_setting(ctx.guild.id, pm)
         if pm:
-            await ctx.send(":white_check_mark: | Users will be DM'd warnings")
+            await ctx.send(f"{POSITIVE_CHECK} | Users will be DM'd warnings")
         else:
-            await ctx.send(":white_check_mark: | Users will not be DM's warnings.")
+            await ctx.send(f"{POSITIVE_CHECK} | Users will not be DM's warnings.")
 
     @commands.command()
     @has_perms(4)
@@ -593,13 +593,13 @@ class Moderation(commands.Cog):
                 raise BotError(f"**{command}** is already disabled.")
 
             await self.bot.db.insert_disabled(ctx.guild.id, name)
-            return await ctx.send(f":white_check_mark: | Command **{name}** is now disabled")
+            return await ctx.send(f"{POSITIVE_CHECK} | Command **{name}** is now disabled")
 
         disabled_commands = [
             x.name for x in cog.get_commands() if x.name not in self.bot.guild_data[ctx.guild.id]["disabled"]
         ]
         await self.bot.db.insert_disabled(ctx.guild.id, *disabled_commands)
-        await ctx.send(f":white_check_mark: | All commands in **{name}** are now disabled")
+        await ctx.send(f"{POSITIVE_CHECK} | All commands in **{name}** are now disabled")
 
     @commands.command()
     @has_perms(4)
@@ -640,13 +640,13 @@ class Moderation(commands.Cog):
                 raise BotError("This command is not disabled.")
 
             await self.bot.db.delete_disabled(ctx.guild.id, name)
-            return await ctx.send(f":white_check_mark: | Command **{name}** is now enabled")
+            return await ctx.send(f"{POSITIVE_CHECK} | Command **{name}** is now enabled")
 
         enabled_commands = [
             x.name for x in cog.get_commands() if x.name in self.bot.guild_data[ctx.guild.id]["disabled"]
         ]
         await self.bot.db.delete_disabled(ctx.guild.id, *enabled_commands)
-        await ctx.send(f":white_check_mark: | All commands in **{name}** are now enabled")
+        await ctx.send(f"{POSITIVE_CHECK} | All commands in **{name}** are now enabled")
 
     #######################################################################
     ## Events

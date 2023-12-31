@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 from rings.utils.checks import has_perms
 from rings.utils.converters import BadgeConverter, MemberConverter, MoneyConverter, RangeConverter
 from rings.utils.ui import Confirm, Paginator
-from rings.utils.utils import BotError, DatabaseError, midnight
+from rings.utils.utils import POSITIVE_CHECK, BotError, DatabaseError, midnight
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -180,8 +180,8 @@ class Profile(commands.Cog):
         payer = ctx.author
         view = Confirm(
             ctx.author,
-            confirm_msg=f":white_check_mark: | **{payer.display_name}** approved the transaction.",
-            cancel_msg=f":white_check_mark: | **{payer.display_name}** cancelled the transaction.",
+            confirm_msg=f"{POSITIVE_CHECK} | **{payer.display_name}** approved the transaction.",
+            cancel_msg=f"{POSITIVE_CHECK} | **{payer.display_name}** cancelled the transaction.",
         )
 
         view.message = await ctx.send(
@@ -330,9 +330,9 @@ class Profile(commands.Cog):
 
         await self.bot.db.update_title(ctx.author.id, text)
         if text == "":
-            await ctx.send(":white_check_mark: | Your title has been reset")
+            await ctx.send(f"{POSITIVE_CHECK} | Your title has been reset")
         else:
-            await ctx.send(f":white_check_mark: | Great, your title is now **{text}**")
+            await ctx.send(f"{POSITIVE_CHECK} | Great, your title is now **{text}**")
 
     @commands.group(aliases=["badge"], invoke_without_command=True)
     async def badges(self, ctx: commands.Context[NecroBot]):
@@ -365,7 +365,7 @@ class Profile(commands.Cog):
         """
         if badge is None:
             await self.bot.db.update_spot_badge(ctx.author.id, spot)
-            await ctx.send(f":white_check_mark: | Reset spot {spot}")
+            await ctx.send(f"{POSITIVE_CHECK} | Reset spot {spot}")
         else:
             badge = await self.bot.db.get_badges(ctx.author.id, badge=badge["name"])
             if not badge:
@@ -373,7 +373,7 @@ class Profile(commands.Cog):
 
             badge = badge[0]
             await self.bot.db.update_spot_badge(ctx.author.id, spot, badge["name"])
-            await ctx.send(f":white_check_mark: | **{badge['name']}** set on spot **{spot}**")
+            await ctx.send(f"{POSITIVE_CHECK} | **{badge['name']}** set on spot **{spot}**")
 
     @badges.command(name="buy")
     async def badges_buy(
@@ -402,10 +402,10 @@ class Profile(commands.Cog):
 
         if spot:
             await ctx.send(
-                f":white_check_mark: | Bought badge **{badge['name']}** and placed it on spot **{spot}**"
+                f"{POSITIVE_CHECK} | Bought badge **{badge['name']}** and placed it on spot **{spot}**"
             )
         else:
-            await ctx.send(f":white_check_mark: | Bought badge **{badge['name']}**")
+            await ctx.send(f"{POSITIVE_CHECK} | Bought badge **{badge['name']}**")
 
     @badges.group(name="shop", invoke_without_command=True)
     async def badge_shop(self, ctx: commands.Context[NecroBot]):
@@ -486,7 +486,7 @@ class Profile(commands.Cog):
             urls.append(msg.attachments[0].url)
 
         self.bot.settings["shop"] = urls
-        await ctx.send(":white_check_mark: | Done generating and updating")
+        await ctx.send(f"{POSITIVE_CHECK} | Done generating and updating")
 
     @commands.group(invoke_without_command=True, aliases=["star"])
     async def stars(

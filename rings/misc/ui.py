@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, List
 import discord
 
 from rings.utils.ui import BaseView
+from rings.utils.utils import NEGATIVE_CHECK, POSITIVE_CHECK
 
 from .hunger_game import events
 
@@ -256,12 +257,12 @@ class MatchupView(BaseView):
     async def confirm(self, interaction: discord.Interaction[NecroBot], button: discord.ui.Button):
         if not self.winner_select.values and self.loser_select.values:
             return await interaction.response.send_message(
-                ":negative_squared_cross_mark: | Please select a winning and losing faction", ephemeral=True
+                f"{NEGATIVE_CHECK} | Please select a winning and losing faction", ephemeral=True
             )
 
         if self.winner_select.values[0] == self.loser_select.values[0]:
             return await interaction.response.send_message(
-                ":negative_squared_cross_mark: | Please select different winning and losing factions",
+                f"{NEGATIVE_CHECK} | Please select different winning and losing factions",
                 ephemeral=True,
             )
 
@@ -287,6 +288,6 @@ class MatchupView(BaseView):
 
         await interaction.response.edit_message()
         await interaction.followup.send(
-            f":white_check_mark: | Registered a victory over **{self.loser_select.values[0]}** for **{self.winner_select.values[0]}**",
+            f"{POSITIVE_CHECK} | Registered a victory over **{self.loser_select.values[0]}** for **{self.winner_select.values[0]}**",
             ephemeral=True,
         )

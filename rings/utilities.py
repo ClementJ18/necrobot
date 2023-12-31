@@ -15,7 +15,7 @@ from rings.utils.astral import Astral
 from rings.utils.checks import has_perms, leaderboard_enabled
 from rings.utils.converters import MemberConverter
 from rings.utils.ui import Paginator
-from rings.utils.utils import BotError, format_dt, time_converter, time_string_parser
+from rings.utils.utils import POSITIVE_CHECK, BotError, format_dt, time_converter, time_string_parser
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -241,7 +241,7 @@ class Utilities(commands.Cog):
             now + datetime.timedelta(seconds=sleep),
             style="f",
         )
-        await ctx.send(f":white_check_mark: | I will remind you of that on **{stamp}** (ID: {reminder_id})")
+        await ctx.send(f"{POSITIVE_CHECK} | I will remind you of that on **{stamp}** (ID: {reminder_id})")
 
     @remindme.command(name="delete")
     async def remindme_delete(self, ctx: commands.Context[NecroBot], reminder_id: int):
@@ -266,7 +266,7 @@ class Utilities(commands.Cog):
         if reminder_id == self.bot.next_reminder_id:
             await self.bot.meta.restart_next_reminder_task()
 
-        await ctx.send(":white_check_mark: | Reminder cancelled")
+        await ctx.send(f"{POSITIVE_CHECK} | Reminder cancelled")
 
     @remindme.command(name="list")
     async def remindme_list(self, ctx: commands.Context[NecroBot]):
@@ -343,9 +343,9 @@ class Utilities(commands.Cog):
         self.bot.queue[ctx.guild.id]["end"] = False
 
         if self.bot.queue[ctx.guild.id]["list"]:
-            await ctx.send(":white_check_mark: | Exising queue resumed")
+            await ctx.send(f"{POSITIVE_CHECK} | Exising queue resumed")
         else:
-            await ctx.send(":white_check_mark: | New queue started")
+            await ctx.send(f"{POSITIVE_CHECK} | New queue started")
 
     @q.command(name="end")
     @has_perms(2)
@@ -355,7 +355,7 @@ class Utilities(commands.Cog):
 
         {usage}"""
         self.bot.queue[ctx.guild.id]["end"] = True
-        await ctx.send(":white_check_mark: | Users will now be unable to add themselves to queue")
+        await ctx.send(f"{POSITIVE_CHECK} | Users will now be unable to add themselves to queue")
 
     @q.command(name="clear")
     @has_perms(2)
@@ -366,7 +366,7 @@ class Utilities(commands.Cog):
         {usage}"""
         self.bot.queue[ctx.guild.id] = self.bot.queue.default_factory()
         await ctx.send(
-            ":white_check_mark: | Queue cleared and ended. Please start a new queue to be able to add users again"
+            f"{POSITIVE_CHECK} | Queue cleared and ended. Please start a new queue to be able to add users again"
         )
 
     @q.command(name="me")
@@ -381,13 +381,13 @@ class Utilities(commands.Cog):
             raise BotError("Sorry, you can no longer add yourself to the queue")
 
         if ctx.author.id in self.bot.queue[ctx.guild.id]["list"]:
-            await ctx.send(":white_check_mark: | You have been removed from the queue")
+            await ctx.send(f"{POSITIVE_CHECK} | You have been removed from the queue")
             self.bot.queue[ctx.guild.id]["list"].remove(ctx.author.id)
             return
 
         self.bot.queue[ctx.guild.id]["list"].append(ctx.author.id)
         position = len(self.bot.queue[ctx.guild.id]["list"])
-        await ctx.send(f":white_check_mark: |  You have been added to the queue at position **{position}**")
+        await ctx.send(f"{POSITIVE_CHECK} |  You have been added to the queue at position **{position}**")
 
     @q.command(name="next")
     @has_perms(2)
@@ -441,12 +441,12 @@ class Utilities(commands.Cog):
 
             if position is None:
                 return await ctx.send(
-                    f":white_check_mark: | **{member.display_name}** has been removed from the queue"
+                    f"{POSITIVE_CHECK} | **{member.display_name}** has been removed from the queue"
                 )
 
         self.bot.queue[ctx.guild.id]["list"].insert(new_position - 1, member.id)
         await ctx.send(
-            f":white_check_mark: | **{member.display_name}** has been inserted into position **{new_position}**"
+            f"{POSITIVE_CHECK} | **{member.display_name}** has been inserted into position **{new_position}**"
         )
 
     @commands.group(invoke_without_command=True)
@@ -500,11 +500,11 @@ class Utilities(commands.Cog):
         `{pre}leaderboard message Server's Favorite People` - enable leaderboards and make
         """
         if message == "":
-            await ctx.send(":white_check_mark: | Leaderboard disabled")
+            await ctx.send(f"{POSITIVE_CHECK} | Leaderboard disabled")
         elif len(message) > 200:
             raise BotError("The message cannot be more than 200 characters")
         else:
-            await ctx.send(":white_check_mark: | Leaderboard message changed")
+            await ctx.send(f"{POSITIVE_CHECK} | Leaderboard message changed")
 
         await self.bot.db.update_leaderboard(ctx.guild.id, message=message)
 
@@ -522,7 +522,7 @@ class Utilities(commands.Cog):
         if len(symbol) > 50:
             raise BotError("The symbol cannot be more than 50 characters")
 
-        await ctx.send(":white_check_mark: | Leaderboard symbol changed")
+        await ctx.send(f"{POSITIVE_CHECK} | Leaderboard symbol changed")
         await self.bot.db.update_leaderboard(ctx.guild.id, symbol=symbol)
 
     @leaderboard.command(name="award")
@@ -638,7 +638,7 @@ class Utilities(commands.Cog):
         if ga_results is None:
             return
 
-        await msg.edit(content=":white_check_mark: The giveaway has ended!", embed=embed)
+        await msg.edit(content=f"{POSITIVE_CHECK} The giveaway has ended!", embed=embed)
 
         winner_users = []
         for entry in ga_results["entries"]:
@@ -718,7 +718,7 @@ class Utilities(commands.Cog):
                 f"You do not have the required NecroBot permissions. Your permission level must be {level} or you must be the author of the giveaway."
             )
 
-        await ctx.send(f":white_check_mark: | Giveaway cancelled. {ga.jump_url}")
+        await ctx.send(f"{POSITIVE_CHECK} | Giveaway cancelled. {ga.jump_url}")
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):

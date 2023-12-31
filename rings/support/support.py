@@ -9,7 +9,7 @@ import discord
 from discord.ext import commands
 
 from rings.utils.ui import Confirm
-from rings.utils.utils import BotError
+from rings.utils.utils import POSITIVE_CHECK, BotError
 from rings.utils.var import tutorial_e
 
 from .var import gdpr_e
@@ -86,7 +86,7 @@ class Support(commands.Cog):
 
         view = Confirm(
             ctx.author,
-            confirm_msg=":white_check_mark: | Report sent!",
+            confirm_msg=f"{POSITIVE_CHECK} | Report sent!",
         )
 
         view.message = await ctx.send(

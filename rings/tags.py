@@ -9,7 +9,7 @@ from discord.ext import commands
 
 from rings.utils.converters import Tag
 from rings.utils.ui import Paginator
-from rings.utils.utils import BotError, DatabaseError, build_format_dict
+from rings.utils.utils import POSITIVE_CHECK, BotError, DatabaseError, build_format_dict
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -152,7 +152,7 @@ class Tags(commands.Cog):
 
             await self.bot.db.query("INSERT INTO necrobot.Aliases VALUES ($1, $1, $2)", tag, ctx.guild.id)
 
-            await ctx.send(f":white_check_mark: | Tag {tag} added")
+            await ctx.send(f"{POSITIVE_CHECK} | Tag {tag} added")
         except DatabaseError as e:
             raise BotError("A tag with this name already exists") from e
 
@@ -172,7 +172,7 @@ class Tags(commands.Cog):
             ctx.guild.id,
             tag["name"],
         )
-        await ctx.send(f":white_check_mark: | Tag {tag['name']} and its aliases removed")
+        await ctx.send(f"{POSITIVE_CHECK} | Tag {tag['name']} and its aliases removed")
 
     @tag_delete.command(name="alias")
     @commands.guild_only()
@@ -199,7 +199,7 @@ class Tags(commands.Cog):
             alias,
         )
 
-        await ctx.send(f":white_check_mark: | Alias `{alias}` removed")
+        await ctx.send(f"{POSITIVE_CHECK} | Alias `{alias}` removed")
 
     @tag.command(name="edit")
     @commands.guild_only()
@@ -220,7 +220,7 @@ class Tags(commands.Cog):
             tag["name"],
         )
 
-        await ctx.send(f":white_check_mark: | Tag `{tag['name']}` modified")
+        await ctx.send(f"{POSITIVE_CHECK} | Tag `{tag['name']}` modified")
 
     @tag.command(name="raw")
     @commands.guild_only()
@@ -303,7 +303,7 @@ class Tags(commands.Cog):
                 ctx.guild.id,
             )
 
-            await ctx.send(":white_check_mark: | Alias successfully created")
+            await ctx.send(f"{POSITIVE_CHECK} | Alias successfully created")
         except DatabaseError as e:
             raise BotError("Alias already exists") from e
 

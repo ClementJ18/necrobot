@@ -12,6 +12,9 @@ from discord.ext import commands
 if TYPE_CHECKING:
     from bot import NecroBot
 
+NEGATIVE_CHECK = ":negative_squared_cross_mark:"
+POSITIVE_CHECK = ":white_check_mark:"
+
 
 class BotError(Exception):
     pass

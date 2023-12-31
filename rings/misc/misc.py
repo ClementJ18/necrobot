@@ -18,7 +18,7 @@ from discord.ext.commands.cooldowns import BucketType
 from rings.utils.checks import guild_only, has_perms
 from rings.utils.converters import UserConverter
 from rings.utils.ui import Confirm, Paginator
-from rings.utils.utils import BotError
+from rings.utils.utils import POSITIVE_CHECK, BotError
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
@@ -233,7 +233,7 @@ class Misc(commands.Cog):
         """
         view = Confirm(
             ctx.author,
-            confirm_msg=":white_check_mark: | All counters reset",
+            confirm_msg=f"{POSITIVE_CHECK} | All counters reset",
         )
 
         view.message = await ctx.send(
@@ -375,7 +375,7 @@ class Misc(commands.Cog):
             log[1],
         )
 
-        await ctx.send(":white_check_mark: | Log removed, counters adjusted.")
+        await ctx.send(f"{POSITIVE_CHECK} | Log removed, counters adjusted.")
 
     def compile_stats(self, logs, faction):
         title = logs[0]["faction"] if logs[0]["faction"].lower() == faction else logs[0]["enemy"]

@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from rings.db import DatabaseError
 from rings.utils.ui import Paginator
-from rings.utils.utils import time_converter
+from rings.utils.utils import NEGATIVE_CHECK, POSITIVE_CHECK, time_converter
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -132,12 +132,12 @@ class RP(commands.Cog):
         """
         if not channel.permissions_for(ctx.author).read_messages:
             return await ctx.send(
-                ":negative_squared_cross_mark: | You do not have permission to read this channel."
+                f"{NEGATIVE_CHECK} | You do not have permission to read this channel."
             )
 
         if not channel.permissions_for(ctx.guild.me).read_messages:
             return await ctx.send(
-                ":negative_squared_cross_mark: | I do not have permission to read this channel."
+                f"{NEGATIVE_CHECK} | I do not have permission to read this channel."
             )
 
         try:
@@ -147,11 +147,11 @@ class RP(commands.Cog):
                 channel.id,
             )
             await ctx.send(
-                f":white_check_mark: | You are now subscribed to {channel.mention}. Make sure your DMs are open!"
+                f"{POSITIVE_CHECK} | You are now subscribed to {channel.mention}. Make sure your DMs are open!"
             )
         except DatabaseError:
             await ctx.send(
-                ":negative_squared_cross_mark: | Could not subscribe. You might already subscribed."
+                f"{NEGATIVE_CHECK} | Could not subscribe. You might already subscribed."
             )
 
     @subscribe.command(name="list")
@@ -201,9 +201,9 @@ class RP(commands.Cog):
         )
 
         if is_deleted:
-            await ctx.send(":white_check_mark: | Subscription cancelled.")
+            await ctx.send(f"{POSITIVE_CHECK} | Subscription cancelled.")
         else:
-            await ctx.send(":negative_squared_cross_mark: | Could not find this subscription.")
+            await ctx.send(f"{NEGATIVE_CHECK} | Could not find this subscription.")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

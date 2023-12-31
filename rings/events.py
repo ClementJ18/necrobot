@@ -9,7 +9,7 @@ import discord
 from discord.ext import commands
 
 from rings.misc.ui import FightError
-from rings.utils.utils import BotError, DatabaseError, build_format_dict
+from rings.utils.utils import NEGATIVE_CHECK, BotError, DatabaseError, build_format_dict
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -50,7 +50,7 @@ class Events(commands.Cog):
             starboard = self.bot.get_channel(self.bot.guild_data[payload.guild_id]["starboard-channel"])
             if channel.is_nsfw() and not starboard.is_nsfw():
                 return await channel.send(
-                    ":negative_squared_cross_mark: | Could not send message to starboard because channel is marked as NSFW and starboard is marked as SFW. Either make this channel SFW or make the starboard NSFW",
+                    f"{NEGATIVE_CHECK} | Could not send message to starboard because channel is marked as NSFW and starboard is marked as SFW. Either make this channel SFW or make the starboard NSFW",
                     delete_after=30,
                 )
 
@@ -151,7 +151,7 @@ class Events(commands.Cog):
 
         if msg is not None:
             try:
-                await ctx.send(f":negative_squared_cross_mark: | {msg}", delete_after=60)
+                await ctx.send(f"{NEGATIVE_CHECK} | {msg}", delete_after=60)
             except discord.Forbidden:
                 pass
 

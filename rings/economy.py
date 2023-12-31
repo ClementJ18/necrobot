@@ -11,7 +11,7 @@ from cards.decks import standard52
 from cards.decks.standard52 import JACK, KING, QUEEN
 from rings.utils.converters import MoneyConverter
 from rings.utils.ui import BaseView
-from rings.utils.utils import BotError
+from rings.utils.utils import NEGATIVE_CHECK, BotError
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -166,7 +166,7 @@ class BlackJack(BaseView):
             self.player.passing = True
         except commands.BadArgument:
             return await interaction.response.send_message(
-                ":negative_squared_cross_mark: | Not enough money to double down",
+                f"{NEGATIVE_CHECK} | Not enough money to double down",
                 ephemeral=True,
             )
 

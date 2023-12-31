@@ -6,6 +6,8 @@ import discord
 
 from PIL import Image
 
+from rings.utils.utils import NEGATIVE_CHECK, POSITIVE_CHECK
+
 if typing.TYPE_CHECKING:
     from bot import NecroBot
 
@@ -16,7 +18,7 @@ if typing.TYPE_CHECKING:
 async def starboard_force(interaction: discord.Interaction[NecroBot], message: discord.Message):
     if not interaction.client.guild_data[interaction.guild.id]["starboard-channel"]:
         return await interaction.response.send_message(
-            ":negative_squared_cross_mark: | Please set a starboard first", ephemeral=True
+            f"{NEGATIVE_CHECK} | Please set a starboard first", ephemeral=True
         )
 
     await interaction.response.defer(ephemeral=True)
@@ -32,7 +34,7 @@ async def starboard_force(interaction: discord.Interaction[NecroBot], message: d
         embed.set_footer(**interaction.client.bot_footer)
         await automod.send(embed=embed)
 
-    await interaction.followup.send(":white_check_mark: | Message force starred", ephemeral=True)
+    await interaction.followup.send(f"{POSITIVE_CHECK} | Message force starred", ephemeral=True)
 
 
 @discord.app_commands.context_menu(name="Delete bot message")
@@ -40,30 +42,30 @@ async def delete_bot_dm(interaction: discord.Interaction[NecroBot], message: dis
     # remove this after discord.app_commands.dm_only has been implemented
     if interaction.guild is not None:
         return await interaction.response.send_message(
-            ":negative_squared_cross_mark: | This action can only be used in DMs", ephemeral=True
+            f"{NEGATIVE_CHECK} | This action can only be used in DMs", ephemeral=True
         )
 
     if not message.author.bot:
         return await interaction.response.send_message(
-            ":negative_squared_cross_mark: | This action can only be used on a bot message", ephemeral=True
+            f"{NEGATIVE_CHECK} | This action can only be used on a bot message", ephemeral=True
         )
 
     await message.delete()
-    await interaction.response.send_message(":white_check_mark: | Message deleted", ephemeral=True)
+    await interaction.response.send_message(f"{POSITIVE_CHECK} | Message deleted", ephemeral=True)
 
 
 @discord.app_commands.context_menu(name="Convert .bmp attachment")
 async def convert_bmp(interaction: discord.Interaction[NecroBot], message: discord.Message):
     if not message.attachments:
         return await interaction.response.send_message(
-            ":negative_squared_cross_mark: | This message has no attachements", ephemeral=True
+            f"{NEGATIVE_CHECK} | This message has no attachements", ephemeral=True
         )
 
     to_convert = [img for img in message.attachments if img.filename.endswith(".bmp")]
 
     if not to_convert:
         return await interaction.response.send_message(
-            ":negative_squared_cross_mark: | This message has no `.bmp` attachements", ephemeral=True
+            f"{NEGATIVE_CHECK} | This message has no `.bmp` attachements", ephemeral=True
         )
 
     await interaction.response.defer()
@@ -79,7 +81,7 @@ async def convert_bmp(interaction: discord.Interaction[NecroBot], message: disco
             converted.append(discord.File(filename=f"converted{index}.png", fp=output_buffer))
 
     await interaction.followup.send(
-        f":white_check_mark: | {interaction.user.mention}, I converted the images like you asked",
+        f"{POSITIVE_CHECK} | {interaction.user.mention}, I converted the images like you asked",
         files=converted,
     )
 

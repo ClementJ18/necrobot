@@ -7,6 +7,7 @@ from discord.ext import commands as cmd
 from discord.interactions import Interaction
 
 from rings.utils.ui import Paginator
+from rings.utils.utils import NEGATIVE_CHECK
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -117,10 +118,10 @@ class NecrobotHelp(cmd.HelpCommand):
     context: cmd.Context[NecroBot]
 
     def command_not_found(self, string):
-        return f":negative_squared_cross_mark: | Command **{string}** not found."
+        return f"{NEGATIVE_CHECK} | Command **{string}** not found."
 
     def subcommand_not_found(self, command: cmd.Command, string):
-        return f":negative_squared_cross_mark: | Command **{command.qualified_name}** has no subcommand **{string}**"
+        return f"{NEGATIVE_CHECK} | Command **{command.qualified_name}** has no subcommand **{string}**"
 
     def get_command_signature(self, command: cmd.Command):
         """Retrieves the signature portion of the help page."""
