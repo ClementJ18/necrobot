@@ -131,14 +131,10 @@ class RP(commands.Cog):
         `{pre}subscribe #news` - subscribe to the news channel
         """
         if not channel.permissions_for(ctx.author).read_messages:
-            return await ctx.send(
-                f"{NEGATIVE_CHECK} | You do not have permission to read this channel."
-            )
+            return await ctx.send(f"{NEGATIVE_CHECK} | You do not have permission to read this channel.")
 
         if not channel.permissions_for(ctx.guild.me).read_messages:
-            return await ctx.send(
-                f"{NEGATIVE_CHECK} | I do not have permission to read this channel."
-            )
+            return await ctx.send(f"{NEGATIVE_CHECK} | I do not have permission to read this channel.")
 
         try:
             await self.bot.db.query(
@@ -150,9 +146,7 @@ class RP(commands.Cog):
                 f"{POSITIVE_CHECK} | You are now subscribed to {channel.mention}. Make sure your DMs are open!"
             )
         except DatabaseError:
-            await ctx.send(
-                f"{NEGATIVE_CHECK} | Could not subscribe. You might already subscribed."
-            )
+            await ctx.send(f"{NEGATIVE_CHECK} | Could not subscribe. You might already subscribed.")
 
     @subscribe.command(name="list")
     async def subscribe_list(self, ctx: commands.Context[NecroBot]):

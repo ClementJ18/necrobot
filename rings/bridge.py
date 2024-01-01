@@ -194,9 +194,7 @@ class Bridge(commands.Cog):
                 )
                 logger.error(error_traceback)
 
-                await post["message"].channel.send(
-                    f"{NEGATIVE_CHECK} | Error while sending: {e}"
-                )
+                await post["message"].channel.send(f"{NEGATIVE_CHECK} | Error while sending: {e}")
                 await post["message"].remove_reaction("\N{GEAR}", post["message"].guild.me)
 
     async def get_form(self, url, form_name):

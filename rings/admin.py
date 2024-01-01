@@ -192,7 +192,11 @@ class Admin(commands.Cog):
         ]
 
         def embed_maker(view: Paginator, entries: List[str]):
-            embed = discord.Embed(title="Guilds", description="\n".join(guilds), color=self.bot.bot_color)
+            embed = discord.Embed(
+                title=f"Guilds ({len(ctx.bot.guilds)})",
+                description="\n".join(guilds),
+                color=self.bot.bot_color,
+            )
             embed.set_footer(**self.bot.bot_footer)
 
             return embed
@@ -318,9 +322,7 @@ class Admin(commands.Cog):
         if subcommand == "add" and not has_badge:
             await self.bot.db.insert_badge(user.id, badge["name"])
             if spot is None:
-                await ctx.send(
-                    f"{POSITIVE_CHECK} | Granted the **{badge['name']}** badge to user **{user}**"
-                )
+                await ctx.send(f"{POSITIVE_CHECK} | Granted the **{badge['name']}** badge to user **{user}**")
             else:
                 await self.bot.db.update_spot_badge(user.id, spot, badge["name"])
                 await ctx.send(
@@ -328,9 +330,7 @@ class Admin(commands.Cog):
                 )
         elif subcommand == "delete" and has_badge:
             await self.bot.db.delete_badge(user.id, badge["name"])
-            await ctx.send(
-                f"{POSITIVE_CHECK} | Reclaimed the **{badge['name']}** badge from user **{user}**"
-            )
+            await ctx.send(f"{POSITIVE_CHECK} | Reclaimed the **{badge['name']}** badge from user **{user}**")
         else:
             raise BotError("Users has/doesn't have the badge")
 
@@ -584,9 +584,12 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def test(self, ctx: commands.Context[NecroBot], *commands: str):
+    async def test(self, ctx: commands.Context[NecroBot], *, commands: str):
         """{usage}"""
-        if not self.bot.user.id != self.bot.TEST_BOT_ID:
+
+        commands = [command.strip() for command in commands.split(",")]
+
+        if self.bot.user.id != self.bot.TEST_BOT_ID:
             return await ctx.send(f"{NEGATIVE_CHECK} | Cannot run tests from production bot")
 
         modules = [v for k, v in sys.modules.items() if k.startswith("tests")]

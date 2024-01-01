@@ -13,5 +13,3 @@ from tests.utils import delay
 
 if TYPE_CHECKING:
     from bot import NecroBot
-
-

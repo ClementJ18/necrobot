@@ -351,9 +351,7 @@ class Server(commands.Cog):
         else:
             updated = len(updated)
 
-        await view.message.edit(
-            content=f"{POSITIVE_CHECK} | Permissions of **{updated}** member(s) updated"
-        )
+        await view.message.edit(content=f"{POSITIVE_CHECK} | Permissions of **{updated}** member(s) updated")
 
     @commands.command()
     @has_perms(4)

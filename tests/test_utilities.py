@@ -22,7 +22,7 @@ async def test_giveaway(ctx: commands.Context[NecroBot]):
     with pytest.raises(BotError):
         await ctx.invoke(command, winner=1, time_string="0s")
 
-    _ = asyncio.create_task(delay(5, ctx.invoke(command, winner=1, time_string="10s")))
+    _ = delay(5, ctx.invoke(command, winner=1, time_string="10s"))
 
     message: discord.Message = await ctx.bot.wait_for(
         "message",
@@ -33,7 +33,7 @@ async def test_giveaway(ctx: commands.Context[NecroBot]):
     await ctx.invoke(ctx.bot.get_command("giveaway list"))
 
     command_cancel = ctx.bot.get_command("giveaway cancel")
-    _ = asyncio.create_task(delay(5, ctx.invoke(command, winner=1, time_string="60s")))
+    _ = delay(5, ctx.invoke(command, winner=1, time_string="60s"))
     message: discord.Message = await ctx.bot.wait_for(
         "message",
         check=lambda m: m.author.id == ctx.bot.user.id and m.channel.id == ctx.channel.id,
@@ -110,7 +110,22 @@ async def test_queue(ctx: commands.Context[NecroBot]):
 
 
 async def test_remindme(ctx: commands.Context[NecroBot]):
-    command = await ctx.bot.get_command("remindme")
+    command = ctx.bot.get_command("remindme")
+
+    await ctx.invoke(command, message="about bark in 1m30s")
+
+    remindme_list = ctx.bot.get_command("remindme list")
+    await ctx.invoke(remindme_list)
+
+    reminders = await ctx.bot.db.get_reminders(ctx.author.id)
+
+    remindme_cancel = ctx.bot.get_command("remindme delete")
+    await ctx.invoke(remindme_cancel, reminder_id=reminders[-1]["id"])
+
+    with pytest.raises(BotError):
+        await ctx.invoke(remindme_list)
+
+    await ctx.invoke(command, message="about bark in 5s")
 
 
 async def test_today(ctx: commands.Context[NecroBot]):
@@ -144,4 +159,4 @@ async def test_calc(ctx: commands.Context[NecroBot]):
     await ctx.invoke(command, equation="(4 + 5) * 3 / (2 - 1)")
 
     with pytest.raises(BotError):
-        await ctx.invoke(command, equation="ctx.bot._http.token")
+        await ctx.invoke(command, equation="ctx.bot._connection.http.token")

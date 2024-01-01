@@ -171,6 +171,9 @@ class PollView(BaseView):
             view=self,
         )
         await interaction.followup.send(f"{POSITIVE_CHECK} | Poll closed", ephemeral=True)
+        await interaction.client.db.query(
+            "UPDATE necrobot.PollsV2 SET open=false WHERE message_id=$1", self.poll_id
+        )
 
 
 class PollEditorModal(discord.ui.Modal):
@@ -244,9 +247,7 @@ class PollEditorView(BaseView):
     @discord.ui.button(label="Delete last option", style=discord.ButtonStyle.red)
     async def delete_option(self, interaction: discord.Interaction[NecroBot], _: discord.ui.Button):
         if not self.options:
-            return await interaction.response.send_message(
-                f"{NEGATIVE_CHECK} | Cannot delete no options"
-            )
+            return await interaction.response.send_message(f"{NEGATIVE_CHECK} | Cannot delete no options")
 
         self.options.pop(-1)
         await interaction.response.edit_message(embed=await self.generate_embed())
@@ -368,9 +369,7 @@ class SelectView(BaseView):
         self.value = False
         self.stop()
         self.clear_items()
-        await interaction.response.edit_message(
-            content=f"{NEGATIVE_CHECK} | Cancelled", view=self
-        )
+        await interaction.response.edit_message(content=f"{NEGATIVE_CHECK} | Cancelled", view=self)
 
     async def on_timeout(self):
         self.stop()

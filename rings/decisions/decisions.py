@@ -74,7 +74,7 @@ class Decisions(commands.Cog):
         bet: MoneyConverter = 0,
     ):
         """Flips a coin and returns the result. Can also be used to bet money on the result (`h` for head and \
-        `t` for tail). The bet return is 50% of your initial bet.
+        `t` for tail). The return is 50% of your initial bet.
 
         {usage}
 
