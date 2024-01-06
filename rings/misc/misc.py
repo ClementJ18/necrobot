@@ -340,7 +340,7 @@ class Misc(commands.Cog):
         """
         msg = await ctx.send(
             "Use this message to register victories and losses for factions in 1v1 games you have played. Select a winner, a loser and then click confirm.",
-            view=MatchupView(self.bot),
+            view=MatchupView(),
         )
         self.bot.settings["matchup_views"][ctx.guild.id] = msg.id
 

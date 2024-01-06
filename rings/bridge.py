@@ -143,7 +143,7 @@ class BridgeView(BaseView):
         }
 
         await interaction.client.queued_posts.put(post)
-        await interaction.response.edit_message(f"{POSITIVE_CHECK} | Post queued", ephemeral=True, view=None)
+        await interaction.response.edit_message(content=f"{POSITIVE_CHECK} | Post queued", view=None)
 
 
 @discord.app_commands.context_menu(name="Send message as bug report")

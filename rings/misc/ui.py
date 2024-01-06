@@ -255,7 +255,7 @@ class MatchupView(BaseView):
 
     @discord.ui.button(label="Confirm", custom_id="matchup_confirm", row=2, style=discord.ButtonStyle.green)
     async def confirm(self, interaction: discord.Interaction[NecroBot], button: discord.ui.Button):
-        if not self.winner_select.values and self.loser_select.values:
+        if not (self.winner_select.values and self.loser_select.values):
             return await interaction.response.send_message(
                 f"{NEGATIVE_CHECK} | Please select a winning and losing faction", ephemeral=True
             )
@@ -288,6 +288,6 @@ class MatchupView(BaseView):
 
         await interaction.response.edit_message()
         await interaction.followup.send(
-            f"{POSITIVE_CHECK} | Registered a victory over **{self.loser_select.values[0]}** for **{self.winner_select.values[0]}**",
+            f"{POSITIVE_CHECK} | Registered a victory for **{self.winner_select.values[0]}** over **{self.loser_select.values[0]}**",
             ephemeral=True,
         )
