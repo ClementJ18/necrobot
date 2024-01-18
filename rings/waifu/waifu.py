@@ -873,7 +873,7 @@ class Flowers(commands.Cog):
         }
 
         view = MultiInputEmbedView(embed_maker, defaults, "Banner Edit", ctx.author)
-        msg = await ctx.send(
+        view.message = await ctx.send(
             "You can submit the edit form anytime. Missing field will only be checked on confirmation. \n Characters is a comma separate list of characters (name or ID)",
             embed=await view.generate_embed(),
             view=view,

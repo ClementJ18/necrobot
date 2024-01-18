@@ -12,6 +12,7 @@ from rings.utils.converters import (
     RoleConverter,
     TimeConverter,
     WritableChannelConverter,
+    transform_mentions,
 )
 from rings.utils.ui import (
     Confirm,
@@ -825,9 +826,11 @@ class Server(commands.Cog):
         channel: discord.TextChannel,
         ctx: commands.Context[NecroBot],
     ) -> MultiInputEmbedView:
-        def embed_maker(values):
+        async def embed_maker(values):
             embed = discord.Embed(
-                title="New Broadcast!", description=values["message"], colour=self.bot.bot_color
+                title="New Broadcast!",
+                description=await transform_mentions(ctx, values["message"]),
+                colour=self.bot.bot_color,
             )
 
             embed.add_field(name="Channel", value=channel.mention)
@@ -838,8 +841,8 @@ class Server(commands.Cog):
             return embed
 
         view = MultiInputEmbedView(embed_maker, defaults, "Broadcast Edit", ctx.author)
-        await ctx.send(
-            f"You can submit the edit form anytime. Missing field will only be checked on confirmation. Current bot hour is {self.bot.counter}\n- interval should be between 1 and 24\n- start should be between 0 and 23",
+        view.message = await ctx.send(
+            f"You can submit the edit form anytime. Missing field will only be checked on confirmation. Current bot hour is {self.bot.counter}\n- interval should be between 1 and 24\n- start should be between 0 and 23\n",
             embed=await view.generate_embed(),
             view=view,
         )
@@ -882,7 +885,7 @@ class Server(commands.Cog):
             channel.id,
             int(values["start"]),
             int(values["interval"]),
-            values["message"],
+            await transform_mentions(ctx, values["message"]),
             fetchval=True,
         )
 
@@ -914,7 +917,10 @@ class Server(commands.Cog):
 
         defaults = {
             "message": EmbedStringConverter(
-                default=str(query[0]["message"]), style=discord.TextStyle.paragraph
+                default=await commands.clean_content(use_nicknames=False, fix_channel_mentions=True).convert(
+                    ctx, str(query[0]["message"])
+                ),
+                style=discord.TextStyle.paragraph,
             ),
             "start": EmbedRangeConverter(default=str(query[0]["start_time"]), min=0, max=23),
             "interval": EmbedRangeConverter(default=str(query[0]["interval"]), min=1, max=24),
@@ -931,7 +937,7 @@ class Server(commands.Cog):
             ctx.guild.id,
             int(values["start"]),
             int(values["interval"]),
-            values["message"],
+            await transform_mentions(ctx, values["message"]),
         )
 
         await ctx.send(f"{POSITIVE_CHECK} | Broadcast edited!")

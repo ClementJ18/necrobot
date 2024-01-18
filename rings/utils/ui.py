@@ -738,20 +738,28 @@ class EditModalSelect(discord.ui.Select):
         self.chunks = chunker(list(values.keys()), 5)
         self.title = title
 
-        options = [
-            discord.SelectOption(
-                label=f"Edit - {', '.join(convert_key_to_label(key) for key in chunk)}",
-                value=index,
-            )
-            for index, chunk in enumerate(self.chunks)
-        ]
+        options = [discord.SelectOption(label="Pick me to reset the select", value=-1)]
+
+        options.extend(
+            [
+                discord.SelectOption(
+                    label=f"Edit - {', '.join(convert_key_to_label(key) for key in chunk)}",
+                    value=index,
+                )
+                for index, chunk in enumerate(self.chunks)
+            ]
+        )
 
         super().__init__(options=options, row=1, placeholder="Pick a set of attributes to edit")
 
     async def callback(self, interaction: discord.Interaction[NecroBot]):
+        value = int(self.values[0])
+        if value == -1:
+            return await interaction.response.edit_message()
+
         modal = EditModal(
             title=self.title,
-            keys=self.chunks[int(self.values[0])],
+            keys=self.chunks[value],
             converters=self.converters,
             attributes=self.attributes,
             view=self.view,

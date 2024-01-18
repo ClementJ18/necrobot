@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 
 from typing import TYPE_CHECKING, List, Literal, get_args
 
@@ -224,9 +225,9 @@ class Tag(commands.Converter[dict]):
         return tag[0]
 
 
-class WritableChannelConverter(commands.Converter[discord.TextChannel]):
+class WritableChannelConverter(commands.TextChannelConverter):
     async def convert(self, ctx: commands.Context[NecroBot], argument: str):
-        result = await commands.TextChannelConverter().convert(ctx, argument)
+        result = await super().convert(ctx, argument)
         if not result.permissions_for(result.guild.me).send_messages:
             raise commands.BadArgument(f"I cannot send messages in {result.mention}")
 
@@ -327,3 +328,38 @@ class GachaBannerConverter(commands.Converter[dict]):
             raise commands.BadArgument(f"Banner **{query[0]['name']}** is not ongoing")
 
         return query[0]
+
+
+async def transform_mentions(ctx: commands.Context[NecroBot], message: str | None):
+    if message is None:
+        return None
+
+    for converter, regex in (
+        (MemberConverter(), r"(?<!\<)@(\w*)(?!\>)"),
+        (RoleConverter(), r"(?<!\<)@(\w*)(?!\>)"),
+        (commands.GuildChannelConverter(), r"(?<!\<)#([a-z0-9-_]*)(?!\>)"),
+    ):
+        message = await _transform_mentions(ctx, message, converter, regex)
+
+    return message
+
+
+async def _transform_mentions(
+    ctx: commands.Context[NecroBot], message: str, converter: commands.Converter, regex: str
+):
+    new_string = ""
+    last_index = 0
+
+    for match in re.finditer(regex, message):
+        try:
+            member = (await converter.convert(ctx, match.group(1))).mention
+        except commands.BadArgument:
+            member = match.group(0)
+
+        new_string += message[last_index : match.start()]
+        new_string += member
+
+        last_index = match.end()
+
+    new_string += message[last_index:]
+    return new_string
