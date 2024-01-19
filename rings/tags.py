@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 
 class Tags(commands.Cog):
+    """A cog to contain all current and future tag commands."""
     def __init__(self, bot: NecroBot):
         self.bot = bot
         self.restricted = [x.name for x in self.tag.commands]

@@ -36,7 +36,7 @@ def _check_error_response(response: dict, query: str):
 
 
 class Wiki(commands.Cog):
-    """A series of wikia-related commands. Used to search the biggest fan-made database of
+    """A series of wikia-related commands. Used to search the biggest fan-made database of \
     information."""
 
     def __init__(self, bot: NecroBot):

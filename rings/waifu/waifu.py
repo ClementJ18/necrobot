@@ -48,8 +48,10 @@ LOG_SIZE = 7
 
 
 class Flowers(commands.Cog):
-    """A server specific economy system. Use it to reward/punish users at you heart's content.
-    Also contains a gacha system."""
+    """A server specific economy system. Use it to reward/punish users at you heart's content. \
+    Also contains a gacha system. Use a global pool of character, weapons and artefacts to create \
+    "banners" on which players can spend their flowers for a chance to obtain them.
+    """
 
     def __init__(self, bot: NecroBot):
         self.bot = bot

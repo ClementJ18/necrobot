@@ -63,9 +63,10 @@ class GivemePaginator(Paginator):
 
 
 class Server(commands.Cog):
-    """Contains all the commands related to customising Necrobot's behavior on your server and to your server members. Contains
-    commands for stuff such as setting broadcast, giving users permissions, ignoring users, getting info on your current settings,
-    ect..."""
+    """Contains all the commands related to customising Necrobot's behavior on your server and to your server members. Contains \
+    commands for stuff such as setting broadcast, giving users permissions, ignoring users, getting info on your current settings, \
+    ect...
+    """
 
     def __init__(self, bot: NecroBot):
         self.bot = bot

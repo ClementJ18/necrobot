@@ -727,7 +727,7 @@ class EditModal(discord.ui.Modal):
 D = TypeVar("D")
 
 
-def chunker(seq: List[D], size: int) -> List[D]:
+def chunker(seq: List[D], size: int) -> List[List[D]]:
     return [seq[pos : pos + size] for pos in range(0, len(seq), size)]
 
 

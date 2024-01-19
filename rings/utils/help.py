@@ -173,7 +173,7 @@ class NecrobotHelp(cmd.HelpCommand):
         return formatted
 
     async def embed_cog(self, cog: cmd.Cog, commands: List[cmd.Command]) -> discord.Embed:
-        help_msg = ""
+        help_msg = f"{cog.description}\n\n__Commands__\n"
         for command in commands:
             name = await self.format_command_name(command)
             help_msg += f"{name} - {await self.get_brief_signature(command)}\n"
@@ -229,9 +229,20 @@ class NecrobotHelp(cmd.HelpCommand):
     async def send_bot_help(self, mapping: Mapping[Optional[cmd.Cog], List[cmd.Command[Any, ..., Any]]]):
         async def embed_maker(view: CogPaginator, entry: Optional[cmd.Cog]):
             if view.index == 0:
+                description = (
+                    f"{self.context.bot.description}\n\n"
+                    "__Permissions__\n"
+                    "Necrobot's commands are not tied to server permissions but to its own system. Each command has a permissions requirement "
+                    "ranking from 0 to 7. Permission level 0 is given by default to everyone and represents a user with no permissions. Levels "
+                    "1 to 4 can be handed out by the server admins to grant users in their server additional permissions, each successive level "
+                    "grants permission to all the commands of the previous level and more. Level 5 is granted to the server owner by the bot when "
+                    "it joins the server. Level 6 and 7 are global permissions levels handed out to users that help manage to bot on discord by the"
+                    "bot owner. Permissions are granted and taken through the `permissions`, `demote` and `promote` commands.\n"
+                )
+
                 embed = discord.Embed(
                     title=f":information_source: NecroBot Help Menu ({view.page_string}) :information_source:",
-                    description=self.context.bot.description,
+                    description=description,
                     color=self.context.bot.bot_color,
                 )
                 embed.set_footer(**self.context.bot.bot_footer)

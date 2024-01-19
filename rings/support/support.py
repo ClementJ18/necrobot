@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import ast
 import time
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class Support(commands.Cog):
-    """All the NecroBot support commands are here to help you enjoy your time with NecroBot"""
+    """All the support commands are here to help you enjoy your time with NecroBot"""
 
     def __init__(self, bot: NecroBot):
         self.bot = bot

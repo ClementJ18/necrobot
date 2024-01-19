@@ -16,9 +16,10 @@ if TYPE_CHECKING:
 
 
 class Modding(commands.Cog):
-    """This module is used to connect to the various modding communities and allow to link and showcase work using
-    commands that determine which modding community to piggy back off and then subcommands which decide
-    what you want to show."""
+    """This module is used to connect to the various modding communities and allow to link and showcase work using \
+    commands that determine which modding community to piggy back off and then subcommands which decide \
+    what you want to show.
+    """
 
     def __init__(self, bot: NecroBot):
         self.bot = bot

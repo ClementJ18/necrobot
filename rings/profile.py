@@ -20,6 +20,9 @@ if TYPE_CHECKING:
 
 
 class Profile(commands.Cog):
+    """See everything there is to know about your NecroBot profile. From your balance to badges \
+    or info. Can also be used to shift money around.    
+    """
     def __init__(self, bot: NecroBot):
         self.bot = bot
         self.font17 = ImageFont.truetype("rings/utils/profile/fonts/Ringbearer Medium.ttf", 17)

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class Literature(commands.Cog):
-    """Commands related to words and literature"""
+    """Commands related to words"""
 
     def __init__(self, bot: NecroBot):
         self.bot = bot

@@ -17,8 +17,9 @@ if TYPE_CHECKING:
 
 
 class Moderation(commands.Cog):
-    """All of the tools moderators can use from the most basic such as `nick` to the most complex like `purge`.
-    All you need to keep your server clean and tidy"""
+    """All of the tools moderators can use from the most basic such as `nick` to the most complex like `purge`. \
+    All you need to keep your server clean and tidy when Discord on its own is not enough.
+    """
 
     def __init__(self, bot: NecroBot):
         self.bot = bot

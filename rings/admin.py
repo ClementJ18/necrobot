@@ -32,6 +32,9 @@ if TYPE_CHECKING:
 
 
 class Admin(commands.Cog):
+    """The admin cog is used by the bot admins to manage its various aspects. This cog does not contain any useful commands \
+        if you are not a Bot Admin.
+    """
     def __init__(self, bot: NecroBot):
         self.bot = bot
         self.gates: Dict[int, discord.TextChannel] = {}

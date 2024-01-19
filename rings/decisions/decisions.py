@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class Decisions(commands.Cog):
-    """Helpful commands to help you make decisions"""
+    """Helpful commands to help you make decisions. Do not use for financial advice."""
 
     def __init__(self, bot: NecroBot):
         self.bot = bot

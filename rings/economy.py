@@ -251,6 +251,7 @@ class BlackJack(BaseView):
 
 
 class Economy(commands.Cog):
+    """Commands that allow you pay a certain amount of money for a chance to increase your balance."""
     def __init__(self, bot: NecroBot):
         self.bot = bot
         self.IS_GAME = []
