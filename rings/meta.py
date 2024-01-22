@@ -479,7 +479,7 @@ class Meta(commands.Cog):
         self.bot.reminders[reminder_id] = self.bot.loop.create_task(self.start_reminder(reminder_id))
 
     async def start_reminder(self, reminder_id):
-        next_reminder = await self.bot.db.query("SELECT * FROM necrobot.Reminders WHERE id = $1", reminder_id)
+        next_reminder = (await self.bot.db.query("SELECT * FROM necrobot.Reminders WHERE id = $1", reminder_id))[0]
         await self._start_reminder(next_reminder)
 
         if reminder_id in self.bot.reminders:
@@ -518,12 +518,16 @@ class Meta(commands.Cog):
             await self._start_reminder(next_reminder)
 
     async def _start_reminder(self, reminder):
-        sleep = (reminder["end_date"] - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
-        if sleep > 0:
-            await asyncio.sleep(sleep)
-            await self.remind_user(reminder)
+        try:
+            sleep = (reminder["end_date"] - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
+            if sleep > 0:
+                await asyncio.sleep(sleep)
+                await self.remind_user(reminder)
 
-        await self.bot.db.delete_reminder(reminder["id"])
+            await self.bot.db.delete_reminder(reminder["id"])
+        except Exception:
+            logger.exception(f"Error for reminder: {reminder}")
+            raise
 
     async def remind_user(self, reminder):
         channel = self.bot.get_channel(reminder["channel_id"])
