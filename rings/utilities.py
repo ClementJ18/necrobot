@@ -194,7 +194,7 @@ class Utilities(commands.Cog):
 
         await Paginator(5, res["data"][choice], ctx.author, embed_maker=embed_maker).start(ctx)
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, aliases=["reminder", "reminders"])
     async def remindme(self, ctx: commands.Context[NecroBot], *, message):
         """Creates a reminder in seconds. The following times can be used: days (d), \
         hours (h), minutes (m), seconds (s). You can also pass a timestamp to be reminded \
