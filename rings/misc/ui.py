@@ -134,7 +134,7 @@ class HungerGames(BaseView):
         embed = discord.Embed(
             title=f"Hunger Games Simulator ({self.index + 1}/{self.max_index + 1})",
             colour=self.bot.bot_color,
-            description=f"{event_name.title()} {self.day}\n {formatted_done_events}",
+            description=f"__{event_name.title()} {self.day}__\n {formatted_done_events}",
         )
 
         embed.add_field(
