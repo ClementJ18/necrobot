@@ -64,5 +64,11 @@ for the user to select which message they want to force.
 Giveaway is an ephemeral command with no proper implementation that has never been used. It
 also relies on a reaction flow which should be avoided.
 
+## gimeve
+* Native Discord Alternative: Channels & Roles menu
+
+Giveme is cool and handy but it has not been supplanted by the Channels & Roles menu which provide a 
+much more intuitive UI for the whole system and more control in the hands of the server admins
+
 
 

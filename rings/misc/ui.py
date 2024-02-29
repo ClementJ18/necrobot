@@ -100,14 +100,6 @@ class HungerGames(BaseView):
         deathless = [event for event in events[event_name] if len(event["killed"]) < 1]
         idle_events = events[event_name].copy() + deathless.copy()
 
-        embed = discord.Embed(
-            title=f"Hunger Games Simulator ({self.index + 1}/{self.max_index + 1})",
-            colour=self.bot.bot_color,
-            description=f"{' - '.join(self.tributes)}\nPress :arrow_forward: to proceed",
-        )
-
-        embed.set_footer(**self.bot.bot_footer)
-
         done_events = []
         while idle_tributes and len(self.tributes) > 1:
             tributes = []
@@ -135,14 +127,22 @@ class HungerGames(BaseView):
             except Exception as e:
                 raise FightError("Error formatting event", event, format_dict) from e
 
-        embed.add_field(
-            name=f"{event_name.title()} {self.day}",
-            value="\n".join(done_events),
-            inline=False,
-        )
-
         if event_name == "night":
             self.day += 1
+
+        events = "\n".join(done_events)
+        embed = discord.Embed(
+            title=f"Hunger Games Simulator ({self.index + 1}/{self.max_index + 1})",
+            colour=self.bot.bot_color,
+            description=f"{event_name.title()} {self.day}\n {events}",
+        )
+
+        embed.add_field(
+            name="Tributes",
+            value=f"{' - '.join(self.tributes)}\nPress :arrow_forward: to proceed"
+        )
+
+        embed.set_footer(**self.bot.bot_footer)
 
         self.phases.append(embed)
         return embed
