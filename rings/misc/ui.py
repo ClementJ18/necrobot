@@ -130,11 +130,11 @@ class HungerGames(BaseView):
         if event_name == "night":
             self.day += 1
 
-        events = "\n".join(done_events)
+        formatted_done_events = "\n".join(done_events)
         embed = discord.Embed(
             title=f"Hunger Games Simulator ({self.index + 1}/{self.max_index + 1})",
             colour=self.bot.bot_color,
-            description=f"{event_name.title()} {self.day}\n {events}",
+            description=f"{event_name.title()} {self.day}\n {formatted_done_events}",
         )
 
         embed.add_field(
