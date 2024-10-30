@@ -81,7 +81,6 @@ intents = discord.Intents.all()
 intents.emojis_and_stickers = False
 intents.integrations = False
 intents.webhooks = False
-intents.voice_states = False
 intents.presences = False
 intents.typing = False
 intents.guild_scheduled_events = False
