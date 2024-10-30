@@ -70,5 +70,10 @@ also relies on a reaction flow which should be avoided.
 Giveme is cool and handy but it has not been supplanted by the Channels & Roles menu which provide a 
 much more intuitive UI for the whole system and more control in the hands of the server admins
 
+## poll
+* Native Discord Alternative: Polls
+
+Poll is pretty much entirely supplanted by the native poll implementation. There is no point in keeping it.
+
 
 

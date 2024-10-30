@@ -74,6 +74,12 @@ class Events(commands.Cog):
     #######################################################################
 
     @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        left = after.channel is None
+        vc = before.channel if left else after.channel
+        logger.info("Member %s (%s) in guild %s (%s) has %s vc channel %s (%s)", member, member.id, member.guild.name, member.guild.id, "left" if left else "joined", vc.name, vc.id)
+
+    @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context[NecroBot], error: Exception):
         """Catches error and sends a message to the user that caused the error with a helpful message."""
         msg = None
