@@ -9,13 +9,14 @@ from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal
 import aiohttp
 import discord
 from discord.ext import commands
+from discord import app_commands
 from simpleeval import simple_eval
 
 from rings.utils.astral import Astral
 from rings.utils.checks import has_perms, leaderboard_enabled
 from rings.utils.converters import MemberConverter
 from rings.utils.ui import Paginator
-from rings.utils.utils import POSITIVE_CHECK, BotError, format_dt, time_converter, time_string_parser
+from rings.utils.utils import NEGATIVE_CHECK, POSITIVE_CHECK, BotError, format_dt, time_converter, time_string_parser
 
 if TYPE_CHECKING:
     from bot import NecroBot
@@ -756,6 +757,19 @@ class Utilities(commands.Cog):
         if payload.message_id in self.bot.ongoing_giveaways:
             del self.bot.ongoing_giveaways[payload.message_id]
 
+@app_commands.command(name="moveme", description="Move the author to another channel if they have the rights")
+@discord.app_commands.guild_only()
+async def moveme(interaction: discord.Interaction, channel: discord.VoiceChannel):
+    if not channel.permissions_for(interaction.user).connect:
+        return await interaction.response.send_message(f"{NEGATIVE_CHECK} | You do not have permission to connect to that channel")
+
+    if interaction.user.voice is None:
+        return await interaction.response.send_message(f"{NEGATIVE_CHECK} | You must be connected to a voice chat")
+    
+    await interaction.user.move_to(channel=channel, reason="Requested by user")
+    await interaction.response.send_message(f"{POSITIVE_CHECK} | Moved")
 
 async def setup(bot: NecroBot):
     await bot.add_cog(Utilities(bot))
+
+    bot.tree.add_command(moveme)
