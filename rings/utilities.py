@@ -761,13 +761,13 @@ class Utilities(commands.Cog):
 @discord.app_commands.guild_only()
 async def moveme(interaction: discord.Interaction, channel: discord.VoiceChannel):
     if not channel.permissions_for(interaction.user).connect:
-        return await interaction.response.send_message(f"{NEGATIVE_CHECK} | You do not have permission to connect to that channel")
+        return await interaction.response.send_message(f"{NEGATIVE_CHECK} | You do not have permission to connect to that channel", ephemeral=True)
 
     if interaction.user.voice is None:
-        return await interaction.response.send_message(f"{NEGATIVE_CHECK} | You must be connected to a voice chat")
+        return await interaction.response.send_message(f"{NEGATIVE_CHECK} | You must be connected to a voice chat", ephemeral=True)
     
     await interaction.user.move_to(channel=channel, reason="Requested by user")
-    await interaction.response.send_message(f"{POSITIVE_CHECK} | Moved")
+    await interaction.response.send_message(f"{POSITIVE_CHECK} | Moved", ephemeral=True)
 
 async def setup(bot: NecroBot):
     await bot.add_cog(Utilities(bot))
